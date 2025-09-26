@@ -2,18 +2,22 @@
 import { useEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
+import { CS2Physics } from '../utils/cs2Physics';
 
 interface CameraControllerProps {
   isActive: boolean;
-  speed?: number;
+  onPhysicsUpdate?: (position: THREE.Vector3, velocity: THREE.Vector3) => void;
 }
 
 export const CameraController: React.FC<CameraControllerProps> = ({ 
-  isActive, 
-  speed = 5 
+  isActive,
+  onPhysicsUpdate
 }) => {
   const { camera } = useThree();
   const keysPressed = useRef<{ [key: string]: boolean }>({});
+  const physics = useRef(new CS2Physics());
+  const euler = useRef(new THREE.Euler(0, 0, 0, 'YXZ'));
+  const mouseSensitivity = 0.002;
 
   useEffect(() => {
     if (!isActive) return;
@@ -26,39 +30,53 @@ export const CameraController: React.FC<CameraControllerProps> = ({
       keysPressed.current[e.key.toLowerCase()] = false;
     };
 
+    const handleMouseMove = (e: MouseEvent) => {
+      // CS2-style mouse look
+      euler.current.setFromQuaternion(camera.quaternion);
+      euler.current.y -= e.movementX * mouseSensitivity;
+      euler.current.x -= e.movementY * mouseSensitivity;
+      
+      // Clamp pitch
+      const maxPitch = Math.PI / 2 - 0.01;
+      euler.current.x = Math.max(-maxPitch, Math.min(maxPitch, euler.current.x));
+      
+      camera.quaternion.setFromEuler(euler.current);
+    };
+
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
+    document.addEventListener('mousemove', handleMouseMove);
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
+      document.removeEventListener('mousemove', handleMouseMove);
     };
-  }, [isActive]);
+  }, [isActive, camera]);
 
   useFrame((state, delta) => {
     if (!isActive) return;
 
-    const moveSpeed = speed * delta;
-    const direction = new THREE.Vector3();
+    // Gather input
+    const input = {
+      forward: (keysPressed.current['w'] ? 1 : 0) + (keysPressed.current['s'] ? -1 : 0),
+      right: (keysPressed.current['d'] ? 1 : 0) + (keysPressed.current['a'] ? -1 : 0),
+      jump: keysPressed.current[' '] || false,
+      crouch: keysPressed.current['shift'] || keysPressed.current['control'] || false
+    };
 
-    // Get camera's forward and right vectors
-    const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
-    const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+    // Update physics
+    const newPosition = physics.current.updateMovement(input, camera, delta);
+    camera.position.copy(newPosition);
 
-    // WASD movement
-    if (keysPressed.current['w']) direction.add(forward);
-    if (keysPressed.current['s']) direction.sub(forward);
-    if (keysPressed.current['a']) direction.sub(right);
-    if (keysPressed.current['d']) direction.add(right);
-    
-    // Space/Shift for up/down
-    if (keysPressed.current[' ']) direction.y += 1;
-    if (keysPressed.current['shift']) direction.y -= 1;
+    // Apply view bob
+    const movementState = physics.current.getMovementState();
+    const bob = physics.current.calculateWeaponBob(movementState.velocity, state.clock.elapsedTime);
+    camera.position.y += bob;
 
-    // Normalize and apply movement
-    if (direction.length() > 0) {
-      direction.normalize().multiplyScalar(moveSpeed);
-      camera.position.add(direction);
+    // Notify parent of physics state
+    if (onPhysicsUpdate) {
+      onPhysicsUpdate(newPosition, movementState.velocity);
     }
   });
 

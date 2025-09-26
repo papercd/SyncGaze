@@ -2,12 +2,14 @@
 import { Canvas } from '@react-three/fiber';
 import { useRef, useState } from 'react';
 import { PerspectiveCamera } from '@react-three/drei';
+import * as THREE from 'three';
 import { Environment } from './Environment';
 import { GameController } from './GameController';
 import { Crosshair } from './Crosshair';
 import { GlockModel } from './GlockModel';
 import { CameraController } from './CameraController';
 import { usePointerLock } from '../hooks/usePointerLock';
+import { CS2Physics } from '../utils/cs2Physics';
 
 export const Scene: React.FC = () => {
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -15,6 +17,11 @@ export const Scene: React.FC = () => {
   const [score, setScore] = useState(0);
   const [phase, setPhase] = useState<'idle' | 'training' | 'complete'>('idle');
   const startTimeRef = useRef<number>(0);
+  
+  // Physics state
+  const physicsRef = useRef(new CS2Physics());
+  const [velocity, setVelocity] = useState(new THREE.Vector3());
+  const [playerPosition, setPlayerPosition] = useState(new THREE.Vector3());
 
   const handleTargetHit = (targetId: string, mouseData: any) => {
     setScore(prev => prev + 1);
@@ -33,6 +40,11 @@ export const Scene: React.FC = () => {
     setPhase('training');
     startTimeRef.current = performance.now();
     requestPointerLock();
+  };
+
+  const handlePhysicsUpdate = (position: THREE.Vector3, vel: THREE.Vector3) => {
+    setPlayerPosition(position);
+    setVelocity(vel);
   };
 
   return (
@@ -69,8 +81,11 @@ export const Scene: React.FC = () => {
             </>
           ) : (
             <>
-              <h2>FPS Training Ground</h2>
-              <p style={{ margin: '20px 0' }}>Click to start training</p>
+              <h2>CS2-Style FPS Training</h2>
+              <p style={{ margin: '20px 0' }}>
+                WASD - Move | Space - Jump | Shift - Crouch<br/>
+                Mouse - Look | Left Click - Shoot
+              </p>
               <button onClick={handleStart} style={{
                 padding: '20px 40px',
                 fontSize: '20px',
@@ -113,21 +128,58 @@ export const Scene: React.FC = () => {
           }}>
             Time: {Math.floor((performance.now() - startTimeRef.current) / 1000)}s / 90s
           </div>
+
+          {/* Movement speed indicator */}
+          <div style={{
+            position: 'absolute',
+            bottom: 80,
+            left: 20,
+            color: 'white',
+            fontSize: '14px',
+            zIndex: 10,
+            textShadow: '2px 2px 4px rgba(0,0,0,0.8)'
+          }}>
+            Speed: {Math.round(new THREE.Vector2(velocity.x, velocity.z).length())} u/s
+          </div>
+
+          {/* Stamina bar */}
+          <div style={{
+            position: 'absolute',
+            bottom: 50,
+            left: 20,
+            width: '200px',
+            height: '20px',
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            border: '2px solid white',
+            zIndex: 10
+          }}>
+            <div style={{
+              width: `${(physicsRef.current.getMovementState().stamina / 100) * 100}%`,
+              height: '100%',
+              backgroundColor: '#4ecdc4',
+              transition: 'width 0.1s'
+            }} />
+          </div>
         </>
       )}
 
       {/* Crosshair */}
       {isLocked && phase === 'training' && <Crosshair />}
 
-      {/* Canvas - Three.js hooks work INSIDE here */}
+      {/* Canvas */}
       <Canvas shadows>
-        <PerspectiveCamera makeDefault position={[0, 3, 3]} fov={90} rotation={[-Math.PI/4, 0, 0]} />
-        <CameraController isActive={isLocked && phase === 'training'} speed={5} />
+        <PerspectiveCamera makeDefault position={[0, 1.6, 0]} fov={90} />
+        <CameraController 
+          isActive={isLocked && phase === 'training'} 
+          onPhysicsUpdate={handlePhysicsUpdate}
+        />
         <Environment />
         <GlockModel 
-          position={[0.02, -1.56, -0.081]}  // Try these values: right, slightly down, in front
-          rotation={[-0.01, Math.PI, 0]}
-          animationName="Reload"
+          position={[0.3, -0.4, -0.6]}
+          rotation={[0, Math.PI, 0]}
+          scale={1}
+          velocity={velocity}
+          physics={physicsRef.current}
         />
         
         <GameController 

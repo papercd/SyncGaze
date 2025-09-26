@@ -5,6 +5,7 @@ import { PerspectiveCamera } from '@react-three/drei';
 import { Environment } from './Environment';
 import { GameController } from './GameController';
 import { Crosshair } from './Crosshair';
+import { Gun } from './Gun';
 import { usePointerLock } from '../hooks/usePointerLock';
 
 export const Scene: React.FC = () => {
@@ -121,6 +122,10 @@ export const Scene: React.FC = () => {
       <Canvas shadows>
         <PerspectiveCamera makeDefault position={[0, 0, 0]} fov={90} />
         <Environment />
+        
+        {/* Gun component - only visible when locked and training */}
+        <Gun isActive={isLocked && phase === 'training'} />
+        
         <GameController 
           isLocked={isLocked} 
           onTargetHit={handleTargetHit}

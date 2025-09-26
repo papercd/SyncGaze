@@ -42,9 +42,10 @@ export const Scene: React.FC = () => {
     requestPointerLock();
   };
 
-  const handlePhysicsUpdate = (position: THREE.Vector3, vel: THREE.Vector3) => {
+  const handlePhysicsUpdate = (position: THREE.Vector3, vel: THREE.Vector3, physics: CS2Physics) => {
     setPlayerPosition(position);
     setVelocity(vel);
+    physicsRef.current = physics;
   };
 
   return (
@@ -175,7 +176,7 @@ export const Scene: React.FC = () => {
         />
         <Environment />
         <GlockModel 
-          position={[0.3, -0.4, -0.6]}
+          position={[0.02, -1.56, -0.081]} 
           rotation={[0, Math.PI, 0]}
           scale={1}
           velocity={velocity}

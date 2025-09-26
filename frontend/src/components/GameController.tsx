@@ -1,5 +1,5 @@
 // src/components/GameController.tsx
-import { useEffect,useRef,useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import * as THREE from 'three';
 import { Target } from './Target';
 import { useMouseLook } from '../hooks/useMouseLook';
@@ -18,11 +18,11 @@ export const GameController: React.FC<GameControllerProps> = ({
 }) => {
   const [targets, setTargets] = useState<Target3D[]>([]);
   const startTimeRef = useRef<number>(0);
+  const hasInitialized = useRef<boolean>(false); // Prevent multiple initializations
 
-  // Now this is INSIDE Canvas, so useThree() works!
   const { getMouseData, clearMouseData } = useMouseLook(0.002, isLocked);
 
-  const spawnTarget = (elapsedTime: number): Target3D => {
+  const spawnTarget = useCallback((elapsedTime: number): Target3D => {
     const phaseType = elapsedTime < 30000 ? 'static' : elapsedTime < 60000 ? 'moving' : 'mixed';
     const isMoving = phaseType === 'moving' || (phaseType === 'mixed' && Math.random() > 0.5);
 
@@ -32,7 +32,7 @@ export const GameController: React.FC<GameControllerProps> = ({
 
     const position = new THREE.Vector3(
       radius * Math.sin(phi) * Math.cos(theta),
-      radius * Math.sin(phi) * Math.sin(theta) - 1,
+      radius * Math.sin(phi) * Math.sin(theta) - 0.5 + 5,
       radius * Math.cos(phi)
     );
 
@@ -48,11 +48,19 @@ export const GameController: React.FC<GameControllerProps> = ({
         (Math.random() - 0.5) * 0.03
       ) : undefined
     };
-  };
+  }, []);
 
   useEffect(() => {
-    if (!isLocked) return;
+    if (!isLocked) {
+      hasInitialized.current = false;
+      return;
+    }
 
+    // Only initialize once when locked
+    if (hasInitialized.current) return;
+    hasInitialized.current = true;
+
+    console.log('🚀 Initializing game');
     startTimeRef.current = performance.now();
     setTargets([spawnTarget(0)]);
 
@@ -62,24 +70,27 @@ export const GameController: React.FC<GameControllerProps> = ({
       if (elapsedTime > 90000) {
         onPhaseChange('complete');
         clearInterval(gameLoop);
-        return;
       }
+    }, 1000);
 
-      setTargets(prev => {
-        if (prev.length === 0) {
-          return [spawnTarget(elapsedTime)];
-        }
-        return prev;
-      });
-    }, 100);
+    return () => {
+      console.log('🛑 Cleaning up game');
+      clearInterval(gameLoop);
+    };
+  }, [isLocked, spawnTarget]); // Remove onPhaseChange from deps
 
-    return () => clearInterval(gameLoop);
-  }, [isLocked, onPhaseChange]);
-
-  const handleTargetHit = (targetId: string) => {
-    setTargets(prev => prev.filter(t => t.id !== targetId));
+  const handleTargetHit = useCallback((targetId: string) => {
+    console.log('💥 Target hit:', targetId);
+    
+    const elapsedTime = performance.now() - startTimeRef.current;
+    
+    setTargets(prev => {
+      const filtered = prev.filter(t => t.id !== targetId);
+      return [...filtered, spawnTarget(elapsedTime)];
+    });
+    
     onTargetHit(targetId, getMouseData());
-  };
+  }, [spawnTarget, onTargetHit, getMouseData]);
 
   return (
     <>

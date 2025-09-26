@@ -6,7 +6,7 @@ import { CS2Physics } from '../utils/cs2Physics';
 
 interface CameraControllerProps {
   isActive: boolean;
-  onPhysicsUpdate?: (position: THREE.Vector3, velocity: THREE.Vector3) => void;
+  onPhysicsUpdate?: (position: THREE.Vector3, velocity: THREE.Vector3, physics: CS2Physics) => void;
 }
 
 export const CameraController: React.FC<CameraControllerProps> = ({ 
@@ -71,12 +71,12 @@ export const CameraController: React.FC<CameraControllerProps> = ({
 
     // Apply view bob
     const movementState = physics.current.getMovementState();
-    const bob = physics.current.calculateWeaponBob(movementState.velocity, state.clock.elapsedTime);
+    const bob = physics.current.calculateWeaponBob(movementState.velocity, state.clock.elapsedTime, delta);
     camera.position.y += bob;
 
     // Notify parent of physics state
     if (onPhysicsUpdate) {
-      onPhysicsUpdate(newPosition, movementState.velocity);
+      onPhysicsUpdate(newPosition, movementState.velocity, physics.current);
     }
   });
 

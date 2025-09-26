@@ -5,7 +5,8 @@ import { PerspectiveCamera } from '@react-three/drei';
 import { Environment } from './Environment';
 import { GameController } from './GameController';
 import { Crosshair } from './Crosshair';
-import { Gun } from './Gun';
+import { GlockModel } from './GlockModel';
+import { CameraController } from './CameraController';
 import { usePointerLock } from '../hooks/usePointerLock';
 
 export const Scene: React.FC = () => {
@@ -120,11 +121,14 @@ export const Scene: React.FC = () => {
 
       {/* Canvas - Three.js hooks work INSIDE here */}
       <Canvas shadows>
-        <PerspectiveCamera makeDefault position={[0, 0, 0]} fov={90} />
+        <PerspectiveCamera makeDefault position={[0, 3, 3]} fov={90} rotation={[-Math.PI/4, 0, 0]} />
+        <CameraController isActive={isLocked && phase === 'training'} speed={5} />
         <Environment />
-        
-        {/* Gun component - only visible when locked and training */}
-        <Gun isActive={isLocked && phase === 'training'} />
+        <GlockModel 
+          position={[0.02, -1.56, -0.081]}  // Try these values: right, slightly down, in front
+          rotation={[-0.01, Math.PI, 0]}
+          animationName="Reload"
+        />
         
         <GameController 
           isLocked={isLocked} 

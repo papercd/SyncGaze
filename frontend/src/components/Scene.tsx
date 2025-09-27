@@ -133,7 +133,7 @@ export const Scene: React.FC = () => {
           {/* Movement speed indicator */}
           <div style={{
             position: 'absolute',
-            bottom: 80,
+            bottom: 50,
             left: 20,
             color: 'white',
             fontSize: '14px',
@@ -141,25 +141,6 @@ export const Scene: React.FC = () => {
             textShadow: '2px 2px 4px rgba(0,0,0,0.8)'
           }}>
             Speed: {Math.round(new THREE.Vector2(velocity.x, velocity.z).length())} u/s
-          </div>
-
-          {/* Stamina bar */}
-          <div style={{
-            position: 'absolute',
-            bottom: 50,
-            left: 20,
-            width: '200px',
-            height: '20px',
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            border: '2px solid white',
-            zIndex: 10
-          }}>
-            <div style={{
-              width: `${(physicsRef.current.getMovementState().stamina / 100) * 100}%`,
-              height: '100%',
-              backgroundColor: '#4ecdc4',
-              transition: 'width 0.1s'
-            }} />
           </div>
         </>
       )}

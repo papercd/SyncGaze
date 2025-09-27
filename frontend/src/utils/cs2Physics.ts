@@ -18,11 +18,6 @@ export const CS2_CONSTANTS = {
   JUMP_VELOCITY: 5.2,        // Jump height
   GRAVITY: 20,               // Fall speed
   
-  // Stamina (not in CS2, but useful for training)
-  STAMINA_RECOVERY: 25,   
-  STAMINA_COST: 30,       
-  STAMINA_MAX: 100,
-  
   // Weapon movement
   WEAPON_SWAY_AMOUNT: 0.003,
   WEAPON_SWAY_SPEED: 5,
@@ -40,7 +35,6 @@ export interface MovementState {
   position: THREE.Vector3;
   isGrounded: boolean;
   isCrouching: boolean;
-  stamina: number;
   currentHeight: number;
   targetHeight: number;
 }
@@ -55,7 +49,6 @@ export class CS2Physics {
       position: new THREE.Vector3(0, CS2_CONSTANTS.HEAD_HEIGHT, 0),
       isGrounded: true,
       isCrouching: false,
-      stamina: CS2_CONSTANTS.STAMINA_MAX,
       currentHeight: CS2_CONSTANTS.HEAD_HEIGHT,
       targetHeight: CS2_CONSTANTS.HEAD_HEIGHT
     };
@@ -175,11 +168,10 @@ export class CS2Physics {
       this.applyFriction(delta);
     }
 
-    // Jump
-    if (input.jump && this.movementState.isGrounded && this.movementState.stamina > CS2_CONSTANTS.STAMINA_COST) {
+    // Jump - no stamina restrictions
+    if (input.jump && this.movementState.isGrounded) {
       this.movementState.velocity.y = CS2_CONSTANTS.JUMP_VELOCITY;
       this.movementState.isGrounded = false;
-      this.movementState.stamina -= CS2_CONSTANTS.STAMINA_COST;
     }
 
     // Update position
@@ -198,14 +190,6 @@ export class CS2Physics {
       this.movementState.isGrounded = true;
     } else {
       this.movementState.isGrounded = false;
-    }
-
-    // Stamina recovery
-    if (this.movementState.isGrounded) {
-      this.movementState.stamina = Math.min(
-        CS2_CONSTANTS.STAMINA_MAX, 
-        this.movementState.stamina + CS2_CONSTANTS.STAMINA_RECOVERY * delta
-      );
     }
 
     return this.movementState.position.clone();

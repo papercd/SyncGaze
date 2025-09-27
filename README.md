@@ -1,6 +1,30 @@
 # This branch is for develop and test of EYE and MOUSE tracking @JuhwnaLee99
 w/ node.js, WebGaze.js, React, TypeScript
 
+# 폴더 구조
+gaze-tracker-app/
+├── node_modules/
+├── public/
+├── src/
+│   ├── assets/
+│   │   └── (이미지, 폰트 등 정적 파일)
+│   │
+│   ├── components/
+│   │   └── GazeTracker/
+│   │       ├── index.tsx         # GazeTracker 컴포넌트 로직
+│   │       └── GazeTracker.css   # GazeTracker 전용 스타일
+│   │
+│   ├── types/
+│   │   └── global.d.ts         # 전역 타입 정의 (window.webgazer)
+│   │
+│   ├── App.tsx                 # 최상위 컴포넌트
+│   ├── index.css               # 전역 스타일
+│   └── index.tsx               # 앱 시작점
+│
+├── .gitignore
+├── package.json
+└── tsconfig.json
+---------
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.

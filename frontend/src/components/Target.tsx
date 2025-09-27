@@ -1,5 +1,5 @@
 // src/components/Target.tsx
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { Target3D } from '../types';
@@ -13,6 +13,15 @@ export const Target: React.FC<TargetProps> = ({ target, onHit }) => {
   const meshRef = useRef<THREE.Mesh>(null);
   const [hovered, setHovered] = useState(false);
   const scaleRef = useRef(1);
+
+  // Mark this mesh as a target with userData
+  useEffect(() => {
+    if (meshRef.current) {
+      meshRef.current.userData.isTarget = true;
+      meshRef.current.userData.targetId = target.id;
+      meshRef.current.name = target.id; // Also set name for easier identification
+    }
+  }, [target.id]);
 
   // Animation for moving targets and hover effect
   useFrame((state, delta) => {
@@ -58,10 +67,6 @@ export const Target: React.FC<TargetProps> = ({ target, onHit }) => {
       position={target.position}
       onPointerEnter={() => setHovered(true)}
       onPointerLeave={() => setHovered(false)}
-      onClick={(e) => {
-        e.stopPropagation();
-        onHit(target.id);
-      }}
       castShadow
     >
       <sphereGeometry args={[target.radius, 32, 32]} />

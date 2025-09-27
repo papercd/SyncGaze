@@ -1,6 +1,6 @@
 // src/components/Scene.tsx
 import { Canvas } from '@react-three/fiber';
-import { useRef, useState } from 'react';
+import { useRef, useState, useCallback } from 'react';
 import { PerspectiveCamera } from '@react-three/drei';
 import * as THREE from 'three';
 import { Environment } from './Environment';
@@ -9,6 +9,7 @@ import { Crosshair } from './Crosshair';
 import { GlockModel } from './GlockModel';
 import { CameraController } from './CameraController';
 import { usePointerLock } from '../hooks/usePointerLock';
+import { useShootingSystem } from '../hooks/useShootingSystem';
 import { CS2Physics } from '../utils/cs2Physics';
 
 export const Scene: React.FC = () => {
@@ -22,9 +23,18 @@ export const Scene: React.FC = () => {
   const physicsRef = useRef(new CS2Physics());
   const [velocity, setVelocity] = useState(new THREE.Vector3());
   const [playerPosition, setPlayerPosition] = useState(new THREE.Vector3());
+  
+  // Reference to GameController's hit handler
+  const gameControllerRef = useRef<{ handleTargetHit: (targetId: string) => void } | null>(null);
+
+  const handleShoot = useCallback((hitInfo: { targetId: string | null; hitPosition: THREE.Vector3 | null }) => {
+    if (hitInfo.targetId && gameControllerRef.current) {
+      gameControllerRef.current.handleTargetHit(hitInfo.targetId);
+      setScore(prev => prev + 1);
+    }
+  }, []);
 
   const handleTargetHit = (targetId: string, mouseData: any) => {
-    setScore(prev => prev + 1);
     console.log('Target hit:', { targetId, timestamp: performance.now(), mouseData });
   };
 
@@ -155,6 +165,10 @@ export const Scene: React.FC = () => {
           isActive={isLocked && phase === 'training'} 
           onPhysicsUpdate={handlePhysicsUpdate}
         />
+        <ShootingSystemWrapper 
+          isActive={isLocked && phase === 'training'} 
+          onShoot={handleShoot}
+        />
         <Environment />
         <GlockModel 
           position={[0.02, -1.56, -0.081]} 
@@ -165,6 +179,7 @@ export const Scene: React.FC = () => {
         />
         
         <GameController 
+          ref={gameControllerRef}
           isLocked={isLocked} 
           onTargetHit={handleTargetHit}
           onPhaseChange={handlePhaseChange}
@@ -172,4 +187,10 @@ export const Scene: React.FC = () => {
       </Canvas>
     </div>
   );
+};
+
+// Wrapper to use hook inside Canvas
+const ShootingSystemWrapper: React.FC<{ isActive: boolean; onShoot: (hitInfo: any) => void }> = ({ isActive, onShoot }) => {
+  useShootingSystem({ isActive, onShoot });
+  return null;
 };

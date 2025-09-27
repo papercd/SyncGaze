@@ -2,6 +2,8 @@
 w/ node.js, WebGaze.js, React, TypeScript
 
 # 폴더 구조
+
+'''
 gaze-tracker-app/
 ├── node_modules/
 ├── public/
@@ -24,7 +26,8 @@ gaze-tracker-app/
 ├── .gitignore
 ├── package.json
 └── tsconfig.json
----------
+'''
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.

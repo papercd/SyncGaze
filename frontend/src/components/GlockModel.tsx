@@ -31,6 +31,7 @@ export const GlockModel: React.FC<GlockModelProps> = ({
   const basePosition = useRef(new THREE.Vector3(...position));
 
   // Debug: Log what animations are available
+  /*
   useEffect(() => {
     console.log('🎬 Available animations:', names);
     console.log('🎬 Actions object:', actions);
@@ -48,7 +49,7 @@ export const GlockModel: React.FC<GlockModelProps> = ({
     Object.keys(actions).forEach(key => {
       console.log(`🎯 Animation: ${key}`, actions[key]);
     });
-  }, [actions, names]);
+  }, [actions, names]);*/
 
   useEffect(() => {
     scene.traverse((child) => {
@@ -62,7 +63,7 @@ export const GlockModel: React.FC<GlockModelProps> = ({
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       if (e.button === 0 && physics) { // Left click
-        console.log('🔫 Click detected!');
+        //console.log('🔫 Click detected!');
         
         // Apply recoil with slight random variance
         const recoil = physics.applyRecoil();
@@ -93,7 +94,7 @@ export const GlockModel: React.FC<GlockModelProps> = ({
           actions['Fire'].paused = false;
           actions['Fire'].play();
           
-          console.log(`✅ Fire at frame ${startFrame}, speed ${speedVariance.toFixed(2)}x`);
+          //console.log(`✅ Fire at frame ${startFrame}, speed ${speedVariance.toFixed(2)}x`);
         }
       }
     };

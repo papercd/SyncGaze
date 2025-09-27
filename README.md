@@ -1,3 +1,6 @@
+# This branch is for develop and test of EYE and MOUSE tracking @JuhwnaLee99
+w/ node.js, WebGaze.js, React, TypeScript
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.

@@ -6,7 +6,7 @@ export const CS2_CONSTANTS = {
   // Movement speeds (units per second) - tuned for CS2 feel
   WALK_SPEED: 2.6,           // ~260 u/s in CS2 scaled down
   RUN_SPEED: 2.6,            // Same as walk (no sprint in CS2/Val)
-  //CROUCH_SPEED: 1.3,         // ~130 u/s
+  CROUCH_MOVE_SPEED: 1.0,    // Movement speed while crouched
   
   // Acceleration values
   ACCELERATION: 50,          // Ground acceleration - snappy response
@@ -32,7 +32,7 @@ export const CS2_CONSTANTS = {
   // Camera
   HEAD_HEIGHT: 1.7,          // Standing eye height
   CROUCH_HEIGHT: 1.2,        // Crouching eye height
-  CROUCH_SPEED: 8,           // How fast you crouch/uncrouch
+  CROUCH_TRANSITION_SPEED: 8, // How fast you crouch/uncrouch
 };
 
 export interface MovementState {
@@ -129,7 +129,7 @@ export class CS2Physics {
     this.movementState.currentHeight = THREE.MathUtils.lerp(
       this.movementState.currentHeight,
       this.movementState.targetHeight,
-      CS2_CONSTANTS.CROUCH_SPEED * delta
+      CS2_CONSTANTS.CROUCH_TRANSITION_SPEED * delta
     );
     
     this.movementState.isCrouching = Math.abs(this.movementState.currentHeight - CS2_CONSTANTS.CROUCH_HEIGHT) < 0.1;
@@ -153,7 +153,7 @@ export class CS2Physics {
     this.wishDir.addScaledVector(right, input.right);
     
     const wishDirLength = this.wishDir.length();
-    const wishSpeed = this.movementState.isCrouching ? CS2_CONSTANTS.CROUCH_SPEED : CS2_CONSTANTS.WALK_SPEED;
+    const wishSpeed = this.movementState.isCrouching ? CS2_CONSTANTS.CROUCH_MOVE_SPEED : CS2_CONSTANTS.WALK_SPEED;
     
     if (wishDirLength > 0.001) {
       this.wishDir.divideScalar(wishDirLength);

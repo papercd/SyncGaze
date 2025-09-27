@@ -1,0 +1,44 @@
+/* src/components/GazeTracker/GazeTracker.css */
+
+.container {
+  text-align: center;
+  padding-top: 20px;
+}
+
+.calibration-dot {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background-color: red;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.calibration-dot:hover {
+  transform: scale(1.2);
+}
+
+.controls {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+}
+
+.task-dot {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  background-color: #28a745; /* 녹색 */
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.1s;
+  box-shadow: 0 0 15px rgba(40, 167, 69, 0.7);
+}
+
+.task-dot:hover {
+  transform: scale(1.1);
+}

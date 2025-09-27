@@ -3,7 +3,7 @@ w/ node.js, WebGaze.js, React, TypeScript
 
 # 폴더 구조
 
-'''
+```
 gaze-tracker-app/
 ├── node_modules/
 ├── public/
@@ -26,7 +26,7 @@ gaze-tracker-app/
 ├── .gitignore
 ├── package.json
 └── tsconfig.json
-'''
+```
 
 # React + TypeScript + Vite
 

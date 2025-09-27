@@ -5,10 +5,12 @@ import * as THREE from 'three';
 
 interface ShootingSystemProps {
   isActive: boolean;
+  canShoot: boolean; // Check ammo/reload state
   onShoot: (hitInfo: { targetId: string | null; hitPosition: THREE.Vector3 | null }) => void;
+  onTriggerPull: () => void; // Called on every click, even if can't shoot
 }
 
-export const useShootingSystem = ({ isActive, onShoot }: ShootingSystemProps) => {
+export const useShootingSystem = ({ isActive, canShoot, onShoot, onTriggerPull }: ShootingSystemProps) => {
   const { camera, scene } = useThree();
   const raycaster = useRef(new THREE.Raycaster());
 
@@ -18,15 +20,21 @@ export const useShootingSystem = ({ isActive, onShoot }: ShootingSystemProps) =>
     const handleClick = (e: MouseEvent) => {
       if (e.button !== 0) return; // Only left click
 
+      onTriggerPull(); // Always call this for ammo system
+
+      if (!canShoot) {
+        console.log('🚫 Cannot shoot - reloading or empty');
+        return;
+      }
+
       // Raycast from center of screen (where crosshair is)
       raycaster.current.setFromCamera(new THREE.Vector2(0, 0), camera);
       
       // Find all intersections
       const intersects = raycaster.current.intersectObjects(scene.children, true);
       
-      // Filter for target objects (they have specific userData or name pattern)
+      // Filter for target objects
       const targetHit = intersects.find(intersect => {
-        // Check if the object or its parent has target data
         let obj = intersect.object;
         while (obj) {
           if (obj.userData?.isTarget || obj.name?.startsWith('target-')) {
@@ -38,7 +46,6 @@ export const useShootingSystem = ({ isActive, onShoot }: ShootingSystemProps) =>
       });
 
       if (targetHit) {
-        // Find the actual target ID
         let obj = targetHit.object;
         let targetId = null;
         while (obj && !targetId) {
@@ -69,5 +76,5 @@ export const useShootingSystem = ({ isActive, onShoot }: ShootingSystemProps) =>
 
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
-  }, [isActive, camera, scene, onShoot]);
+  }, [isActive, canShoot, camera, scene, onShoot, onTriggerPull]);
 };

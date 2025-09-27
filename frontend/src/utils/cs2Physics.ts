@@ -236,9 +236,9 @@ export class CS2Physics {
     lastShotTime: 0
   };
 
-  applyRecoil(): THREE.Vector2 {
+  applyRecoil(multiplier: number = 1): THREE.Vector2 {
     const recoil = this.glockRecoilPattern[this.weaponState.recoilIndex % this.glockRecoilPattern.length].clone();
-    recoil.multiplyScalar(0.3);
+    recoil.multiplyScalar(0.3 * multiplier); // Apply multiplier here
     
     this.weaponState.totalRecoil.add(recoil);
     this.weaponState.recoilIndex++;

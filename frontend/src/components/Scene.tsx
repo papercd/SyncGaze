@@ -47,7 +47,7 @@ export const Scene: React.FC = () => {
     
     if (didShoot) {
       const isLastShot = ammo.current - 1 === 0;
-      const recoilMultiplier = isLastShot ? 3.5 : 1;
+      const recoilMultiplier = isLastShot ? 1.24 : 1;
       
       if (isLastShot) {
         console.log('💥 Last shot - applying extra recoil!');

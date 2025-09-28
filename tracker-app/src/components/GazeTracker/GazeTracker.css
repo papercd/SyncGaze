@@ -7,8 +7,8 @@
 
 /* 컨트롤 영역 */
 .controls {
-  position: fixed;
-  bottom: 20px;
+  position: absolute;
+  bottom: -120px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -16,19 +16,18 @@
 }
 
 /* 초기 화면 instruction 영역 */
-
 .instructions {
   max-width: 600px;
-  margin: 20px auto 30px auto; /* 위, 좌우, 아래 간격 */
+  margin: 20px auto 30px auto;
   padding: 10px 25px;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
   background-color: #f9f9f9;
-  text-align: left; /* 가독성을 위해 왼쪽 정렬 */
+  text-align: left;
 }
 
 .instructions h3 {
-  text-align: center; /* 제목만 중앙 정렬 */
+  text-align: center;
   margin-top: 10px;
 }
 
@@ -55,14 +54,68 @@
   transform: scale(1.2);
 }
 
-/* 정확도 측정 영역 */
+/* 정확도 측정 시작 영역 */
+.confirmation-box {
+  /* 이 박스를 화면 정중앙에 고정 (이전과 동일) */
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  
+  width: 90%;
+  max-width: 500px;
+  height: 250px; /* 위치 계산을 위한 고정 높이 */
+  text-align: center;
+}
 
+.confirmation-box h2 {
+  position: absolute; /* 이제부터는 부모 박스(.confirmation-box)를 기준으로 위치를 직접 지정 */
+  width: 100%;
+  top: 100px; /* 박스 상단에서 100px 아래에 배치 */
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  color: #333;
+}
+
+.confirmation-box p {
+  position: absolute;
+  width: 100%;
+  top: 70px; /* 박스 상단에서 40px 아래에 배치 */ /* 왜 인지 모르겠으나 해당 문구의 위치를 잡는데 오류가 계속 발생 - 높이 값이 작동을 안 함 */
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  color: #555;
+  font-size: 1.1em;
+  line-height: 1.6;
+}
+
+.confirmation-box button {
+  position: absolute;
+  bottom: 10px; /* 박스 하단에서 10px 위에 배치 */
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* 정확도 측정 영역 */
 .validation-container {
+  /* 이 컨테이너는 이제 자식요소(.confirmation-box) 하나만 중앙 정렬하는 역할에 집중 */
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   height: 80vh;
+}
+
+.validation-container p,
+.validation-container .result-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 20px;
+  width: 100%;
+  text-align: center;
 }
 
 .validation-container button {
@@ -74,7 +127,7 @@
 .validation-dot {
   width: 25px;
   height: 25px;
-  background-color: #007bff; /* 파란색 */
+  background-color: #007bff;
   border-radius: 50%;
   box-shadow: 0 0 15px rgba(0, 123, 255, 0.7);
   position: absolute;
@@ -83,16 +136,12 @@
   transform: translate(-50%, -50%);
 }
 
-.validation-container p {
-  margin-top: 100px; /* 점과 텍스트가 겹치지 않도록 */
-}
-
 /* 과제 영역 */
 .task-dot {
   position: absolute;
   width: 30px;
   height: 30px;
-  background-color: #28a745; /* 녹색 */
+  background-color: #28a745;
   border-radius: 50%;
   cursor: pointer;
   transition: all 0.1s;
@@ -100,5 +149,5 @@
 }
 
 .task-dot:hover {
-  transform: scale(1.1);
+  transform: scale(1.2);
 }

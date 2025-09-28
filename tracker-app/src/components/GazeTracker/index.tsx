@@ -259,9 +259,11 @@ const GazeTracker: React.FC = () => {
       case 'confirmValidation':
         return (
           <div className="validation-container">
-            <h2>캘리브레이션 완료</h2>
-            <p>이제 정확도 측정 단계로 진행합니다.</p>
-            <button onClick={() => setGameState('validating')}>정확도 측정 시작</button>
+            <div className="confirmation-box">
+              <h2>캘리브레이션 완료</h2>
+              <p>이제 정확도 측정 단계로 진행합니다.</p>
+              <button onClick={() => setGameState('validating')}>정확도 측정 시작</button>
+            </div>
           </div>
         );
 
@@ -273,7 +275,7 @@ const GazeTracker: React.FC = () => {
             {validationError === null ? (
               <p>정확도 측정 중... 화면 중앙의 파란 점을 3초간 응시하세요.</p>
             ) : (
-              <div>
+              <div className="result-container">
                 <p>측정된 평균 오차: <strong>{validationError.toFixed(2)} 픽셀</strong></p>
                 <div className="controls">
                   <button onClick={() => setGameState('task')}>과제 시작</button>

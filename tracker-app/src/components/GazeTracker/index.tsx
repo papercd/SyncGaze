@@ -4,7 +4,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import './GazeTracker.css';
 
 // 게임(과제)의 진행 상태를 나타내는 타입
-type GameState = 'idle' | 'calibrating' | 'task' | 'finished';
+// VALIDATION: 'validating' 상태 추가
+type GameState = 'idle' | 'calibrating' | 'validating' | 'task' | 'finished';
 
 // 수집할 데이터의 타입을 정의합니다. (taskId 추가)
 interface DataRecord {
@@ -40,6 +41,10 @@ const GazeTracker: React.FC = () => {
     { x: '20%', y: '50%' }, { x: '50%', y: '50%' }, { x: '35%', y: '35%' },
   ];
 
+  // VALIDATION: 정확도 검증 관련 상태 추가
+  const [validationError, setValidationError] = useState<number | null>(null);
+  const validationGazePoints = useRef<{ x: number; y: number }[]>([]);
+
   // 새로운 과제(Task) 관련 상태
   const TOTAL_TASKS = 9; // 측정 점 개수
   const [taskCount, setTaskCount] = useState(0);
@@ -62,6 +67,54 @@ const GazeTracker: React.FC = () => {
       if (window.webgazer) window.webgazer.end();
     };
   }, []);
+  
+  // VALIDATION: 정확도 측정 로직을 위한 useEffect 추가
+  useEffect(() => {
+    if (gameState !== 'validating') return;
+
+    validationGazePoints.current = []; // 측정 데이터 초기화
+    setValidationError(null); // 이전 에러 값 초기화
+
+    // 검증을 위한 시선 데이터 수집 리스너
+    const validationListener = (data: any) => {
+      if (data) {
+        validationGazePoints.current.push({ x: data.x, y: data.y });
+      }
+    };
+    window.webgazer.setGazeListener(validationListener);
+
+    // 3초 후에 정확도 계산 실행
+    const timer = setTimeout(() => {
+      window.webgazer.clearGazeListener(); // 리스너 정리
+
+      if (validationGazePoints.current.length === 0) {
+        alert("시선이 감지되지 않았습니다. 재보정을 진행합니다.");
+        handleRecalibrate();
+        return;
+      }
+
+      // 수집된 시선 좌표의 평균 계산
+      const avgGaze = validationGazePoints.current.reduce(
+        (acc, p) => ({ x: acc.x + p.x, y: acc.y + p.y }),
+        { x: 0, y: 0 }
+      );
+      avgGaze.x /= validationGazePoints.current.length;
+      avgGaze.y /= validationGazePoints.current.length;
+
+      // 검증용 타겟의 실제 위치 (화면 정중앙)
+      const target = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+
+      // 유클리드 거리를 이용해 오차 계산
+      const error = Math.sqrt(
+        Math.pow(target.x - avgGaze.x, 2) + Math.pow(target.y - avgGaze.y, 2)
+      );
+      setValidationError(error);
+
+    }, 3000); // 3초간 측정
+
+    return () => clearTimeout(timer); // 컴포넌트 언마운트 시 타이머 정리
+  }, [gameState]);
+
 
   // gameState이 'task'로 변경되거나 taskCount가 증가하면 새로운 랜덤 점을 생성
   useEffect(() => {
@@ -125,9 +178,18 @@ const GazeTracker: React.FC = () => {
     if (calibDotIndex < calibrationDots.length - 1) {
       setCalibDotIndex(calibDotIndex + 1);
     } else {
-      // 캘리브레이션 완료 -> 과제 시작
-      setGameState('task');
+      // 캘리브레이션 완료 -> 정확도 측정 시작
+      // VALIDATION: 'task' 대신 'validating' 상태로 변경
+      setGameState('validating');
     }
+  };
+
+  // VALIDATION: 재보정 핸들러 추가
+  const handleRecalibrate = () => {
+    setCalibDotIndex(0);
+    setValidationError(null);
+    window.webgazer.clearData(); // WebGazer 내부 데이터 초기화
+    setGameState('calibrating');
   };
 
   const handleTaskDotClick = () => {
@@ -177,6 +239,26 @@ const GazeTracker: React.FC = () => {
             />
           </div>
         );
+      
+      // VALIDATION: 'validating' 상태에 대한 UI 추가
+      case 'validating':
+        return (
+          <div className="validation-container">
+            <div className="validation-dot" />
+            {validationError === null ? (
+              <p>정확도 측정 중... 화면 중앙의 파란 점을 3초간 응시하세요.</p>
+            ) : (
+              <div>
+                <p>측정된 평균 오차: <strong>{validationError.toFixed(2)} 픽셀</strong></p>
+                <div className="controls">
+                  <button onClick={() => setGameState('task')}>과제 시작</button>
+                  <button onClick={handleRecalibrate}>재보정</button>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+
       case 'task':
         return (
           <div>

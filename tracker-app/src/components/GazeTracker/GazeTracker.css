@@ -5,6 +5,16 @@
   padding-top: 20px;
 }
 
+/* 컨트롤 영역 */
+.controls {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+}
+/* 캘리브레이션 영역 */
 .calibration-dot {
   position: absolute;
   width: 20px;
@@ -19,15 +29,33 @@
   transform: scale(1.2);
 }
 
-.controls {
-  position: fixed;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
+/* 정확도 측정 영역 */
+
+.validation-container {
   display: flex;
-  gap: 10px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 80vh;
 }
 
+.validation-dot {
+  width: 25px;
+  height: 25px;
+  background-color: #007bff; /* 파란색 */
+  border-radius: 50%;
+  box-shadow: 0 0 15px rgba(0, 123, 255, 0.7);
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.validation-container p {
+  margin-top: 100px; /* 점과 텍스트가 겹치지 않도록 */
+}
+
+/* 과제 영역 */
 .task-dot {
   position: absolute;
   width: 30px;

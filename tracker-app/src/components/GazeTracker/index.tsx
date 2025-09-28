@@ -22,6 +22,9 @@ interface DotPosition {
   y: number;
 }
 
+// 카메라 미리보기 영역 + 여유 공간
+const FORBIDDEN_ZONE = { width: 340, height: 260 };
+
 const GazeTracker: React.FC = () => {
   // --- 상태 관리 (State Management) ---
   const [gameState, setGameState] = useState<GameState>('idle');
@@ -30,14 +33,15 @@ const GazeTracker: React.FC = () => {
 
   // 캘리브레이션 관련 상태
   const [calibDotIndex, setCalibDotIndex] = useState(0);
+  // 카메라 영역을 피하도록 좌표 전면 수정
   const calibrationDots = [
-    { x: '20%', y: '20%' }, { x: '50%', y: '10%' }, { x: '90%', y: '10%' },
-    { x: '10%', y: '50%' }, { x: '50%', y: '50%' }, { x: '90%', y: '50%' },
-    { x: '10%', y: '90%' }, { x: '50%', y: '90%' }, { x: '90%', y: '90%' },
+    { x: '50%', y: '20%' }, { x: '80%', y: '20%' }, { x: '80%', y: '50%' },
+    { x: '80%', y: '80%' }, { x: '50%', y: '80%' }, { x: '20%', y: '80%' },
+    { x: '20%', y: '50%' }, { x: '50%', y: '50%' }, { x: '35%', y: '35%' },
   ];
 
   // 새로운 과제(Task) 관련 상태
-  const TOTAL_TASKS = 9;
+  const TOTAL_TASKS = 9; // 측정 점 개수
   const [taskCount, setTaskCount] = useState(0);
   const [currentDot, setCurrentDot] = useState<DotPosition | null>(null);
 
@@ -62,10 +66,15 @@ const GazeTracker: React.FC = () => {
   // gameState이 'task'로 변경되거나 taskCount가 증가하면 새로운 랜덤 점을 생성
   useEffect(() => {
     if (gameState === 'task' && taskCount < TOTAL_TASKS) {
-      // 50px의 패딩을 주어 점이 화면 가장자리에 너무 붙지 않게 함
-      const padding = 50;
-      const x = Math.floor(Math.random() * (window.innerWidth - padding * 2)) + padding;
-      const y = Math.floor(Math.random() * (window.innerHeight - padding * 2)) + padding;
+      let x, y;
+      const padding = 50; // 화면 가장자리 여백
+
+      // 안전한 좌표가 나올 때까지 랜덤 생성을 반복
+      do {
+        x = Math.floor(Math.random() * (window.innerWidth - padding * 2)) + padding;
+        y = Math.floor(Math.random() * (window.innerHeight - padding * 2)) + padding;
+      } while (x < FORBIDDEN_ZONE.width && y < FORBIDDEN_ZONE.height);
+
       setCurrentDot({ x, y });
     }
   }, [gameState, taskCount]);
@@ -152,7 +161,6 @@ const GazeTracker: React.FC = () => {
   };
 
   // --- UI 렌더링 (Rendering) ---
-
   const renderContent = () => {
     switch (gameState) {
       case 'calibrating':
@@ -172,7 +180,7 @@ const GazeTracker: React.FC = () => {
       case 'task':
         return (
           <div>
-            <p>데모: 화면에 나타나는 녹색 점을 클릭하세요. ({taskCount + 1}/{TOTAL_TASKS})</p>
+            <p>측정: 화면에 나타나는 녹색 점을 클릭하세요. ({taskCount + 1}/{TOTAL_TASKS})</p>
             {currentDot && (
               <div
                 className="task-dot"
@@ -188,7 +196,7 @@ const GazeTracker: React.FC = () => {
       case 'finished':
         return (
           <div>
-            <h2>과제 완료!</h2>
+            <h2>측정 완료!</h2>
             <p>데이터가 `gaze_mouse_task_data.csv` 파일로 자동 저장되었습니다.</p>
             <button onClick={() => window.location.reload()}>다시 시작하기</button>
           </div>
@@ -197,7 +205,7 @@ const GazeTracker: React.FC = () => {
       default:
         return (
           <div>
-            <p>시작 버튼을 누르면 캘리브레이션 후, 데모가 시작됩니다.</p>
+            <p>시작 버튼을 누르면 캘리브레이션 후, 시선 및 마우스 추적 측정이 시작됩니다.</p>
             <button onClick={handleStart} disabled={!isScriptLoaded}>
               {isScriptLoaded ? '측정 시작' : '스크립트 로딩 중...'}
             </button>

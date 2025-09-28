@@ -5,7 +5,8 @@ import './GazeTracker.css';
 
 // 게임(과제)의 진행 상태를 나타내는 타입
 // VALIDATION: 'validating' 상태 추가
-type GameState = 'idle' | 'calibrating' | 'validating' | 'task' | 'finished';
+// NEW: 'confirmValidation' 상태 추가
+type GameState = 'idle' | 'calibrating' | 'confirmValidation' | 'validating' | 'task' | 'finished';
 
 // 수집할 데이터의 타입을 정의합니다. (taskId 추가)
 interface DataRecord {
@@ -180,7 +181,8 @@ const GazeTracker: React.FC = () => {
     } else {
       // 캘리브레이션 완료 -> 정확도 측정 시작
       // VALIDATION: 'task' 대신 'validating' 상태로 변경
-      setGameState('validating');
+      // CHANGED: 'validating' 대신 'confirmValidation' 상태로 변경
+      setGameState('confirmValidation');
     }
   };
 
@@ -204,13 +206,16 @@ const GazeTracker: React.FC = () => {
   };
 
   const downloadCSV = (data: DataRecord[]) => {
-    if (data.length === 0) return;
+    // CHANGED: CSV 파일에 정확도 결과도 저장하도록 수정
+    const metaData = `# Validation Error (pixels): ${validationError ? validationError.toFixed(2) : 'N/A'}\n`;
+
     // CSV 헤더에 taskId 추가
     const header = 'timestamp,taskId,gazeX,gazeY,mouseX,mouseY';
     const rows = data.map(d =>
         `${d.timestamp},${d.taskId ?? ''},${d.gazeX ?? ''},${d.gazeY ?? ''},${d.mouseX ?? ''},${d.mouseY ?? ''}`
     ).join('\n');
-    const csvContent = `${header}\n${rows}`;
+
+    const csvContent = `${metaData}${header}\n${rows}`;
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
@@ -240,7 +245,17 @@ const GazeTracker: React.FC = () => {
           </div>
         );
       
-      // VALIDATION: 'validating' 상태에 대한 UI 추가
+      // confirmValidation 상태에 대한 UI 추가
+      case 'confirmValidation':
+        return (
+          <div className="validation-container">
+            <h2>캘리브레이션 완료</h2>
+            <p>이제 정확도 측정 단계로 진행합니다.</p>
+            <button onClick={() => setGameState('validating')}>정확도 측정 시작</button>
+          </div>
+        );
+
+      // 'validating' 상태에 대한 UI 추가
       case 'validating':
         return (
           <div className="validation-container">

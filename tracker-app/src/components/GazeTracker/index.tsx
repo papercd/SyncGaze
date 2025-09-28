@@ -35,11 +35,21 @@ const GazeTracker: React.FC = () => {
 
   // 캘리브레이션 관련 상태
   const [calibDotIndex, setCalibDotIndex] = useState(0);
-  // 카메라 영역을 피하도록 좌표 전면 수정
+  // 점 개수를 13개로 늘리고, 화면 가장자리를 더 많이 포함하도록 좌표 재설계
   const calibrationDots = [
-    { x: '50%', y: '20%' }, { x: '80%', y: '20%' }, { x: '80%', y: '50%' },
-    { x: '80%', y: '80%' }, { x: '50%', y: '80%' }, { x: '20%', y: '80%' },
-    { x: '20%', y: '50%' }, { x: '50%', y: '50%' }, { x: '35%', y: '35%' },
+    { x: '50%', y: '50%' }, // 1. Center
+    { x: '50%', y: '10%' }, // 2. Top-Center
+    { x: '90%', y: '10%' }, // 3. Top-Right
+    { x: '90%', y: '50%' }, // 4. Middle-Right
+    { x: '90%', y: '90%' }, // 5. Bottom-Right
+    { x: '50%', y: '90%' }, // 6. Bottom-Center
+    { x: '10%', y: '90%' }, // 7. Bottom-Left
+    { x: '10%', y: '50%' }, // 8. Middle-Left
+    { x: '35%', y: '35%' }, // 9. Inner Top-Left (safe)
+    { x: '65%', y: '35%' }, // 10. Inner Top-Right
+    { x: '65%', y: '65%' }, // 11. Inner Bottom-Right
+    { x: '35%', y: '65%' }, // 12. Inner Bottom-Left
+    { x: '20%', y: '20%' }, // 13. Top-Left
   ];
 
   // VALIDATION: 정확도 검증 관련 상태 추가
@@ -290,6 +300,7 @@ const GazeTracker: React.FC = () => {
             )}
           </div>
         );
+
       case 'finished':
         return (
           <div>
@@ -298,11 +309,41 @@ const GazeTracker: React.FC = () => {
             <button onClick={() => window.location.reload()}>다시 시작하기</button>
           </div>
         );
+
       case 'idle':
       default:
         return (
           <div>
-            <p>시작 버튼을 누르면 캘리브레이션 후, 시선 및 마우스 추적 측정이 시작됩니다.</p>
+            <div className="instructions">
+              <h3>정확도 향상을 위한 핵심 원리 (사용자 안내)</h3>
+              <p>
+                WebGazer.js는 사용자의 얼굴 특징(특히 눈)과 화면 위 마우스
+                포인터의 위치 관계를 학습합니다. 따라서 정확한 학습을 위해서는
+                아래의 환경과 자세가 매우 중요합니다.
+              </p>
+              <ul>
+                <li>
+                  <strong>자세 고정:</strong> 캘리브레이션을 진행하는 동안에는
+                  머리와 상체를 최대한 움직이지 않고 고정해야 합니다. 머리가
+                  움직이면 눈과 화면의 상대적 위치가 계속 바뀌어 모델이 혼란을
+                  겪고 정확도가 크게 떨어집니다.
+                </li>
+                <li>
+                  <strong>정확한 클릭:</strong> 점을 클릭할 때, 점을 먼저
+                  응시한 후, 시선이 고정된 상태에서 클릭하는 것이 중요합니다.
+                  점을 보지 않고 마우스만 움직여 클릭하면 잘못된 데이터가
+                  학습됩니다.
+                </li>
+                <li>
+                  <strong>좋은 환경:</strong> 안경에 빛이 반사되거나, 얼굴에
+                  그림자가 지거나, 배경이 너무 복잡하면 시선 추적의 정확도가
+                  떨어질 수 있습니다. 밝고 균일한 조명 아래에서 진행하는 것이
+                  가장 좋습니다.
+                </li>
+              </ul>
+            </div>
+            <p>준비가 되셨다면 아래 버튼을 눌러 시작해 주세요.<br/>
+            <strong>측정시작</strong> 버튼을 누르면 캘리브레이션 후, 시선 및 마우스 추적 측정이 시작됩니다.</p>
             <button onClick={handleStart} disabled={!isScriptLoaded}>
               {isScriptLoaded ? '측정 시작' : '스크립트 로딩 중...'}
             </button>

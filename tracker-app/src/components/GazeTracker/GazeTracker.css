@@ -14,6 +14,32 @@
   display: flex;
   gap: 10px;
 }
+
+/* 초기 화면 instruction 영역 */
+
+.instructions {
+  max-width: 600px;
+  margin: 20px auto 30px auto; /* 위, 좌우, 아래 간격 */
+  padding: 10px 25px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+  text-align: left; /* 가독성을 위해 왼쪽 정렬 */
+}
+
+.instructions h3 {
+  text-align: center; /* 제목만 중앙 정렬 */
+  margin-top: 10px;
+}
+
+.instructions ul {
+  padding-left: 20px;
+}
+
+.instructions li {
+  margin-bottom: 10px;
+}
+
 /* 캘리브레이션 영역 */
 .calibration-dot {
   position: absolute;

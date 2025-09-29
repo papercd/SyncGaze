@@ -8,10 +8,13 @@ import './GazeTracker.css';
 // NEW: 'confirmValidation' 상태 추가
 type GameState = 'idle' | 'calibrating' | 'confirmValidation' | 'validating' | 'task' | 'finished';
 
-// 수집할 데이터의 타입을 정의합니다. (taskId 추가)
+// 수집할 데이터의 타입을 정의합니다.
+// task 점의 좌표 필드 추가
 interface DataRecord {
   timestamp: number;
   taskId: number | null; // 몇 번째 과제(점)인지 기록
+  targetX: number | null; // 과제 점의 X 좌표
+  targetY: number | null; // 과제 점의 Y 좌표
   gazeX: number | null;
   gazeY: number | null;
   mouseX: number | null;
@@ -153,6 +156,8 @@ const GazeTracker: React.FC = () => {
         collectedData.current.push({
           timestamp: performance.now(),
           taskId: taskCount + 1,
+          targetX: currentDot?.x ?? null, // CHANGED: 현재 점의 x 좌표 기록
+          targetY: currentDot?.y ?? null, // CHANGED: 현재 점의 y 좌표 기록
           gazeX: data.x, gazeY: data.y,
           mouseX: null, mouseY: null,
         });
@@ -164,6 +169,8 @@ const GazeTracker: React.FC = () => {
       collectedData.current.push({
         timestamp: performance.now(),
         taskId: taskCount + 1,
+        targetX: currentDot?.x ?? null, // CHANGED: 현재 점의 x 좌표 기록
+        targetY: currentDot?.y ?? null, // CHANGED: 현재 점의 y 좌표 기록
         gazeX: null, gazeY: null,
         mouseX: event.clientX, mouseY: event.clientY,
       });
@@ -174,7 +181,7 @@ const GazeTracker: React.FC = () => {
       window.webgazer.clearGazeListener();
       document.removeEventListener('mousemove', mouseMoveListener);
     };
-  }, [gameState, taskCount]); // gameState이나 taskCount가 바뀔 때마다 리스너 재설정
+  }, [gameState, taskCount, currentDot]); // gameState, taskCount, currentDot 이 바뀔 때마다 리스너 재설정
 
   // --- 이벤트 핸들러 (Event Handlers) ---
 
@@ -220,9 +227,9 @@ const GazeTracker: React.FC = () => {
     const metaData = `# Validation Error (pixels): ${validationError ? validationError.toFixed(2) : 'N/A'}\n`;
 
     // CSV 헤더에 taskId 추가
-    const header = 'timestamp,taskId,gazeX,gazeY,mouseX,mouseY';
+    const header = 'timestamp,taskId,targetX,targerY,gazeX,gazeY,mouseX,mouseY';
     const rows = data.map(d =>
-        `${d.timestamp},${d.taskId ?? ''},${d.gazeX ?? ''},${d.gazeY ?? ''},${d.mouseX ?? ''},${d.mouseY ?? ''}`
+        `${d.timestamp},${d.taskId ?? ''},${d.targetX ?? ''},${d.targetY ?? ''},${d.gazeX ?? ''},${d.gazeY ?? ''},${d.mouseX ?? ''},${d.mouseY ?? ''}`
     ).join('\n');
 
     const csvContent = `${metaData}${header}\n${rows}`;

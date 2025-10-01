@@ -21,6 +21,14 @@ interface DataRecord {
   mouseY: number | null;
 }
 
+// NEW: 최종 결과 화면에 보여줄 단일 과제의 요약 데이터 타입
+interface TaskResult {
+  taskId: number;
+  timeTaken: number; // 소요 시간 (ms)
+  gazeToTargetDistance: number | null; // 시선-타겟 거리 (px)
+  gazeToClickDistance: number | null; // 시선-클릭 거리 (px)
+}
+
 // 랜덤 점의 좌표 타입
 interface DotPosition {
   x: number;
@@ -63,6 +71,12 @@ const GazeTracker: React.FC = () => {
   const TOTAL_TASKS = 9; // 측정 점 개수
   const [taskCount, setTaskCount] = useState(0);
   const [currentDot, setCurrentDot] = useState<DotPosition | null>(null);
+
+  // NEW: 과제별 요약 결과를 저장할 상태
+  const [taskResults, setTaskResults] = useState<TaskResult[]>([]);
+  // NEW: 각 과제의 시작 시간을 기록하기 위한 ref
+  const taskStartTime = useRef<number | null>(null);
+
 
   // --- useEffect 훅 (Side Effects) ---
 
@@ -143,6 +157,8 @@ const GazeTracker: React.FC = () => {
       } while (x < FORBIDDEN_ZONE.width && y < FORBIDDEN_ZONE.height);
 
       setCurrentDot({ x, y });
+      // NEW: 새로운 점이 나타난 시간을 기록
+      taskStartTime.current = performance.now();
     }
   }, [gameState, taskCount]);
 
@@ -156,8 +172,8 @@ const GazeTracker: React.FC = () => {
         collectedData.current.push({
           timestamp: performance.now(),
           taskId: taskCount + 1,
-          targetX: currentDot?.x ?? null, // CHANGED: 현재 점의 x 좌표 기록
-          targetY: currentDot?.y ?? null, // CHANGED: 현재 점의 y 좌표 기록
+          targetX: currentDot?.x ?? null,
+          targetY: currentDot?.y ?? null,
           gazeX: data.x, gazeY: data.y,
           mouseX: null, mouseY: null,
         });
@@ -169,8 +185,8 @@ const GazeTracker: React.FC = () => {
       collectedData.current.push({
         timestamp: performance.now(),
         taskId: taskCount + 1,
-        targetX: currentDot?.x ?? null, // CHANGED: 현재 점의 x 좌표 기록
-        targetY: currentDot?.y ?? null, // CHANGED: 현재 점의 y 좌표 기록
+        targetX: currentDot?.x ?? null,
+        targetY: currentDot?.y ?? null,
         gazeX: null, gazeY: null,
         mouseX: event.clientX, mouseY: event.clientY,
       });
@@ -186,6 +202,8 @@ const GazeTracker: React.FC = () => {
   // --- 이벤트 핸들러 (Event Handlers) ---
 
   const handleStart = () => {
+    // NEW: 다시 시작할 때 결과 데이터 초기화
+    setTaskResults([]);
     if (!isScriptLoaded) return;
     collectedData.current = [];
     window.webgazer.begin();
@@ -211,14 +229,49 @@ const GazeTracker: React.FC = () => {
     setGameState('calibrating');
   };
 
-  const handleTaskDotClick = () => {
+  // CHANGED: handleTaskDotClick 함수를 요약 데이터 계산 로직으로 전면 교체
+  const handleTaskDotClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    const clickTime = performance.now();
+    
+    const lastGazeRecord = [...collectedData.current].reverse().find(d => d.gazeX !== null && d.gazeY !== null);
+    const lastGazePos = lastGazeRecord ? { x: lastGazeRecord.gazeX, y: lastGazeRecord.gazeY } : null;
+
+    const clickPos = { x: event.clientX, y: event.clientY };
+    const targetPos = currentDot;
+
+    const timeTaken = taskStartTime.current ? clickTime - taskStartTime.current : 0;
+    
+    let gazeToTargetDistance: number | null = null;
+    if (lastGazePos && targetPos) {
+      gazeToTargetDistance = Math.sqrt(
+        // TS-FIX: '!'를 추가하여 null이 아님을 명시
+        Math.pow(targetPos.x - lastGazePos.x!, 2) + Math.pow(targetPos.y - lastGazePos.y!, 2)
+      );
+    }
+
+    let gazeToClickDistance: number | null = null;
+    if (lastGazePos) {
+      gazeToClickDistance = Math.sqrt(
+        // TS-FIX: '!'를 추가하여 null이 아님을 명시
+        Math.pow(clickPos.x - lastGazePos.x!, 2) + Math.pow(clickPos.y - lastGazePos.y!, 2)
+      );
+    }
+    
+    setTaskResults(prevResults => [
+      ...prevResults,
+      {
+        taskId: taskCount + 1,
+        timeTaken,
+        gazeToTargetDistance,
+        gazeToClickDistance,
+      }
+    ]);
+
     if (taskCount < TOTAL_TASKS - 1) {
       setTaskCount(taskCount + 1);
     } else {
-      // 모든 과제 완료
       setGameState('finished');
       if (window.webgazer) window.webgazer.end();
-      downloadCSV(collectedData.current);
     }
   };
 
@@ -227,7 +280,7 @@ const GazeTracker: React.FC = () => {
     const metaData = `# Validation Error (pixels): ${validationError ? validationError.toFixed(2) : 'N/A'}\n`;
 
     // CSV 헤더에 taskId 추가
-    const header = 'timestamp,taskId,targetX,targerY,gazeX,gazeY,mouseX,mouseY';
+    const header = 'timestamp,taskId,targetX,targetY,gazeX,gazeY,mouseX,mouseY'; // 'targerY' 오타 수정
     const rows = data.map(d =>
         `${d.timestamp},${d.taskId ?? ''},${d.targetX ?? ''},${d.targetY ?? ''},${d.gazeX ?? ''},${d.gazeY ?? ''},${d.mouseX ?? ''},${d.mouseY ?? ''}`
     ).join('\n');
@@ -304,18 +357,43 @@ const GazeTracker: React.FC = () => {
                   left: `${currentDot.x}px`,
                   top: `${currentDot.y}px`,
                 }}
+                // CHANGED: 클릭 이벤트 객체를 핸들러에 전달
                 onClick={handleTaskDotClick}
               />
             )}
           </div>
         );
 
+      // CHANGED: 최종 결과 화면을 요약 테이블을 보여주는 UI로 교체
       case 'finished':
         return (
-          <div>
+          <div className="finished-container">
             <h2>측정 완료!</h2>
-            <p>데이터가 `gaze_mouse_task_data.csv` 파일로 자동 저장되었습니다.</p>
-            <button onClick={() => window.location.reload()}>다시 시작하기</button>
+            <h3>데이터 요약</h3>
+            <table className="results-table">
+              <thead>
+                <tr>
+                  <th>과제 번호</th>
+                  <th>소요 시간 (초)</th>
+                  <th>시선-타겟 거리 (px)</th>
+                  <th>시선-클릭 거리 (px)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {taskResults.map(result => (
+                  <tr key={result.taskId}>
+                    <td>{result.taskId}</td>
+                    <td>{(result.timeTaken / 1000).toFixed(2)}</td>
+                    <td>{result.gazeToTargetDistance ? result.gazeToTargetDistance.toFixed(2) : 'N/A'}</td>
+                    <td>{result.gazeToClickDistance ? result.gazeToClickDistance.toFixed(2) : 'N/A'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div className="finished-controls">
+              <button onClick={() => downloadCSV(collectedData.current)}>원본 데이터(CSV) 다운로드</button>
+              <button onClick={() => window.location.reload()}>다시 시작하기</button>
+            </div>
           </div>
         );
 

@@ -151,3 +151,41 @@
 .task-dot:hover {
   transform: scale(1.2);
 }
+
+/* 결과 출력 영역 */
+
+.finished-container {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.results-table {
+  margin: 30px auto;
+  border-collapse: collapse;
+  width: 100%;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.results-table th, 
+.results-table td {
+  border: 1px solid #ddd;
+  padding: 12px 15px;
+  text-align: center;
+}
+
+.results-table th {
+  background-color: #f4f4f4;
+  font-weight: bold;
+}
+
+.results-table tbody tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.finished-controls {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 30px;
+}

@@ -54,6 +54,44 @@
   transform: scale(1.2);
 }
 
+/* 시선추적 캘리브레이션 영역 */
+
+.pursuit-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 80vh;
+  text-align: center;
+}
+
+.pursuit-dot {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  background-color: #28a745; /* 녹색 */
+  border-radius: 50%;
+  box-shadow: 0 0 15px rgba(40, 167, 69, 0.7);
+  /* left, top은 JavaScript에서 설정 */
+}
+
+.progress-bar-container {
+  width: 80%;
+  max-width: 400px;
+  height: 20px;
+  background-color: #e0e0e0;
+  border-radius: 10px;
+  margin-top: 20px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background-color: #28a745;
+  border-radius: 10px;
+  transition: width 0.1s linear;
+}
+
 /* 정확도 측정 시작 영역 */
 .confirmation-box {
   /* 이 박스를 화면 정중앙에 고정 (이전과 동일) */

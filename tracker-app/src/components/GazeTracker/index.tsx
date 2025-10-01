@@ -45,22 +45,21 @@ const GazeTracker: React.FC = () => {
   const collectedData = useRef<DataRecord[]>([]);
 
   // 캘리브레이션 관련 상태
+  // NEW: 2단계 캘리브레이션을 위한 상태 추가 (1: 추적 응시, 2: 지점 클릭)
+  const [calibrationStep, setCalibrationStep] = useState(1);
   const [calibDotIndex, setCalibDotIndex] = useState(0);
-  // 점 개수를 13개로 늘리고, 화면 가장자리를 더 많이 포함하도록 좌표 재설계
+  // ORIGINAL: 점 개수를 13개로 늘리고, 화면 가장자리를 더 많이 포함하도록 좌표 재설계
+  // CHANGED: 2단계에서 사용할 점 개수를 9개로 수정
   const calibrationDots = [
     { x: '50%', y: '50%' }, // 1. Center
-    { x: '50%', y: '10%' }, // 2. Top-Center
-    { x: '90%', y: '10%' }, // 3. Top-Right
-    { x: '90%', y: '50%' }, // 4. Middle-Right
-    { x: '90%', y: '90%' }, // 5. Bottom-Right
-    { x: '50%', y: '90%' }, // 6. Bottom-Center
-    { x: '10%', y: '90%' }, // 7. Bottom-Left
-    { x: '10%', y: '50%' }, // 8. Middle-Left
+    { x: '50%', y: '15%' }, // 2. Top-Mid
+    { x: '85%', y: '15%' }, // 3. Top-Right
+    { x: '15%', y: '85%' }, // 4. Bottom-Left
+    { x: '50%', y: '85%' }, // 5. Bottom-Mid
+    { x: '85%', y: '85%' }, // 6. Bottom-Right
+    { x: '15%', y: '50%' }, // 7. Mid-Left
+    { x: '85%', y: '50%' }, // 8. Mid-Right
     { x: '35%', y: '35%' }, // 9. Inner Top-Left (safe)
-    { x: '65%', y: '35%' }, // 10. Inner Top-Right
-    { x: '65%', y: '65%' }, // 11. Inner Bottom-Right
-    { x: '35%', y: '65%' }, // 12. Inner Bottom-Left
-    { x: '20%', y: '20%' }, // 13. Top-Left
   ];
 
   // VALIDATION: 정확도 검증 관련 상태 추가
@@ -87,7 +86,7 @@ const GazeTracker: React.FC = () => {
     script.async = true;
     script.onload = () => {
       setIsScriptLoaded(true);
-      window.webgazer.showPredictionPoints(true);
+      // 
     };
     document.body.appendChild(script);
     return () => {
@@ -95,6 +94,23 @@ const GazeTracker: React.FC = () => {
       if (window.webgazer) window.webgazer.end();
     };
   }, []);
+  
+  // NEW: gameState에 따라 시선 예측 점(빨간 점)의 표시 여부를 제어
+  useEffect(() => {
+    if (!isScriptLoaded || !window.webgazer) return;
+
+    // 'validating'(정확도측정) 또는 'task'(과제) 상태일 때만 빨간 점을 표시
+    if (
+      // calibrating 상황은 제외
+      // gameState === 'calibrating' ||
+      gameState === 'validating' || 
+      gameState === 'task'
+    ) {
+      window.webgazer.showPredictionPoints(true);
+    } else {
+      window.webgazer.showPredictionPoints(false);
+    }
+  }, [gameState, isScriptLoaded]); // gameState이나 스크립트 로드 상태가 바뀔 때마다 실행
   
   // VALIDATION: 정확도 측정 로직을 위한 useEffect 추가
   useEffect(() => {
@@ -202,8 +218,11 @@ const GazeTracker: React.FC = () => {
   // --- 이벤트 핸들러 (Event Handlers) ---
 
   const handleStart = () => {
-    // NEW: 다시 시작할 때 결과 데이터 초기화
+    // NEW: 다시 시작할 때 결과 및 캘리브레이션 단계 초기화
     setTaskResults([]);
+    setCalibrationStep(1);
+    setCalibDotIndex(0);
+
     if (!isScriptLoaded) return;
     collectedData.current = [];
     window.webgazer.begin();
@@ -223,6 +242,8 @@ const GazeTracker: React.FC = () => {
 
   // VALIDATION: 재보정 핸들러 추가
   const handleRecalibrate = () => {
+    // NEW: 캘리브레이션 1단계부터 다시 시작하도록 수정
+    setCalibrationStep(1);
     setCalibDotIndex(0);
     setValidationError(null);
     window.webgazer.clearData(); // WebGazer 내부 데이터 초기화
@@ -244,7 +265,6 @@ const GazeTracker: React.FC = () => {
     let gazeToTargetDistance: number | null = null;
     if (lastGazePos && targetPos) {
       gazeToTargetDistance = Math.sqrt(
-        // TS-FIX: '!'를 추가하여 null이 아님을 명시
         Math.pow(targetPos.x - lastGazePos.x!, 2) + Math.pow(targetPos.y - lastGazePos.y!, 2)
       );
     }
@@ -252,7 +272,6 @@ const GazeTracker: React.FC = () => {
     let gazeToClickDistance: number | null = null;
     if (lastGazePos) {
       gazeToClickDistance = Math.sqrt(
-        // TS-FIX: '!'를 추가하여 null이 아님을 명시
         Math.pow(clickPos.x - lastGazePos.x!, 2) + Math.pow(clickPos.y - lastGazePos.y!, 2)
       );
     }
@@ -280,7 +299,7 @@ const GazeTracker: React.FC = () => {
     const metaData = `# Validation Error (pixels): ${validationError ? validationError.toFixed(2) : 'N/A'}\n`;
 
     // CSV 헤더에 taskId 추가
-    const header = 'timestamp,taskId,targetX,targetY,gazeX,gazeY,mouseX,mouseY'; // 'targerY' 오타 수정
+    const header = 'timestamp,taskId,targetX,targetY,gazeX,gazeY,mouseX,mouseY';
     const rows = data.map(d =>
         `${d.timestamp},${d.taskId ?? ''},${d.targetX ?? ''},${d.targetY ?? ''},${d.gazeX ?? ''},${d.gazeY ?? ''},${d.mouseX ?? ''},${d.mouseY ?? ''}`
     ).join('\n');
@@ -301,19 +320,25 @@ const GazeTracker: React.FC = () => {
   const renderContent = () => {
     switch (gameState) {
       case 'calibrating':
-        return (
-          <div>
-            <p>캘리브레이션: 화면의 빨간 점을 클릭하세요. ({calibDotIndex + 1}/{calibrationDots.length})</p>
-            <div
-              className="calibration-dot"
-              style={{
-                left: calibrationDots[calibDotIndex].x,
-                top: calibrationDots[calibDotIndex].y,
-              }}
-              onClick={handleCalibDotClick}
-            />
-          </div>
-        );
+        if (calibrationStep === 1) {
+          // 1단계: 추적 응시
+          return <SmoothPursuit onComplete={() => setCalibrationStep(2)} />;
+        } else {
+          // 2단계: 지점 클릭
+          return (
+            <div>
+              <p>캘리브레이션 (2/2): 화면의 주요 지점을 클릭하여 보정을 완료하세요. ({calibDotIndex + 1}/{calibrationDots.length})</p>
+              <div
+                className="calibration-dot"
+                style={{
+                  left: calibrationDots[calibDotIndex].x,
+                  top: calibrationDots[calibDotIndex].y,
+                }}
+                onClick={handleCalibDotClick}
+              />
+            </div>
+          );
+        }
       
       // confirmValidation 상태에 대한 UI 추가
       case 'confirmValidation':
@@ -443,6 +468,68 @@ const GazeTracker: React.FC = () => {
     <div className="container">
       <h1>시선 & 마우스 추적 데모</h1>
       {renderContent()}
+    </div>
+  );
+};
+
+// NEW: 추적 응시 캘리브레이션을 위한 별도의 컴포넌트
+const SmoothPursuit: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
+  const [progress, setProgress] = useState(0);
+  const animationFrameId = useRef<number | null>(null);
+
+  useEffect(() => {
+    const dot = document.getElementById('pursuit-dot');
+    if (!dot) return;
+
+    const duration = 12000; // 12초 동안 진행
+    let startTime: number;
+
+    const animate = (timestamp: number) => {
+      if (!startTime) startTime = timestamp;
+      const elapsedTime = timestamp - startTime;
+      const currentProgress = Math.min(elapsedTime / duration, 1);
+      setProgress(currentProgress);
+
+      const radius = Math.min(window.innerWidth, window.innerHeight) * 0.4;
+      const angle = currentProgress * Math.PI * 4;
+      const x = window.innerWidth / 2 + radius * Math.cos(angle);
+      const y = window.innerHeight / 2 + radius * Math.sin(angle);
+
+      dot.style.left = `${x}px`;
+      dot.style.top = `${y}px`;
+      
+      // 실제 mousemove 이벤트를 생성하여 발생시켜 WebGazer가 정상적으로 데이터를 수집하도록함
+      const mouseMoveEvent = new MouseEvent('mousemove', {
+        bubbles: true,
+        cancelable: true,
+        clientX: x,
+        clientY: y,
+      });
+      document.dispatchEvent(mouseMoveEvent);
+
+      if (currentProgress < 1) {
+        animationFrameId.current = requestAnimationFrame(animate);
+      } else {
+        onComplete();
+      }
+    };
+
+    animationFrameId.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (animationFrameId.current) {
+        cancelAnimationFrame(animationFrameId.current);
+      }
+    };
+  }, [onComplete]);
+
+  return (
+    <div className="pursuit-container">
+      <p>캘리브레이션 (1/2): 화면의 녹색 점을 눈으로 따라가세요.</p>
+      <div className="progress-bar-container">
+        <div className="progress-bar" style={{ width: `${progress * 100}%` }}></div>
+      </div>
+      <div id="pursuit-dot" className="pursuit-dot" />
     </div>
   );
 };

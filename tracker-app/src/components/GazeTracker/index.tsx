@@ -6,7 +6,8 @@ import './GazeTracker.css';
 // 게임(과제)의 진행 상태를 나타내는 타입
 // VALIDATION: 'validating' 상태 추가
 // NEW: 'confirmValidation' 상태 추가
-type GameState = 'idle' | 'calibrating' | 'confirmValidation' | 'validating' | 'task' | 'finished';
+// NEW: 'webcamCheck' 상태 추가
+type GameState = 'idle' | 'webcamCheck' | 'calibrating' | 'confirmValidation' | 'validating' | 'task' | 'finished';
 
 // 수집할 데이터의 타입을 정의합니다.
 // task 점의 좌표 필드 추가
@@ -226,7 +227,7 @@ const GazeTracker: React.FC = () => {
     if (!isScriptLoaded) return;
     collectedData.current = [];
     window.webgazer.begin();
-    setGameState('calibrating');
+    setGameState('webcamCheck'); // 시작할 단계 설정 gameState = 'idle' | 'webcamCheck' | 'calibrating' | 'confirmValidation' | 'validating' | 'task' | 'finished'
   };
 
   const handleCalibDotClick = () => {
@@ -319,6 +320,23 @@ const GazeTracker: React.FC = () => {
   // --- UI 렌더링 (Rendering) ---
   const renderContent = () => {
     switch (gameState) {
+      // NEW: 웹캠 확인 단계를 위한 UI 추가
+      case 'webcamCheck':
+        return (
+          <div className="instructions">
+            <h3>웹캠 및 얼굴 인식 확인</h3>
+            <p>캘리브레이션을 시작하기 전에, 웹캠과 얼굴 인식이 정상적으로 작동하는지 확인하세요.</p>
+            <ul>
+              <li>화면 왼쪽 상단에 본인의 웹캠 영상이 나타나는지 확인하세요.</li>
+              <li>영상 속 얼굴에 **녹색 사각형**과 **얼굴 특징 점**들이 표시되는지 확인하세요.</li>
+              <li>만약 인식이 잘 되지 않는다면, 얼굴이 정면을 향하도록 자세를 바꾸거나 주변을 더 밝게 조절해 주세요.</li>
+            </ul>
+            <div style={{ textAlign: 'center', marginTop: '20px' }}>
+              <button onClick={() => setGameState('calibrating')}>확인 완료, 캘리브레이션 시작</button>
+            </div>
+          </div>
+        );
+
       case 'calibrating':
         if (calibrationStep === 1) {
           // 1단계: 추적 응시

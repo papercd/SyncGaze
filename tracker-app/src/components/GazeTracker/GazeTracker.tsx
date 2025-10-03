@@ -1,4 +1,4 @@
-// src/components/GazeTracker/index.tsx
+// src/components/GazeTracker/GazeTracker.tsx
 
 import React, { useState, useEffect, useRef } from 'react';
 import './GazeTracker.css';

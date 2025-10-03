@@ -13,8 +13,16 @@ gaze-tracker-app/
 │   │
 │   ├── components/
 │   │   └── GazeTracker/
-│   │       ├── index.tsx         # GazeTracker 컴포넌트 로직
-│   │       └── GazeTracker.css   # GazeTracker 전용 스타일
+│   │       ├── GazeTracker.tsx        # (메인) 상태 관리 및 컴포넌트 렌더링
+│   │       ├── GazeTracker.css        # (스타일) 변경 없음
+│   │       ├── types.ts               # (타입) 모든 타입 정의
+│   │       ├── constants.ts           # (상수) 고정 값들
+│   │       ├── Instructions.tsx       # 1. 초기 안내 화면
+│   │       ├── WebcamCheck.tsx        # 2. 웹캠 확인 화면
+│   │       ├── Calibration.tsx        # 3. 캘리브레이션 화면 (추적 응시 + 지점 클릭)
+│   │       ├── Validation.tsx         # 4. 정확도 검증 화면
+│   │       ├── Task.tsx               # 5. 과제 수행 화면
+│   │       └── Results.tsx            # 6. 최종 결과 화면
 │   │
 │   ├── types/
 │   │   └── global.d.ts         # 전역 타입 정의 (window.webgazer)

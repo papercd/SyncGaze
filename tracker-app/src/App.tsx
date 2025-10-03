@@ -1,7 +1,7 @@
 // src/App.tsx
 
 import React from 'react';
-import GazeTracker from './components/GazeTracker';
+import GazeTracker from './components/GazeTracker/GazeTracker';
 
 function App() {
   return (

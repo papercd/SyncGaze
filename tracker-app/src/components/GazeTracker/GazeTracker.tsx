@@ -128,6 +128,9 @@ const GazeTracker: React.FC = () => {
     setScreenSize({ width: window.innerWidth, height: window.innerHeight }); // 측정 시작 시점의 화면 크기를 저장
 
     if (!isScriptLoaded) return;
+    
+    window.webgazer.setTracker('TFFacemesh');// 얼굴 추적 모델을 설정. (clmtrackr(기본값) -> TFFacemesh)
+
     collectedData.current = [];
 
     window.webgazer.begin();

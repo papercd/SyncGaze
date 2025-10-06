@@ -6,15 +6,21 @@ import { TaskResult } from './types';
 interface ResultsProps {
   taskResults: TaskResult[];
   onDownload: () => void;
+  screenSize: { width: number; height: number } | null;
 }
 
-const Results: React.FC<ResultsProps> = ({ taskResults, onDownload }) => {
+const Results: React.FC<ResultsProps> = ({ taskResults, onDownload, screenSize }) => {
   const handleReload = () => window.location.reload();
 
   return (
     <div className="finished-container">
       <h2>측정 완료!</h2>
       <h3>데이터 요약</h3>
+
+      {screenSize && (
+        <p><strong>측정 당시 화면 크기:</strong> {screenSize.width}px &times; {screenSize.height}px</p>
+      )}
+
       <table className="results-table">
         <thead>
           <tr>

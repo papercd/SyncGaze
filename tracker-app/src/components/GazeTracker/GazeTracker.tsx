@@ -24,6 +24,7 @@ const GazeTracker: React.FC = () => {
   const taskStartTime = useRef<number | null>(null);
   const [validationError, setValidationError] = useState<number | null>(null);
   const validationGazePoints = useRef<{ x: number; y: number }[]>([]);
+  const [screenSize, setScreenSize] = useState<{ width: number; height: number } | null>(null); // 화면크기 기록 (화면 크기 대비 오차율 확인용) 
 
   // --- useEffect 훅 (Side Effects) ---
 
@@ -123,6 +124,9 @@ const GazeTracker: React.FC = () => {
 
   const handleStart = () => {
     setTaskResults([]);
+
+    setScreenSize({ width: window.innerWidth, height: window.innerHeight }); // 측정 시작 시점의 화면 크기를 저장
+
     if (!isScriptLoaded) return;
     collectedData.current = [];
 
@@ -170,7 +174,7 @@ const GazeTracker: React.FC = () => {
   };
 
   const downloadCSV = () => {
-    const metaData = `# Validation Error (pixels): ${validationError ? validationError.toFixed(2) : 'N/A'}\n`;
+    const metaData = `# Screen Size (width x height): ${screenSize ? `${screenSize.width}x${screenSize.height}` : 'N/A'}\n# Validation Error (pixels): ${validationError ? validationError.toFixed(2) : 'N/A'}\n`;
     const header = 'timestamp,taskId,targetX,targetY,gazeX,gazeY,mouseX,mouseY';
     const rows = collectedData.current.map(d => `${d.timestamp},${d.taskId ?? ''},${d.targetX ?? ''},${d.targetY ?? ''},${d.gazeX ?? ''},${d.gazeY ?? ''},${d.mouseX ?? ''},${d.mouseY ?? ''}`).join('\n');
     const csvContent = `${metaData}${header}\n${rows}`;
@@ -209,7 +213,7 @@ const GazeTracker: React.FC = () => {
       case 'task':
         return <Task taskCount={taskCount} currentDot={currentDot} onDotClick={handleTaskDotClick} />;
       case 'finished':
-        return <Results taskResults={taskResults} onDownload={downloadCSV} />;
+        return <Results taskResults={taskResults} onDownload={downloadCSV} screenSize={screenSize} />;
       default:
         return null;
     }

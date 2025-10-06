@@ -141,7 +141,7 @@ const GazeTracker: React.FC = () => {
     if (!isScriptLoaded) return;
     
     window.webgazer.setTracker('TFFacemesh');// 얼굴 추적 모델을 설정. (clmtrackr(기본값) -> TFFacemesh)
-    window.webgazer.setRegression('weightedRidge');// 회기 모델을 별도 스레드에서 작업하는 모델로 변경 (ridge(기본값) -> threadedRidge(현재 오류 발생) or weightedRidge)
+    window.webgazer.setRegression('ridge');// 회기 모델 변경 (ridge(기본값) -> threadedRidge(현재 오류 발생) or weightedRidge)
 
     collectedData.current = [];
 

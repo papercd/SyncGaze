@@ -48,11 +48,20 @@
   border-radius: 50%;
   cursor: pointer;
   transition: all 0.2s;
+  /* 기본 상태에서 중앙 정렬을 위해 transform 추가 */
+  transform: translate(-50%, -50%);
 }
 
 .calibration-dot:hover {
-  transform: scale(1.2);
+  transform: translate(-50%, -50%) scale(1.2);
 }
+
+/* 클릭 시 점이 깜빡이는 효과 추가 */
+.calibration-dot:active {
+  transform: translate(-50%, -50%) scale(0.9);
+  background-color: darkred;
+}
+
 
 /* 시선추적 캘리브레이션 영역 */
 

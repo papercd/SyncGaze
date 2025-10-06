@@ -65,11 +65,25 @@ const Calibration: React.FC<CalibrationProps> = ({ onComplete }) => {
   const [step, setStep] = useState(1);
   const [dotIndex, setDotIndex] = useState(0);
 
+  // 각 점을 몇 번 클릭했는지 세는 상태 추가
+  const [clickCount, setClickCount] = useState(0);
+  const CLICKS_PER_DOT = 3; // 점당 클릭 횟수
+
   const handleDotClick = () => {
-    if (dotIndex < CALIBRATION_DOTS.length - 1) {
-      setDotIndex(dotIndex + 1);
+    const newClickCount = clickCount + 1;
+
+    if (newClickCount < CLICKS_PER_DOT) {
+      // 아직 클릭 횟수가 남았다면 clickCount만 증가
+      setClickCount(newClickCount);
     } else {
-      onComplete();
+      // 클릭 횟수를 다 채웠다면 다음 점으로 이동
+      if (dotIndex < CALIBRATION_DOTS.length - 1) {
+        setDotIndex(dotIndex + 1);
+        setClickCount(0); // 클릭 횟수 초기화
+      } else {
+        // 모든 점의 캘리브레이션이 끝나면 완료 처리
+        onComplete();
+      }
     }
   };
 
@@ -79,7 +93,10 @@ const Calibration: React.FC<CalibrationProps> = ({ onComplete }) => {
 
   return (
     <div>
-      <p>캘리브레이션 (2/2): 화면의 주요 지점을 클릭하여 보정을 완료하세요. ({dotIndex + 1}/{CALIBRATION_DOTS.length})</p>
+      <p>캘리브레이션 (2/2): 화면의 주요 지점을 클릭하여 보정을 완료하세요. ({dotIndex + 1}/{CALIBRATION_DOTS.length})
+        <br />
+        <strong>({clickCount + 1}/{CLICKS_PER_DOT} 번째 클릭)</strong>
+      </p>
       <div
         className="calibration-dot"
         style={{ left: CALIBRATION_DOTS[dotIndex].x, top: CALIBRATION_DOTS[dotIndex].y }}

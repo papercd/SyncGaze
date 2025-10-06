@@ -13,6 +13,15 @@ import Validation from './Validation';
 import Task from './Task';
 import Results from './Results';
 
+// 품질별 카메라 설정 값을 상수로 정의
+const CAMERA_SETTINGS = {
+  low: { width: 640, height: 480, frameRate: 30 },
+  medium: { width: 1280, height: 720, frameRate: 30 },
+  high: { width: 1280, height: 720, frameRate: 60 },
+};
+// 품질 설정을 위한 타입 정의
+type QualitySetting = 'low' | 'medium' | 'high';
+
 const GazeTracker: React.FC = () => {
   // --- 상태 관리 (State Management) ---
   const [gameState, setGameState] = useState<GameState>('idle');
@@ -25,6 +34,8 @@ const GazeTracker: React.FC = () => {
   const [validationError, setValidationError] = useState<number | null>(null);
   const validationGazePoints = useRef<{ x: number; y: number }[]>([]);
   const [screenSize, setScreenSize] = useState<{ width: number; height: number } | null>(null); // 화면크기 기록 (화면 크기 대비 오차율 확인용) 
+  // quality 상태 추가, 기본값은 'medium'
+  const [quality, setQuality] = useState<QualitySetting>('medium');
 
   // --- useEffect 훅 (Side Effects) ---
 
@@ -140,6 +151,18 @@ const GazeTracker: React.FC = () => {
     setGameState('webcamCheck');
   };
 
+  // WebcamCheck 화면에서 '캘리브레이션 시작'을 누르면 호출될 함수
+  const handleCalibrationStart = () => {
+    if (!window.webgazer) return;
+
+    // 현재 quality 상태에 맞는 카메라 설정을 적용
+    const constraints = CAMERA_SETTINGS[quality];
+    window.webgazer.setCameraConstraints({ video: constraints });
+
+    // 캘리브레이션 상태로 전환
+    setGameState('calibrating');
+  };
+
   const handleRecalibrate = () => {
     setValidationError(null);
     window.webgazer.clearData();
@@ -199,7 +222,7 @@ const GazeTracker: React.FC = () => {
       case 'idle':
         return <Instructions onStart={handleStart} isScriptLoaded={isScriptLoaded} />;
       case 'webcamCheck':
-        return <WebcamCheck onComplete={() => setGameState('calibrating')} />;
+        return <WebcamCheck quality={quality} onQualityChange={setQuality} onComplete={handleCalibrationStart} />;
       case 'calibrating':
         return <Calibration onComplete={() => setGameState('confirmValidation')} />;
       case 'confirmValidation':

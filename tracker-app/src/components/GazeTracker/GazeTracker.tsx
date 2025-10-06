@@ -125,7 +125,10 @@ const GazeTracker: React.FC = () => {
     setTaskResults([]);
     if (!isScriptLoaded) return;
     collectedData.current = [];
+
     window.webgazer.begin();
+    window.webgazer.applyKalmanFilter(true); // 칼만필터 활성화
+
     setGameState('webcamCheck');
   };
 

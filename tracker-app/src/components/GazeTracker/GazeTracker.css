@@ -109,7 +109,7 @@
 .confirmation-box h2 {
   position: absolute; /* 이제부터는 부모 박스(.confirmation-box)를 기준으로 위치를 직접 지정 */
   width: 100%;
-  top: 100px; /* 박스 상단에서 100px 아래에 배치 */
+  top: 80px; /* 박스 상단에서 80px 아래에 배치 */
   left: 50%;
   transform: translateX(-50%);
   margin: 0;
@@ -119,7 +119,7 @@
 .confirmation-box p {
   position: absolute;
   width: 100%;
-  top: 70px; /* 박스 상단에서 40px 아래에 배치 */ /* 왜 인지 모르겠으나 해당 문구의 위치를 잡는데 오류가 계속 발생 - 높이 값이 작동을 안 함 */
+  top: 110px; /* 박스 상단에서 110px 아래에 배치 */ /* 왜 인지 모르겠으나 해당 문구의 위치를 잡는데 오류가 계속 발생 - 높이 값이 작동을 안 함 */
   left: 50%;
   transform: translateX(-50%);
   margin: 0;
@@ -145,12 +145,15 @@
   height: 80vh;
 }
 
-.validation-container p,
+.validation-container p{ /* 다른 val 컨테이너와 속성 분리 */
+  margin: 10px 0;
+}
+
 .validation-container .result-container {
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translateX(-50%); /* Y축 정렬도 추가 가능 */
   margin-top: 20px;
   width: 100%;
   text-align: center;

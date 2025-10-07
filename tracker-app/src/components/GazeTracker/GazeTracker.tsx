@@ -159,12 +159,23 @@ const GazeTracker: React.FC = () => {
     if (!isScriptLoaded) return;
     
     window.webgazer.setTracker('TFFacemesh');// 얼굴 추적 모델을 설정. (clmtrackr(기본값) -> TFFacemesh)
+
+  /*  // threadedRidge worker 설정
+   if (window.webgazer.params) {
+    window.webgazer.params.workerScriptPath = `${process.env.PUBLIC_URL}/webgazer.worker.js`;
+  }
+
+  // Fallback 설정 (환경별 호환성)
+  //if (window.webgazer.params && !window.webgazer.params.WORKER_PATH) {
+    window.webgazer.params.WORKER_PATH = `${process.env.PUBLIC_URL}/webgazer.worker.js`;
+  } */
+
     window.webgazer.setRegression('ridge');// 회기 모델 변경 (ridge(기본값) -> threadedRidge(현재 오류 발생) or weightedRidge)
 
     collectedData.current = [];
 
     window.webgazer.begin();
-    window.webgazer.applyKalmanFilter(true); // 칼만필터 활성화
+    window.webgazer.applyKalmanFilter(true); // 칼만필터 활성화 -> 지연시간 발생 가능
 
     setGameState('webcamCheck');
   };

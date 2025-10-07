@@ -46,7 +46,7 @@ const Calibration: React.FC<CalibrationProps> = ({ onComplete, liveGaze }) => {
     const dot = dotRef.current;
     if (!dot) return;
 
-    const DURATION = step === 1 ? 12000 : 15000; // 1단계는 12초, 3단계는 15초
+    const DURATION = step === 1 ? 18000 : 20000; // 1단계는 18초, 3단계는 20초 (시간을 늘리면 점의 이동속도가 느려짐)
     const DWELL_RADIUS_PX = 150;
     let startTime: number;
 

@@ -21,6 +21,8 @@ const CAMERA_SETTINGS = {
 };
 // 품질 설정을 위한 타입 정의
 type QualitySetting = 'low' | 'medium' | 'high';
+// 회귀 모델 선택을 위한 타입과 상태 추가
+type RegressionModel = 'ridge' | 'threadedRidge' | 'weightedRidge';
 
 const GazeTracker: React.FC = () => {
   // --- 상태 관리 (State Management) ---
@@ -36,6 +38,8 @@ const GazeTracker: React.FC = () => {
   const [screenSize, setScreenSize] = useState<{ width: number; height: number } | null>(null); // 화면크기 기록 (화면 크기 대비 오차율 확인용) 
   // quality 상태 추가, 기본값은 'medium'
   const [quality, setQuality] = useState<QualitySetting>('medium');
+  // 회기 모델 상태 추가
+  const [regressionModel, setRegressionModel] = useState<RegressionModel>('ridge'); // 기본값: ridge
   // 실시간 시선 좌표를 저장할 state 추가
   const [liveGaze, setLiveGaze] = useState<{ x: number | null; y: number | null }>({ x: null, y: null });
 
@@ -188,6 +192,9 @@ const GazeTracker: React.FC = () => {
     const constraints = CAMERA_SETTINGS[quality];
     window.webgazer.setCameraConstraints({ video: constraints });
 
+    // 선택된 회귀 모델을 적용하는 코드 추가
+    window.webgazer.setRegression(regressionModel);
+
     // 캘리브레이션 상태로 전환
     setGameState('calibrating');
   };
@@ -255,7 +262,7 @@ const GazeTracker: React.FC = () => {
       case 'idle':
         return <Instructions onStart={handleStart} isScriptLoaded={isScriptLoaded} />;
       case 'webcamCheck':
-        return <WebcamCheck quality={quality} onQualityChange={setQuality} onComplete={handleCalibrationStart} />;
+        return <WebcamCheck quality={quality} onQualityChange={setQuality} regressionModel={regressionModel} onRegressionChange={setRegressionModel}onComplete={handleCalibrationStart} />;
       case 'calibrating':
         return <Calibration onComplete={handleCalibrationComplete} liveGaze={liveGaze} />;
       case 'confirmValidation':

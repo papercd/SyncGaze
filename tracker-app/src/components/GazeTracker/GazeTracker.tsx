@@ -48,7 +48,11 @@ const GazeTracker: React.FC = () => {
   // WebGazer.js 스크립트 로드
   useEffect(() => {
     const script = document.createElement('script');
-    script.src = 'https://webgazer.cs.brown.edu/webgazer.js';
+
+    //script.src = 'https://webgazer.cs.brown.edu/webgazer.js';
+    // CDN 주소 대신 로컬 경로로 변경
+    script.src = '/webgazer.js';
+
     script.async = true;
     script.onload = () => setIsScriptLoaded(true);
     document.body.appendChild(script);

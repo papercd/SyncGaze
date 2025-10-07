@@ -1,6 +1,6 @@
 // src/components/GazeTracker/GazeTracker.tsx
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './GazeTracker.css';
 
 // 분리된 파일들 import
@@ -36,6 +36,8 @@ const GazeTracker: React.FC = () => {
   const [screenSize, setScreenSize] = useState<{ width: number; height: number } | null>(null); // 화면크기 기록 (화면 크기 대비 오차율 확인용) 
   // quality 상태 추가, 기본값은 'medium'
   const [quality, setQuality] = useState<QualitySetting>('medium');
+  // 실시간 시선 좌표를 저장할 state 추가
+  const [liveGaze, setLiveGaze] = useState<{ x: number | null; y: number | null }>({ x: null, y: null });
 
   // --- useEffect 훅 (Side Effects) ---
 
@@ -131,6 +133,22 @@ const GazeTracker: React.FC = () => {
     };
   }, [gameState, taskCount, currentDot]);
 
+  // 캘리브레이션 중에만 시선 데이터를 state에 업데이트하는 useEffect 추가
+  useEffect(() => {
+    if (gameState === 'calibrating' && window.webgazer) {
+      const gazeListener = (data: any) => {
+        if (data) {
+          setLiveGaze({ x: data.x, y: data.y });
+        }
+      };
+      window.webgazer.setGazeListener(gazeListener);
+
+      // 캘리브레이션 상태가 아니면 리스너 정리
+      return () => window.webgazer.clearGazeListener();
+    }
+  }, [gameState]);
+
+
   // --- 이벤트 핸들러 (Event Handlers) ---
 
   const handleStart = () => {
@@ -162,6 +180,10 @@ const GazeTracker: React.FC = () => {
     // 캘리브레이션 상태로 전환
     setGameState('calibrating');
   };
+
+  const handleCalibrationComplete = useCallback(() => {
+    setGameState('confirmValidation');
+  }, [setGameState]);
 
   const handleRecalibrate = () => {
     setValidationError(null);
@@ -224,7 +246,7 @@ const GazeTracker: React.FC = () => {
       case 'webcamCheck':
         return <WebcamCheck quality={quality} onQualityChange={setQuality} onComplete={handleCalibrationStart} />;
       case 'calibrating':
-        return <Calibration onComplete={() => setGameState('confirmValidation')} />;
+        return <Calibration onComplete={handleCalibrationComplete} liveGaze={liveGaze} />;
       case 'confirmValidation':
          return ( // 이 부분은 UI가 간단하여 별도 컴포넌트로 분리하지 않았습니다.
           <div className="validation-container">

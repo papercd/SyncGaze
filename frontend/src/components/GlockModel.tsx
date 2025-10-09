@@ -1,6 +1,6 @@
 // src/components/GlockModel.tsx
 import { useGLTF, useAnimations } from '@react-three/drei';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { CS2Physics } from '../utils/cs2Physics';
@@ -13,13 +13,18 @@ interface GlockModelProps {
   physics?: CS2Physics; 
 }
 
-export const GlockModel: React.FC<GlockModelProps> = ({
+export interface GlockModelRef {
+  triggerFire: (recoilMultiplier?: number) => void;  // Add parameter
+  triggerSlideBack: () => void;
+  triggerReload: (isEmpty: boolean) => void;
+}
+export const GlockModel = forwardRef<GlockModelRef, GlockModelProps>(({
   position = [0.3, -0.4, -0.6],
   rotation = [0, Math.PI, 0],
   scale = 1,
   velocity = new THREE.Vector3(),
   physics
-}) => {
+}, ref) => {
   const group = useRef<THREE.Group>(null);
   const { camera } = useThree();
   
@@ -30,24 +35,31 @@ export const GlockModel: React.FC<GlockModelProps> = ({
   const swayOffset = useRef(new THREE.Vector3());
   const basePosition = useRef(new THREE.Vector3(...position));
 
-  // Debug: Log what animations are available
+  // Debug: Log animations
   useEffect(() => {
     console.log('🎬 Available animations:', names);
-    console.log('🎬 Actions object:', actions);
-    console.log('🎬 Available action names:', Object.keys(actions));
+    console.log('🎬 Actions object keys:', Object.keys(actions));
     
-    // Check if Fire animation exists
     if (actions['Fire']) {
-      console.log('✅ Fire animation found');
-      console.log('📊 Fire clip duration:', actions['Fire'].getClip().duration);
+      console.log('✅ Fire animation ready', actions['Fire']);
     } else {
       console.log('❌ Fire animation NOT found');
     }
-
-    // List all available animations
-    Object.keys(actions).forEach(key => {
-      console.log(`🎯 Animation: ${key}`, actions[key]);
-    });
+    if (actions['SlideBack']) {
+      console.log('✅ SlideBack animation ready', actions['SlideBack']);
+    } else {
+      console.log('❌ SlideBack animation NOT found');
+    }
+    if (actions['Reload']) {
+      console.log('✅ Reload animation ready', actions['Reload']);
+    } else {
+      console.log('❌ Reload animation NOT found');
+    }
+    if (actions['ReloadEmpty']) {
+      console.log('✅ ReloadEmpty animation ready', actions['ReloadEmpty']);
+    } else {
+      console.log('❌ ReloadEmpty animation NOT found');
+    }
   }, [actions, names]);
 
   useEffect(() => {
@@ -59,49 +71,106 @@ export const GlockModel: React.FC<GlockModelProps> = ({
     });
   }, [scene]);
 
-  useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      if (e.button === 0 && physics) { // Left click
-        console.log('🔫 Click detected!');
+  // Expose animation triggers via ref
+  useImperativeHandle(ref, () => {
+    console.log('🔗 useImperativeHandle setting up ref with actions:', Object.keys(actions));
+    const refObject: GlockModelRef = {
+      triggerFire: (recoilMultiplier: number = 1) => {
+        console.log('🔫 triggerFire called! Actions available:', Object.keys(actions));
         
-        // Apply recoil with slight random variance
-        const recoil = physics.applyRecoil();
-        const recoilVariance = 0.4 + Math.random() * 0.2; // 0.8 to 1.2 multiplier
-        recoilOffset.current.set(
-          recoil.x * 0.008 * recoilVariance,
-          -recoil.y * 0.008 * recoilVariance,
-          recoil.y * 0.0018 * recoilVariance
-        );
+        // Apply recoil first
+        if (physics) {
+          const recoil = physics.applyRecoil(recoilMultiplier);
+          const recoilVariance = 0.4 + Math.random() * 0.2;
+          recoilOffset.current.set(
+            recoil.x * 0.008 * recoilVariance,
+            -recoil.y * 0.008 * recoilVariance,
+            recoil.y * 0.0018 * recoilVariance
+          );
+        }
         
-        // Play Fire animation with slight timing variance
         if (actions['Fire']) {
           const fps = 24;
-          const baseFrame = 68.8;
-          //const frameVariance = Math.floor(Math.random() * 3) - 1; // -1, 0, or +1 frame
-          const startFrame = baseFrame ;
+          const startFrame = 68.8;
           const startTime = startFrame / fps;
-          
-          // Slight speed variance (0.95x to 1.05x speed)
-          const speedVariance = 1;
           
           actions['Fire'].stop();
           actions['Fire'].reset();
           actions['Fire'].time = startTime;
-          actions['Fire'].timeScale = speedVariance; // Vary playback speed slightly
+          actions['Fire'].timeScale = 1;
           actions['Fire'].setLoop(THREE.LoopOnce, 1);
           actions['Fire'].clampWhenFinished = true;
           actions['Fire'].paused = false;
           actions['Fire'].play();
           
-          console.log(`✅ Fire at frame ${startFrame}, speed ${speedVariance.toFixed(2)}x`);
+          console.log('✅ Fire animation playing');
+        } else {
+          console.error('❌ Fire action not found!');
+        }
+      },
+      triggerSlideBack: () => {
+        console.log('🔙 triggerSlideBack called!');
+        if (actions['SlideBack']) {
+          const fps = 24;
+          const startFrame = 84.8;
+          const endFrame = 85.6;
+          const startTime = startFrame / fps;
+          const duration = (endFrame - startFrame) / fps;
+          
+          // Stop other animations
+          Object.values(actions).forEach(a => {
+            if (a && a !== actions['SlideBack']) a.stop();
+          });
+          
+          actions['SlideBack'].reset();
+          actions['SlideBack'].time = startTime;
+          actions['SlideBack'].setLoop(THREE.LoopOnce, 1);
+          actions['SlideBack'].clampWhenFinished = true;
+          actions['SlideBack'].play();
+          
+          console.log(`✅ SlideBack animation playing (${startFrame}-${endFrame}, duration: ${duration.toFixed(3)}s)`);
+        } else {
+          console.error('❌ SlideBack action not found!');
+        }
+      },
+      triggerReload: (isEmpty: boolean) => {
+        const animName = isEmpty ? 'ReloadEmpty' : 'Reload';
+        console.log(`🔄 triggerReload called with isEmpty=${isEmpty}, animName=${animName}`);
+        const action = actions[animName];
+        
+        if (action) {
+          const fps = 24;
+          
+          // Stop all other animations
+          Object.values(actions).forEach(a => a?.stop());
+          
+          action.reset();
+          
+          if (isEmpty && animName === 'ReloadEmpty') {
+            // ReloadEmpty: frames 85.6 to 158.4
+            const startFrame = 85.6;
+            const endFrame = 158.4;
+            const startTime = startFrame / fps;
+            const duration = (endFrame - startFrame) / fps;
+            
+            action.time = startTime;
+            console.log(`📊 ReloadEmpty: ${startFrame}-${endFrame}, duration: ${duration.toFixed(3)}s`);
+          }
+          
+          action.setLoop(THREE.LoopOnce, 1);
+          action.clampWhenFinished = true;
+          action.play();
+          
+          console.log(`✅ ${animName} animation playing`);
+        } else {
+          console.error(`❌ ${animName} animation not found! Available:`, Object.keys(actions));
         }
       }
     };
-  
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, [physics, actions]);
-
+    
+    console.log('🔗 Ref object created:', refObject);
+    return refObject;
+  }, [actions]);
 
   useFrame((state, delta) => {
     if (!group.current || !physics) return;
@@ -139,6 +208,8 @@ export const GlockModel: React.FC<GlockModelProps> = ({
       <primitive object={scene} />
     </group>
   );
-};
+});
+
+GlockModel.displayName = 'GlockModel';
 
 useGLTF.preload('/glock/glock.glb');

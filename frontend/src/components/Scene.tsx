@@ -1,6 +1,6 @@
-// src/components/Scene.tsx
-import { Canvas } from '@react-three/fiber';
-import { useRef, useState } from 'react';
+// frontend/src/components/Scene.tsx - UPDATED WITH TRACKING INTEGRATION
+import { Canvas, useThree } from '@react-three/fiber';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import { PerspectiveCamera } from '@react-three/drei';
 import * as THREE from 'three';
 import { Environment } from './Environment';
@@ -9,37 +9,147 @@ import { Crosshair } from './Crosshair';
 import { GlockModel } from './GlockModel';
 import { CameraController } from './CameraController';
 import { usePointerLock } from '../hooks/usePointerLock';
+import { useShootingSystem } from '../hooks/useShootingSystem';
+import { useAmmoSystem } from '../hooks/useAmmoSystem';
 import { CS2Physics } from '../utils/cs2Physics';
+import { useTrackingSystem } from './TrackingIntegration';
+import { CalibrationOverlay, ValidationOverlay } from './CalibrationOverlay';
+
+type Phase = 'idle' | 'calibration' | 'confirmValidation' | 'validation' | 'training' | 'complete';
 
 export const Scene: React.FC = () => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const { isLocked, requestPointerLock, exitPointerLock } = usePointerLock(canvasRef);
   const [score, setScore] = useState(0);
-  const [phase, setPhase] = useState<'idle' | 'training' | 'complete'>('idle');
+  const [phase, setPhase] = useState<Phase>('idle');
   const startTimeRef = useRef<number>(0);
+  
+  // Tracking system integration
+  const {
+    isWebGazerReady,
+    validationError,
+    recordTargetHit,
+    exportData,
+    clearData,
+    recalibrate,
+    dataCount
+  } = useTrackingSystem({
+    isActive: isLocked,
+    phase: phase as any
+  });
+
+  // Ammo system
+  const { ammo, shoot, reload } = useAmmoSystem(20);
   
   // Physics state
   const physicsRef = useRef(new CS2Physics());
   const [velocity, setVelocity] = useState(new THREE.Vector3());
   const [playerPosition, setPlayerPosition] = useState(new THREE.Vector3());
+  const cameraRotationRef = useRef(new THREE.Euler());
+  
+  // Reference to GameController and weapon animation
+  const gameControllerRef = useRef<{ handleTargetHit: (targetId: string) => void } | null>(null);
+  const weaponAnimRef = useRef<{ 
+    triggerFire: (recoilMultiplier?: number) => void;
+    triggerSlideBack: () => void;
+    triggerReload: (isEmpty: boolean) => void;
+  } | null>(null);
 
-  const handleTargetHit = (targetId: string, mouseData: any) => {
-    setScore(prev => prev + 1);
-    console.log('Target hit:', { targetId, timestamp: performance.now(), mouseData });
+  // Camera rotation tracking component
+  const CameraRotationTracker = () => {
+    const { camera } = useThree();
+    useEffect(() => {
+      const updateRotation = () => {
+        cameraRotationRef.current.setFromQuaternion(camera.quaternion);
+      };
+      const interval = setInterval(updateRotation, 16); // ~60fps
+      return () => clearInterval(interval);
+    }, [camera]);
+    return null;
   };
 
+  const handleTriggerPull = useCallback(() => {
+    const didShoot = shoot();
+    
+    if (didShoot) {
+      const isLastShot = ammo.current - 1 === 0;
+      const recoilMultiplier = isLastShot ? 1.24 : 1;
+      
+      weaponAnimRef.current?.triggerFire(recoilMultiplier);
+      
+      if (isLastShot) {
+        const slideBackDuration = ((85.6 - 84.8) / 24) * 1000;
+        weaponAnimRef.current?.triggerSlideBack();
+        
+        setTimeout(() => {
+          const didReload = reload(true);
+          weaponAnimRef.current?.triggerReload(true);
+        }, slideBackDuration + 50);
+      }
+    }
+  }, [shoot, ammo.current, reload]);
+
+  const handleShoot = useCallback((hitInfo: { targetId: string | null; hitPosition: THREE.Vector3 | null }) => {
+    if (hitInfo.targetId && gameControllerRef.current) {
+      // Record hit in tracking system
+      if (hitInfo.hitPosition && phase === 'training') {
+        recordTargetHit(
+          hitInfo.targetId,
+          {
+            x: hitInfo.hitPosition.x,
+            y: hitInfo.hitPosition.y,
+            z: hitInfo.hitPosition.z
+          },
+          {
+            x: cameraRotationRef.current.x,
+            y: cameraRotationRef.current.y,
+            z: cameraRotationRef.current.z
+          },
+          {
+            x: playerPosition.x,
+            y: playerPosition.y,
+            z: playerPosition.z
+          }
+        );
+      }
+      
+      gameControllerRef.current.handleTargetHit(hitInfo.targetId);
+      setScore(prev => prev + 1);
+    }
+  }, [recordTargetHit, phase, playerPosition]);
+
   const handlePhaseChange = (newPhase: 'training' | 'complete') => {
-    setPhase(newPhase);
     if (newPhase === 'complete') {
+      setPhase('complete');
       exitPointerLock();
+      // Export tracking data
+      exportData();
     }
   };
 
   const handleStart = () => {
+    clearData();
     setScore(0);
+    setPhase('calibration');
+  };
+
+  const handleCalibrationComplete = () => {
+    setPhase('confirmValidation');
+  };
+
+  const handleConfirmValidation = () => {
+    setPhase('validation');
+  };
+
+  const handleStartTraining = () => {
     setPhase('training');
     startTimeRef.current = performance.now();
     requestPointerLock();
+  };
+
+  const handleRecalibrate = () => {
+    recalibrate();
+    setPhase('calibration');
   };
 
   const handlePhysicsUpdate = (position: THREE.Vector3, vel: THREE.Vector3, physics: CS2Physics) => {
@@ -48,10 +158,22 @@ export const Scene: React.FC = () => {
     physicsRef.current = physics;
   };
 
+  const handleReload = useCallback(() => {
+    if (ammo.isReloading || ammo.current === ammo.max) return;
+    
+    const didReload = reload(false);
+    weaponAnimRef.current?.triggerReload(false);
+  }, [ammo.isReloading, ammo.current, ammo.max, reload]);
+
   return (
     <div ref={canvasRef} style={{ width: '100vw', height: '100vh', position: 'relative' }}>
-      {/* Start/Complete overlay */}
-      {(!isLocked || phase === 'complete') && (
+      {/* Calibration Overlay */}
+      {phase === 'calibration' && isWebGazerReady && (
+        <CalibrationOverlay onComplete={handleCalibrationComplete} />
+      )}
+
+      {/* Validation Confirmation */}
+      {phase === 'confirmValidation' && (
         <div style={{
           position: 'absolute',
           top: '50%',
@@ -60,14 +182,64 @@ export const Scene: React.FC = () => {
           zIndex: 10,
           textAlign: 'center',
           color: 'white',
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          backgroundColor: 'rgba(0, 0, 0, 0.9)',
           padding: '40px',
-          borderRadius: '10px'
+          borderRadius: '10px',
+          maxWidth: '600px'
+        }}>
+          <h2>Calibration Complete</h2>
+          <p style={{ margin: '20px 0' }}>
+            Now we'll measure the accuracy of the calibration.<br/>
+            This will help us validate the eye tracking quality.
+          </p>
+          <button onClick={handleConfirmValidation} style={{
+            padding: '15px 30px',
+            fontSize: '18px',
+            cursor: 'pointer',
+            backgroundColor: '#4ecdc4',
+            color: 'white',
+            border: 'none',
+            borderRadius: '5px'
+          }}>
+            Start Accuracy Test
+          </button>
+        </div>
+      )}
+
+      {/* Validation Overlay */}
+      {phase === 'validation' && (
+        <ValidationOverlay
+          validationError={validationError}
+          onStartTraining={handleStartTraining}
+          onRecalibrate={handleRecalibrate}
+        />
+      )}
+
+      {/* Start/Complete overlay */}
+      {(!isLocked || phase === 'complete' || phase === 'idle') && phase !== 'calibration' && phase !== 'validation' && phase !== 'confirmValidation' && (
+        <div style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          zIndex: 10,
+          textAlign: 'center',
+          color: 'white',
+          backgroundColor: 'rgba(0, 0, 0, 0.9)',
+          padding: '40px',
+          borderRadius: '10px',
+          maxWidth: '600px'
         }}>
           {phase === 'complete' ? (
             <>
               <h2>Training Complete!</h2>
               <p style={{ fontSize: '24px', margin: '20px 0' }}>Final Score: {score}</p>
+              <p style={{ fontSize: '16px', color: '#4ecdc4', marginBottom: '20px' }}>
+                ✅ Tracking data has been exported to CSV
+              </p>
+              <p style={{ fontSize: '14px', color: '#aaa', marginBottom: '20px' }}>
+                Data points collected: {dataCount}
+              </p>
               <button onClick={handleStart} style={{
                 padding: '15px 30px',
                 fontSize: '18px',
@@ -82,11 +254,37 @@ export const Scene: React.FC = () => {
             </>
           ) : (
             <>
-              <h2>CS2-Style FPS Training</h2>
-              <p style={{ margin: '20px 0' }}>
-                WASD - Move | Space - Jump | Shift - Crouch<br/>
-                Mouse - Look | Left Click - Shoot
-              </p>
+              <h2>FPS Training with Eye Tracking</h2>
+              <div style={{ 
+                textAlign: 'left', 
+                margin: '20px 0', 
+                padding: '20px', 
+                backgroundColor: 'rgba(255,255,255,0.05)',
+                borderRadius: '8px'
+              }}>
+                <p style={{ marginBottom: '10px' }}><strong>Controls:</strong></p>
+                <ul style={{ paddingLeft: '20px' }}>
+                  <li>WASD - Move</li>
+                  <li>Space - Jump</li>
+                  <li>Shift - Crouch</li>
+                  <li>Mouse - Look</li>
+                  <li>Left Click - Shoot</li>
+                  <li>R - Reload</li>
+                </ul>
+              </div>
+              <div style={{
+                padding: '15px',
+                backgroundColor: 'rgba(78, 205, 196, 0.1)',
+                borderRadius: '8px',
+                marginBottom: '20px'
+              }}>
+                <p style={{ fontSize: '14px', color: '#4ecdc4', marginBottom: '10px' }}>
+                  📊 Eye Tracking Enabled
+                </p>
+                <p style={{ fontSize: '12px', color: '#aaa' }}>
+                  Your gaze and mouse movements will be recorded during training
+                </p>
+              </div>
               <button onClick={handleStart} style={{
                 padding: '20px 40px',
                 fontSize: '20px',
@@ -94,10 +292,16 @@ export const Scene: React.FC = () => {
                 backgroundColor: '#4ecdc4',
                 color: 'white',
                 border: 'none',
-                borderRadius: '5px'
+                borderRadius: '5px',
+                fontWeight: 'bold'
               }}>
-                Start Training
+                {isWebGazerReady ? 'Start Training' : 'Loading Eye Tracking...'}
               </button>
+              {!isWebGazerReady && (
+                <p style={{ fontSize: '12px', color: '#888', marginTop: '10px' }}>
+                  Please wait for WebGazer to load...
+                </p>
+              )}
             </>
           )}
         </div>
@@ -125,15 +329,38 @@ export const Scene: React.FC = () => {
             color: 'white',
             fontSize: '18px',
             zIndex: 10,
+            textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
+            textAlign: 'right'
+          }}>
+            <div>Time: {Math.floor((performance.now() - startTimeRef.current) / 1000)}s / 90s</div>
+            <div style={{ fontSize: '14px', color: '#4ecdc4', marginTop: '5px' }}>
+              📊 Recording: {dataCount} data points
+            </div>
+          </div>
+
+          {/* Ammo counter */}
+          <div style={{
+            position: 'absolute',
+            bottom: 80,
+            right: 20,
+            color: ammo.isEmpty ? '#ff6b6b' : 'white',
+            fontSize: '32px',
+            fontWeight: 'bold',
+            zIndex: 10,
             textShadow: '2px 2px 4px rgba(0,0,0,0.8)'
           }}>
-            Time: {Math.floor((performance.now() - startTimeRef.current) / 1000)}s / 90s
+            {ammo.current} / {ammo.max}
+            {ammo.isReloading && (
+              <span style={{ fontSize: '16px', display: 'block', color: '#4ecdc4' }}>
+                RELOADING...
+              </span>
+            )}
           </div>
 
           {/* Movement speed indicator */}
           <div style={{
             position: 'absolute',
-            bottom: 80,
+            bottom: 50,
             left: 20,
             color: 'white',
             fontSize: '14px',
@@ -141,25 +368,6 @@ export const Scene: React.FC = () => {
             textShadow: '2px 2px 4px rgba(0,0,0,0.8)'
           }}>
             Speed: {Math.round(new THREE.Vector2(velocity.x, velocity.z).length())} u/s
-          </div>
-
-          {/* Stamina bar */}
-          <div style={{
-            position: 'absolute',
-            bottom: 50,
-            left: 20,
-            width: '200px',
-            height: '20px',
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            border: '2px solid white',
-            zIndex: 10
-          }}>
-            <div style={{
-              width: `${(physicsRef.current.getMovementState().stamina / 100) * 100}%`,
-              height: '100%',
-              backgroundColor: '#4ecdc4',
-              transition: 'width 0.1s'
-            }} />
           </div>
         </>
       )}
@@ -174,8 +382,20 @@ export const Scene: React.FC = () => {
           isActive={isLocked && phase === 'training'} 
           onPhysicsUpdate={handlePhysicsUpdate}
         />
+        <CameraRotationTracker />
+        <ShootingSystemWrapper 
+          isActive={isLocked && phase === 'training'} 
+          canShoot={!ammo.isReloading && ammo.current > 0}
+          onShoot={handleShoot}
+          onTriggerPull={handleTriggerPull}
+        />
+        <ReloadKeyListener 
+          isActive={isLocked && phase === 'training'}
+          onReload={handleReload}
+        />
         <Environment />
         <GlockModel 
+          ref={weaponAnimRef}
           position={[0.02, -1.56, -0.081]} 
           rotation={[0, Math.PI, 0]}
           scale={1}
@@ -184,11 +404,41 @@ export const Scene: React.FC = () => {
         />
         
         <GameController 
-          isLocked={isLocked} 
-          onTargetHit={handleTargetHit}
+          ref={gameControllerRef}
+          isLocked={isLocked && phase === 'training'} 
+          onTargetHit={() => {}}
           onPhaseChange={handlePhaseChange}
         />
       </Canvas>
     </div>
   );
+};
+
+// Wrapper to use hook inside Canvas
+const ShootingSystemWrapper: React.FC<{ 
+  isActive: boolean; 
+  canShoot: boolean;
+  onShoot: (hitInfo: any) => void;
+  onTriggerPull: () => void;
+}> = ({ isActive, canShoot, onShoot, onTriggerPull }) => {
+  useShootingSystem({ isActive, canShoot, onShoot, onTriggerPull });
+  return null;
+};
+
+// Reload key listener
+const ReloadKeyListener: React.FC<{ isActive: boolean; onReload: () => void }> = ({ isActive, onReload }) => {
+  useEffect(() => {
+    if (!isActive) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() === 'r') {
+        onReload();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isActive, onReload]);
+
+  return null;
 };

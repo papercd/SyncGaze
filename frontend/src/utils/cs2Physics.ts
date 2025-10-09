@@ -1,37 +1,33 @@
 // frontend/src/utils/cs2Physics.ts
 import * as THREE from 'three';
 
-// CS2 Movement Constants (PROPERLY SCALED for Three.js)
+// CS2/Valorant-inspired Movement Constants
 export const CS2_CONSTANTS = {
-  // Movement speeds - scaled down significantly
-  WALK_SPEED: 1.2,
-  RUN_SPEED: 2.5,
-  CROUCH_SPEED: 0.8,
+  // Movement speeds (units per second) - tuned for CS2 feel
+  WALK_SPEED: 2.6,           // ~260 u/s in CS2 scaled down
+  RUN_SPEED: 2.6,            // Same as walk (no sprint in CS2/Val)
+  CROUCH_MOVE_SPEED: 1.0,    // Movement speed while crouched
   
-  ACCELERATION: 25,
-  GROUND_FRICTION: 8.0,
-  AIR_ACCELERATION: 8,
+  // Acceleration values
+  ACCELERATION: 50,          // Ground acceleration - snappy response
+  GROUND_FRICTION: 12.0,     // How quickly you stop
+  AIR_ACCELERATION: 10,      // Air control
+  STOP_SPEED: 1.0,           // Speed below which extra friction is applied
   
-  JUMP_VELOCITY: 4.5,      // Scaled down
-  GRAVITY: 18,             // Scaled down
-  AIR_CONTROL: 0.25,
+  // Jump physics
+  JUMP_VELOCITY: 5.2,        // Jump height
+  GRAVITY: 20,               // Fall speed
   
-  STAMINA_RECOVERY: 20,   
-  STAMINA_COST: 30,       
-  STAMINA_MAX: 100,
-  STAMINA_LAND_COST: 15,  
+  // Weapon movement
+  WEAPON_SWAY_AMOUNT: 0.003,
+  WEAPON_SWAY_SPEED: 5,
+  WEAPON_BOB_AMOUNT: 0.015,
+  WEAPON_BOB_SPEED: 10,
   
-  WEAPON_SWAY_AMOUNT: 0.002,   // Less sway
-  WEAPON_SWAY_SPEED: 4,        // Slower sway
-  WEAPON_BOB_AMOUNT: 0.002,    // Less bob
-  WEAPON_BOB_SPEED: 0.06,      // Slower bob
-  
-  RECOIL_RECOVERY: 3,
-  RECOIL_PATTERN_SCALE: 0.3,
-  BASE_INACCURACY: 0.5,
-  MOVE_INACCURACY: 15,
-  JUMP_INACCURACY: 40,
-  CROUCH_ACCURACY_BONUS: 0.5,
+  // Camera
+  HEAD_HEIGHT: 1.7,          // Standing eye height
+  CROUCH_HEIGHT: 1.2,        // Crouching eye height
+  CROUCH_TRANSITION_SPEED: 8, // How fast you crouch/uncrouch
 };
 
 export interface MovementState {
@@ -39,66 +35,41 @@ export interface MovementState {
   position: THREE.Vector3;
   isGrounded: boolean;
   isCrouching: boolean;
-  stamina: number;
-  moveSpeed: number;
-}
-
-export interface WeaponState {
-  recoilIndex: number;
-  totalRecoil: THREE.Vector2;
-  inaccuracy: number;
-  lastShotTime: number;
+  currentHeight: number;
+  targetHeight: number;
 }
 
 export class CS2Physics {
   private movementState: MovementState;
-  private weaponState: WeaponState;
   private wishDir: THREE.Vector3 = new THREE.Vector3();
   
   constructor() {
     this.movementState = {
       velocity: new THREE.Vector3(),
-      position: new THREE.Vector3(0, 1.6, 0),
+      position: new THREE.Vector3(0, CS2_CONSTANTS.HEAD_HEIGHT, 0),
       isGrounded: true,
       isCrouching: false,
-      stamina: CS2_CONSTANTS.STAMINA_MAX,
-      moveSpeed: CS2_CONSTANTS.RUN_SPEED
-    };
-    
-    this.weaponState = {
-      recoilIndex: 0,
-      totalRecoil: new THREE.Vector2(),
-      inaccuracy: CS2_CONSTANTS.BASE_INACCURACY,
-      lastShotTime: 0
+      currentHeight: CS2_CONSTANTS.HEAD_HEIGHT,
+      targetHeight: CS2_CONSTANTS.HEAD_HEIGHT
     };
   }
 
   private accelerate(wishDir: THREE.Vector3, wishSpeed: number, accel: number, delta: number) {
+    // Get current speed in wish direction
     const currentSpeed = this.movementState.velocity.dot(wishDir);
     const addSpeed = wishSpeed - currentSpeed;
     
     if (addSpeed <= 0) return;
     
+    // Calculate acceleration speed
     let accelSpeed = accel * delta * wishSpeed;
+    
+    // Cap it
     if (accelSpeed > addSpeed) {
       accelSpeed = addSpeed;
     }
     
-    this.movementState.velocity.addScaledVector(wishDir, accelSpeed);
-  }
-
-  private airAccelerate(wishDir: THREE.Vector3, wishSpeed: number, delta: number) {
-    const wishSpd = Math.min(wishSpeed, 30);
-    const currentSpeed = this.movementState.velocity.dot(wishDir);
-    const addSpeed = wishSpd - currentSpeed;
-    
-    if (addSpeed <= 0) return;
-    
-    let accelSpeed = CS2_CONSTANTS.AIR_ACCELERATION * delta * wishSpeed;
-    if (accelSpeed > addSpeed) {
-      accelSpeed = addSpeed;
-    }
-    
+    // Add to velocity
     this.movementState.velocity.addScaledVector(wishDir, accelSpeed);
   }
 
@@ -106,15 +77,35 @@ export class CS2Physics {
     if (!this.movementState.isGrounded) return;
     
     const speed = this.movementState.velocity.length();
-    if (speed < 0.1) return;
     
-    let drop = speed * CS2_CONSTANTS.GROUND_FRICTION * delta;
-    let newSpeed = Math.max(speed - drop, 0);
-    
-    if (newSpeed > 0) {
-      newSpeed /= speed;
+    // DEBUG: Log when speed is very low
+    if (speed < 0.5 && speed > 0.001) {
+      console.log('🐌 Low speed:', speed.toFixed(4), 'velocity:', this.movementState.velocity);
     }
     
+    // Stop completely if very slow
+    if (speed < 0.1) {
+      console.log('✋ STOPPING at speed:', speed.toFixed(4));
+      this.movementState.velocity.set(0, 0, 0);
+      return;
+    }
+    
+    // Enhanced friction when below stop speed
+    let control = speed < CS2_CONSTANTS.STOP_SPEED ? CS2_CONSTANTS.STOP_SPEED : speed;
+    let drop = control * CS2_CONSTANTS.GROUND_FRICTION * delta;
+    
+    // Calculate new speed
+    let newSpeed = speed - drop;
+    
+    // If friction would reverse direction, just stop
+    if (newSpeed < 0) {
+      console.log('✋ STOPPING (friction reversed) at speed:', speed.toFixed(4));
+      this.movementState.velocity.set(0, 0, 0);
+      return;
+    }
+    
+    // Scale the velocity
+    newSpeed /= speed;
     this.movementState.velocity.multiplyScalar(newSpeed);
   }
 
@@ -123,10 +114,25 @@ export class CS2Physics {
     camera: THREE.Camera,
     delta: number
   ): THREE.Vector3 {
+    // Smooth crouch transition
+    this.movementState.targetHeight = input.crouch 
+      ? CS2_CONSTANTS.CROUCH_HEIGHT 
+      : CS2_CONSTANTS.HEAD_HEIGHT;
+    
+    this.movementState.currentHeight = THREE.MathUtils.lerp(
+      this.movementState.currentHeight,
+      this.movementState.targetHeight,
+      CS2_CONSTANTS.CROUCH_TRANSITION_SPEED * delta
+    );
+    
+    this.movementState.isCrouching = Math.abs(this.movementState.currentHeight - CS2_CONSTANTS.CROUCH_HEIGHT) < 0.1;
+
+    // Apply gravity if in air
     if (!this.movementState.isGrounded) {
       this.movementState.velocity.y -= CS2_CONSTANTS.GRAVITY * delta;
     }
 
+    // Calculate wish direction (where player wants to move)
     const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
     forward.y = 0;
     forward.normalize();
@@ -140,51 +146,50 @@ export class CS2Physics {
     this.wishDir.addScaledVector(right, input.right);
     
     const wishDirLength = this.wishDir.length();
-    if (wishDirLength > 0) {
+    const wishSpeed = this.movementState.isCrouching ? CS2_CONSTANTS.CROUCH_MOVE_SPEED : CS2_CONSTANTS.WALK_SPEED;
+    
+    if (wishDirLength > 0.001) {
       this.wishDir.divideScalar(wishDirLength);
+      
+      // Diagonal movement shouldn't be faster (CS2 style)
+      const normalizedSpeed = Math.min(wishDirLength, 1) * wishSpeed;
+      
+      // Apply friction before acceleration
+      this.applyFriction(delta);
+      
+      // Accelerate
+      if (this.movementState.isGrounded) {
+        this.accelerate(this.wishDir, normalizedSpeed, CS2_CONSTANTS.ACCELERATION, delta);
+      } else {
+        this.accelerate(this.wishDir, normalizedSpeed, CS2_CONSTANTS.AIR_ACCELERATION, delta);
+      }
+    } else {
+      // No input - just apply friction
+      this.applyFriction(delta);
     }
 
-    this.movementState.isCrouching = input.crouch;
-    this.movementState.moveSpeed = this.movementState.isCrouching 
-      ? CS2_CONSTANTS.CROUCH_SPEED 
-      : CS2_CONSTANTS.RUN_SPEED;
-
-    this.applyFriction(delta);
-
-    if (input.jump && this.movementState.isGrounded && this.movementState.stamina > CS2_CONSTANTS.STAMINA_COST) {
+    // Jump - no stamina restrictions
+    if (input.jump && this.movementState.isGrounded) {
       this.movementState.velocity.y = CS2_CONSTANTS.JUMP_VELOCITY;
       this.movementState.isGrounded = false;
-      this.movementState.stamina -= CS2_CONSTANTS.STAMINA_COST;
     }
 
-    if (this.movementState.isGrounded) {
-      this.accelerate(this.wishDir, this.movementState.moveSpeed, CS2_CONSTANTS.ACCELERATION, delta);
-    } else {
-      const airWishSpeed = this.movementState.moveSpeed * CS2_CONSTANTS.AIR_CONTROL;
-      this.airAccelerate(this.wishDir, airWishSpeed, delta);
-    }
-
+    // Update position
     const deltaPos = this.movementState.velocity.clone().multiplyScalar(delta);
     this.movementState.position.add(deltaPos);
 
-    if (this.movementState.position.y <= 1.6) {
-      this.movementState.position.y = 1.6;
-      this.movementState.velocity.y = 0;
+    // Ground check with smooth height
+    if (this.movementState.position.y <= this.movementState.currentHeight) {
+      this.movementState.position.y = this.movementState.currentHeight;
       
-      if (!this.movementState.isGrounded) {
-        this.movementState.stamina = Math.max(0, this.movementState.stamina - CS2_CONSTANTS.STAMINA_LAND_COST);
+      // Only zero Y velocity if falling
+      if (this.movementState.velocity.y < 0) {
+        this.movementState.velocity.y = 0;
       }
       
       this.movementState.isGrounded = true;
     } else {
       this.movementState.isGrounded = false;
-    }
-
-    if (this.movementState.isGrounded) {
-      this.movementState.stamina = Math.min(
-        CS2_CONSTANTS.STAMINA_MAX, 
-        this.movementState.stamina + CS2_CONSTANTS.STAMINA_RECOVERY * delta
-      );
     }
 
     return this.movementState.position.clone();
@@ -194,37 +199,46 @@ export class CS2Physics {
     const speed = new THREE.Vector2(velocity.x, velocity.z).length();
     const swayAmount = CS2_CONSTANTS.WEAPON_SWAY_AMOUNT;
     
-    const swayX = Math.sin(time * CS2_CONSTANTS.WEAPON_SWAY_SPEED) * swayAmount * speed * delta * 60;
-    const swayY = Math.cos(time * CS2_CONSTANTS.WEAPON_SWAY_SPEED * 0.5) * swayAmount * speed * delta * 60;
-    const swayZ = Math.sin(time * CS2_CONSTANTS.WEAPON_SWAY_SPEED * 0.7) * swayAmount * speed * delta * 60;
+    const swayX = Math.sin(time * CS2_CONSTANTS.WEAPON_SWAY_SPEED) * swayAmount * speed;
+    const swayY = Math.cos(time * CS2_CONSTANTS.WEAPON_SWAY_SPEED * 0.5) * swayAmount * speed;
+    const swayZ = Math.sin(time * CS2_CONSTANTS.WEAPON_SWAY_SPEED * 0.7) * swayAmount * speed * 0.5;
     
     return new THREE.Vector3(swayX, swayY, swayZ);
   }
 
   calculateWeaponBob(velocity: THREE.Vector3, time: number, delta: number): number {
+    if (!this.movementState.isGrounded) return 0;
+    
     const speed = new THREE.Vector2(velocity.x, velocity.z).length();
+    const normalizedSpeed = speed / CS2_CONSTANTS.WALK_SPEED;
     const bobAmount = CS2_CONSTANTS.WEAPON_BOB_AMOUNT;
     const bobSpeed = CS2_CONSTANTS.WEAPON_BOB_SPEED;
     
-    return Math.sin(time * bobSpeed * speed) * bobAmount * speed * delta * 60;
+    return Math.sin(time * bobSpeed * normalizedSpeed) * bobAmount * normalizedSpeed;
   }
 
+  getMovementState() {
+    return this.movementState;
+  }
+
+  // Weapon recoil methods remain the same...
   private glockRecoilPattern: THREE.Vector2[] = [
     new THREE.Vector2(0, -2.5),
     new THREE.Vector2(-0.5, -2.8),
     new THREE.Vector2(0.5, -3.0),
     new THREE.Vector2(-0.8, -3.2),
     new THREE.Vector2(1.0, -3.5),
-    new THREE.Vector2(-1.2, -3.8),
-    new THREE.Vector2(1.5, -4.0),
-    new THREE.Vector2(-1.8, -4.2),
-    new THREE.Vector2(2.0, -4.5),
-    new THREE.Vector2(-2.2, -4.8),
   ];
 
-  applyRecoil(): THREE.Vector2 {
+  private weaponState = {
+    recoilIndex: 0,
+    totalRecoil: new THREE.Vector2(),
+    lastShotTime: 0
+  };
+
+  applyRecoil(multiplier: number = 1): THREE.Vector2 {
     const recoil = this.glockRecoilPattern[this.weaponState.recoilIndex % this.glockRecoilPattern.length].clone();
-    recoil.multiplyScalar(CS2_CONSTANTS.RECOIL_PATTERN_SCALE);
+    recoil.multiplyScalar(0.3 * multiplier); // Apply multiplier here
     
     this.weaponState.totalRecoil.add(recoil);
     this.weaponState.recoilIndex++;
@@ -240,7 +254,7 @@ export class CS2Physics {
       this.weaponState.recoilIndex = Math.max(0, this.weaponState.recoilIndex - 1);
     }
     
-    const recovery = CS2_CONSTANTS.RECOIL_RECOVERY * delta;
+    const recovery = 3 * delta;
     const recoilLength = this.weaponState.totalRecoil.length();
     
     if (recoilLength > 0) {
@@ -250,29 +264,6 @@ export class CS2Physics {
     }
     
     return this.weaponState.totalRecoil.clone();
-  }
-
-  calculateInaccuracy(): number {
-    let inaccuracy = CS2_CONSTANTS.BASE_INACCURACY;
-    
-    const speed = new THREE.Vector2(this.movementState.velocity.x, this.movementState.velocity.z).length();
-    if (speed > 10) {
-      inaccuracy += (speed / this.movementState.moveSpeed) * CS2_CONSTANTS.MOVE_INACCURACY;
-    }
-    
-    if (!this.movementState.isGrounded) {
-      inaccuracy += CS2_CONSTANTS.JUMP_INACCURACY;
-    }
-    
-    if (this.movementState.isCrouching) {
-      inaccuracy *= CS2_CONSTANTS.CROUCH_ACCURACY_BONUS;
-    }
-    
-    return inaccuracy;
-  }
-
-  getMovementState() {
-    return this.movementState;
   }
 
   getWeaponState() {

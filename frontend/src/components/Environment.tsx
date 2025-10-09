@@ -45,9 +45,9 @@ export const Environment: React.FC = () => {
 
       {/* Lighting setup */}
       <ambientLight intensity={0.4} />
-      <pointLight position={[0, 4, 0]} intensity={0.8} castShadow />
-      <pointLight position={[-3, 2, 3]} intensity={0.5} />
-      <pointLight position={[3, 2, -3]} intensity={0.5} />
+      <pointLight position={[0, 9, 0]} intensity={0.8} castShadow />
+      <pointLight position={[-3, 7, 3]} intensity={0.5} />
+      <pointLight position={[3, 7, -3]} intensity={0.5} />
       
       {/* Directional light for better shadows */}
       <directionalLight

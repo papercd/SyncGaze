@@ -1,5 +1,5 @@
 // src/components/GameController.tsx
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, forwardRef, useImperativeHandle } from 'react';
 import * as THREE from 'three';
 import { Target } from './Target';
 import { useMouseLook } from '../hooks/useMouseLook';
@@ -11,14 +11,18 @@ interface GameControllerProps {
   onPhaseChange: (phase: 'training' | 'complete') => void;
 }
 
-export const GameController: React.FC<GameControllerProps> = ({ 
+export interface GameControllerRef {
+  handleTargetHit: (targetId: string) => void;
+}
+
+export const GameController = forwardRef<GameControllerRef, GameControllerProps>(({ 
   isLocked, 
   onTargetHit,
   onPhaseChange 
-}) => {
+}, ref) => {
   const [targets, setTargets] = useState<Target3D[]>([]);
   const startTimeRef = useRef<number>(0);
-  const hasInitialized = useRef<boolean>(false); // Prevent multiple initializations
+  const hasInitialized = useRef<boolean>(false);
 
   const { getMouseData, clearMouseData } = useMouseLook(0.002, isLocked);
 
@@ -56,7 +60,6 @@ export const GameController: React.FC<GameControllerProps> = ({
       return;
     }
 
-    // Only initialize once when locked
     if (hasInitialized.current) return;
     hasInitialized.current = true;
 
@@ -77,7 +80,7 @@ export const GameController: React.FC<GameControllerProps> = ({
       console.log('🛑 Cleaning up game');
       clearInterval(gameLoop);
     };
-  }, [isLocked, spawnTarget]); // Remove onPhaseChange from deps
+  }, [isLocked, spawnTarget]);
 
   const handleTargetHit = useCallback((targetId: string) => {
     console.log('💥 Target hit:', targetId);
@@ -92,6 +95,11 @@ export const GameController: React.FC<GameControllerProps> = ({
     onTargetHit(targetId, getMouseData());
   }, [spawnTarget, onTargetHit, getMouseData]);
 
+  // Expose handleTargetHit via ref
+  useImperativeHandle(ref, () => ({
+    handleTargetHit
+  }), [handleTargetHit]);
+
   return (
     <>
       {targets.map(target => (
@@ -99,4 +107,4 @@ export const GameController: React.FC<GameControllerProps> = ({
       ))}
     </>
   );
-};
+});

@@ -1,4 +1,4 @@
-// frontend/src/components/Scene.tsx - UPDATED WITH TRACKING INTEGRATION
+// frontend/src/components/Scene.tsx - MERGED VERSION WITH NEW CALIBRATION
 import { Canvas, useThree } from '@react-three/fiber';
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { PerspectiveCamera } from '@react-three/drei';
@@ -14,6 +14,7 @@ import { useAmmoSystem } from '../hooks/useAmmoSystem';
 import { CS2Physics } from '../utils/cs2Physics';
 import { useTrackingSystem } from './TrackingIntegration';
 import { CalibrationOverlay, ValidationOverlay } from './CalibrationOverlay';
+import { LiveGaze } from '../types/calibration'; // NEW IMPORT
 
 type Phase = 'idle' | 'calibration' | 'confirmValidation' | 'validation' | 'training' | 'complete';
 
@@ -23,6 +24,9 @@ export const Scene: React.FC = () => {
   const [score, setScore] = useState(0);
   const [phase, setPhase] = useState<Phase>('idle');
   const startTimeRef = useRef<number>(0);
+  
+  // NEW: Live gaze state for Stage 3 calibration
+  const [liveGaze, setLiveGaze] = useState<LiveGaze>({ x: null, y: null });
   
   // Tracking system integration
   const {
@@ -67,6 +71,33 @@ export const Scene: React.FC = () => {
     }, [camera]);
     return null;
   };
+
+  // NEW: Set up live gaze tracking listener for Stage 3 calibration
+  useEffect(() => {
+    if (!isWebGazerReady || !window.webgazer) return;
+
+    const gazeListener = (data: any) => {
+      if (data && data.x !== undefined && data.y !== undefined) {
+        setLiveGaze({ x: data.x, y: data.y });
+      }
+    };
+
+    try {
+      window.webgazer.setGazeListener(gazeListener);
+    } catch (error) {
+      console.error('Failed to set gaze listener:', error);
+    }
+
+    return () => {
+      if (window.webgazer) {
+        try {
+          window.webgazer.clearGazeListener();
+        } catch (error) {
+          console.error('Failed to clear gaze listener:', error);
+        }
+      }
+    };
+  }, [isWebGazerReady]);
 
   const handleTriggerPull = useCallback(() => {
     const didShoot = shoot();
@@ -167,9 +198,12 @@ export const Scene: React.FC = () => {
 
   return (
     <div ref={canvasRef} style={{ width: '100vw', height: '100vh', position: 'relative' }}>
-      {/* Calibration Overlay */}
+      {/* Calibration Overlay - NOW WITH liveGaze PROP */}
       {phase === 'calibration' && isWebGazerReady && (
-        <CalibrationOverlay onComplete={handleCalibrationComplete} />
+        <CalibrationOverlay 
+          onComplete={handleCalibrationComplete}
+          liveGaze={liveGaze}  // NEW: Pass live gaze data
+        />
       )}
 
       {/* Validation Confirmation */}
@@ -375,7 +409,7 @@ export const Scene: React.FC = () => {
       {/* Crosshair */}
       {isLocked && phase === 'training' && <Crosshair />}
 
-      {/* Canvas */}
+      {/* Canvas - YOUR EXISTING TRAINING GROUND RENDERING */}
       <Canvas shadows>
         <PerspectiveCamera makeDefault position={[0, 1.6, 0]} fov={90} />
         <CameraController 

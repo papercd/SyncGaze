@@ -152,9 +152,22 @@ const ResearchConsentPage = () => {
           </button>
         </div>
 
-        {/* (Optional) 연구자 연락처 추가 권장 */}
+        {/* 연구자 연락처 추가 */}
       <div className="researcher-contact" style={{marginTop: '25px', fontSize: '1rem', color: '#ffffffff', textAlign: 'center'}}>
         <p>연구 관련 문의: syncgaze25@gmail.com</p>
+
+        {/* 깃허브 링크 */}
+        <p style={{ marginTop: '10px', fontSize: '1rem', opacity: 0.8 }}>
+          본 프로젝트는 오픈소스로 공개되어 있습니다.<br/>
+          <a 
+            href="https://github.com/papercd/syncgaze" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            style={{ color: '#4facfe84', textDecoration: 'underline', cursor: 'pointer' }}
+          >
+            GitHub Repository 방문하기 🔗
+          </a>
+        </p>
       </div>
 
       </div>

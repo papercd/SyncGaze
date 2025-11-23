@@ -142,6 +142,16 @@ const LandingPage = () => {
       {/* Footer */}
       <footer className="footer">
         <p>&copy; 2025 SyncGaze. All rights reserved.</p>
+        {/* 깃허브 연결 */}
+        <a 
+          href="https://github.com/papercd/syncgaze" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="github-link"
+          style={{ marginLeft: '1rem', color: 'inherit', textDecoration: 'none', opacity: 0.8 }}
+        >
+          View Project on GitHub 🔗
+        </a>
       </footer>
     </div>
 

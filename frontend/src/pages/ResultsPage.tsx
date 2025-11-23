@@ -8,6 +8,7 @@ import {
   TrainingSessionSummary,
   TrainingDataPoint,
   useTrackingSession,
+  persistSessionExportMetadata,
 } from '../state/trackingSessionContext';
 import { exportSessionData } from '../utils/sessionExport';
 import { useWebgazer } from '../hooks/tracking/useWebgazer';
@@ -554,6 +555,14 @@ const ResultsPage = () => {
               ? 'CSV downloaded and uploaded successfully.'
               : 'CSV uploaded successfully.'
           : 'CSV downloaded successfully.';
+
+          if (upload && user?.uid && sessionData) {
+          await persistSessionExportMetadata(user.uid, sessionData.id, {
+            exportPath: exportResult.uploadResult?.storagePath ?? null,
+            exportDownloadUrl: exportResult.uploadResult?.downloadUrl ?? null,
+            exportUploadedAt: new Date().toISOString(),
+          });
+        }
 
         showToast(successMessage, 'success');
         return true;

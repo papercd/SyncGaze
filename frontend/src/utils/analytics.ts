@@ -1,12 +1,16 @@
+// frontend/src/utils/analytics.ts
 import { TrainingDataPoint } from '../state/trackingSessionContext';
 
 export interface PerformanceAnalytics {
   totalTargets: number;
   targetsHit: number;
+  accuracy: number;            // ✅ Added: (Targets Hit / Total Targets) * 100
   avgReactionTime: number;     
   avgGazeReactionTime: number; 
   gazeErrorAtHit: number;      
   mouseErrorAtHit: number;     
+  gazeAccuracy: number;        // ✅ Added: % of frames gaze was on target
+  mouseAccuracy: number;       // ✅ Added: % of frames mouse was on target
   synchronization: number;     
   gazeAimLatency: number;      
 }
@@ -20,10 +24,13 @@ export const calculatePerformanceAnalytics = (data: TrainingDataPoint[]): Perfor
     return {
       totalTargets: 0,
       targetsHit: 0,
+      accuracy: 0,
       avgReactionTime: 0,
       avgGazeReactionTime: 0,
       gazeErrorAtHit: 0,
       mouseErrorAtHit: 0,
+      gazeAccuracy: 0,
+      mouseAccuracy: 0,
       synchronization: 0,
       gazeAimLatency: 0,
     };
@@ -35,12 +42,19 @@ export const calculatePerformanceAnalytics = (data: TrainingDataPoint[]): Perfor
   const firstGazeOnTarget = new Map<string, number>();
   
   const GAZE_HIT_THRESHOLD = 100; 
+  const MOUSE_HIT_THRESHOLD = 100; // Assumed threshold for mouse tracking accuracy
 
   let totalSyncDist = 0;
   let validSyncFrames = 0;
+  
+  // Tracking Accuracy Counters
+  let totalFramesWithTarget = 0;
+  let gazeOnTargetFrames = 0;
+  let mouseOnTargetFrames = 0;
 
-  // 1. 기본 데이터 순회 (Sync, 반응속도 기초 데이터 수집)
+  // 1. Loop through data to collect metrics
   data.forEach(point => {
+    // Synchronization metric
     if (point.gazeX !== null && point.gazeY !== null && point.mouseX !== null && point.mouseY !== null) {
       totalSyncDist += getDistance(point.gazeX, point.gazeY, point.mouseX, point.mouseY);
       validSyncFrames++;
@@ -48,26 +62,49 @@ export const calculatePerformanceAnalytics = (data: TrainingDataPoint[]): Perfor
 
     if (!point.targetId) return;
     
+    // Count targets
     targetIds.add(point.targetId);
+    
+    // Count frames where a target is active
+    if (point.targetX !== null && point.targetY !== null) {
+      totalFramesWithTarget++;
+      
+      // Gaze Tracking Accuracy
+      if (point.gazeX !== null && point.gazeY !== null) {
+        const gazeDist = getDistance(point.gazeX, point.gazeY, point.targetX, point.targetY);
+        if (gazeDist <= GAZE_HIT_THRESHOLD) {
+          gazeOnTargetFrames++;
+          
+          // Record first gaze on target for reaction time
+          const existingGaze = firstGazeOnTarget.get(point.targetId);
+          if (existingGaze === undefined || point.timestamp < existingGaze) {
+            firstGazeOnTarget.set(point.targetId, point.timestamp);
+          }
+        }
+      }
 
+      // Mouse Tracking Accuracy
+      if (point.mouseX !== null && point.mouseY !== null) {
+        const mouseDist = getDistance(point.mouseX, point.mouseY, point.targetX, point.targetY);
+        if (mouseDist <= MOUSE_HIT_THRESHOLD) {
+          mouseOnTargetFrames++;
+        }
+      }
+    }
+
+    // Record first time target was seen
     const existingFirstSeen = firstSeenByTarget.get(point.targetId);
     if (existingFirstSeen === undefined || point.timestamp < existingFirstSeen) {
       firstSeenByTarget.set(point.targetId, point.timestamp);
-    }
-
-    if (point.targetX !== null && point.targetY !== null && point.gazeX !== null && point.gazeY !== null) {
-      const dist = getDistance(point.gazeX, point.gazeY, point.targetX, point.targetY);
-      if (dist <= GAZE_HIT_THRESHOLD) {
-        const existingGaze = firstGazeOnTarget.get(point.targetId);
-        if (existingGaze === undefined || point.timestamp < existingGaze) {
-          firstGazeOnTarget.set(point.targetId, point.timestamp);
-        }
-      }
     }
   });
 
   // --- Metrics Calculation ---
 
+  const totalTargets = targetIds.size || hits.length;
+  const targetsHit = hits.length;
+
+  // 2. Reaction Times
   const reactionTimes = hits
     .map(hit => {
       if (!hit.targetId) return null;
@@ -95,48 +132,44 @@ export const calculatePerformanceAnalytics = (data: TrainingDataPoint[]): Perfor
     }
   });
 
-  // 4. Errors at Hit Moment (UPDATED: Lookback logic)
+  // 3. Errors at Hit Moment
   let totalGazeError = 0;
   let gazeErrorCount = 0;
   let totalMouseError = 0;
   let mouseErrorCount = 0;
 
-  // 전체 데이터를 순회하며 targetHit 지점을 찾습니다.
   for (let i = 0; i < data.length; i++) {
     if (data[i].targetHit) {
       const hitPoint = data[i];
       
-      // A. 타겟 좌표 찾기 (현재 프레임에 없으면 이전 데이터 탐색)
       let targetX = hitPoint.targetX;
       let targetY = hitPoint.targetY;
 
+      // Lookback for target coordinates if missing in current frame
       if (targetX === null || targetY === null) {
         for (let k = i - 1; k >= 0; k--) {
-           // 같은 타겟 ID를 가진 유효한 좌표를 찾음
            if (data[k].targetId === hitPoint.targetId && data[k].targetX !== null && data[k].targetY !== null) {
              targetX = data[k].targetX;
              targetY = data[k].targetY;
              break;
            }
-           // 너무 멀리 떨어진 데이터는 사용하지 않음 (예: 1초 이상)
            if (hitPoint.timestamp - data[k].timestamp > 1000) break;
         }
       }
 
-      // 타겟 좌표를 끝내 찾지 못했으면 건너뜀
       if (targetX === null || targetY === null) continue;
 
-      // B. 시선 좌표 찾기 (명중 직전의 유효 데이터 탐색)
+      // Gaze Error at Hit
       for (let j = i - 1; j >= 0; j--) {
         if (data[j].gazeX !== null && data[j].gazeY !== null) {
           totalGazeError += getDistance(data[j].gazeX!, data[j].gazeY!, targetX, targetY);
           gazeErrorCount++;
-          break; // 가장 최근의 유효 데이터 하나만 사용하고 종료
+          break;
         }
-        if (hitPoint.timestamp - data[j].timestamp > 500) break; // 0.5초 이상 차이나면 무효
+        if (hitPoint.timestamp - data[j].timestamp > 500) break;
       }
 
-      // C. 마우스 좌표 찾기 (명중 직전의 유효 데이터 탐색)
+      // Mouse Error at Hit
       for (let j = i - 1; j >= 0; j--) {
         if (data[j].mouseX !== null && data[j].mouseY !== null) {
           totalMouseError += getDistance(data[j].mouseX!, data[j].mouseY!, targetX, targetY);
@@ -149,12 +182,15 @@ export const calculatePerformanceAnalytics = (data: TrainingDataPoint[]): Perfor
   }
 
   return {
-    totalTargets: targetIds.size || hits.length,
-    targetsHit: hits.length,
+    totalTargets,
+    targetsHit,
+    accuracy: totalTargets > 0 ? (targetsHit / totalTargets) * 100 : 0,
     avgReactionTime: reactionTimes.length ? reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length : 0,
     avgGazeReactionTime: gazeReactionTimes.length ? gazeReactionTimes.reduce((a, b) => a + b, 0) / gazeReactionTimes.length : 0,
     gazeErrorAtHit: gazeErrorCount ? totalGazeError / gazeErrorCount : 0,
     mouseErrorAtHit: mouseErrorCount ? totalMouseError / mouseErrorCount : 0,
+    gazeAccuracy: totalFramesWithTarget > 0 ? (gazeOnTargetFrames / totalFramesWithTarget) * 100 : 0,
+    mouseAccuracy: totalFramesWithTarget > 0 ? (mouseOnTargetFrames / totalFramesWithTarget) * 100 : 0,
     synchronization: validSyncFrames ? totalSyncDist / validSyncFrames : 0,
     gazeAimLatency: latencies.length ? latencies.reduce((a, b) => a + b, 0) / latencies.length : 0,
   };
@@ -170,18 +206,15 @@ export interface TimeSeriesPoint {
 export const generateErrorTimeSeries = (data: TrainingDataPoint[], duration: number): TimeSeriesPoint[] => {
   if (!data.length) return [];
 
-  // 타임스탬프 기준으로 정렬
   const sorted = [...data].sort((a, b) => a.timestamp - b.timestamp);
   const startTime = sorted[0].timestamp;
   const series: TimeSeriesPoint[] = [];
 
-  // 초 단위 버킷 생성
   const buckets = new Map<number, TrainingDataPoint[]>();
   for (let i = 0; i <= duration; i++) {
     buckets.set(i, []);
   }
 
-  // 데이터를 초 단위로 분류
   sorted.forEach(point => {
     const elapsed = Math.floor((point.timestamp - startTime) / 1000);
     if (elapsed >= 0 && elapsed <= duration) {
@@ -189,7 +222,6 @@ export const generateErrorTimeSeries = (data: TrainingDataPoint[], duration: num
     }
   });
 
-  // 각 초마다 평균 오차 계산
   for (let i = 0; i <= duration; i++) {
     const points = buckets.get(i) || [];
     
@@ -198,17 +230,14 @@ export const generateErrorTimeSeries = (data: TrainingDataPoint[], duration: num
     let syncSum = 0, syncCount = 0;
 
     points.forEach(p => {
-      // Gaze Error (Target vs Gaze)
       if (p.targetX !== null && p.targetY !== null && p.gazeX !== null && p.gazeY !== null) {
         gazeErrSum += Math.hypot(p.gazeX - p.targetX, p.gazeY - p.targetY);
         gazeErrCount++;
       }
-      // Mouse Error (Target vs Mouse)
       if (p.targetX !== null && p.targetY !== null && p.mouseX !== null && p.mouseY !== null) {
         mouseErrSum += Math.hypot(p.mouseX - p.targetX, p.mouseY - p.targetY);
         mouseErrCount++;
       }
-      // Synchronization (Gaze vs Mouse)
       if (p.gazeX !== null && p.gazeY !== null && p.mouseX !== null && p.mouseY !== null) {
         syncSum += Math.hypot(p.gazeX - p.mouseX, p.gazeY - p.mouseY);
         syncCount++;

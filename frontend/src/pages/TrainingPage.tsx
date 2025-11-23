@@ -11,6 +11,7 @@ import {
   TrainingDataPoint,
   TrainingSessionSummary,
   useTrackingSession,
+  persistSessionToFirestore,
 } from '../state/trackingSessionContext';
 import { useAuth } from '../state/authContext';
 import { useWebgazer } from '../hooks/tracking/useWebgazer';
@@ -132,6 +133,10 @@ const TrainingPage = () => {
     // Save to context
     addSession(finalSession);
     setActiveSessionId(finalSession.id);
+    
+    if (user?.uid) {
+      void persistSessionToFirestore(user.uid, finalSession);
+    }
     
     console.log('✅ Training session saved:', {
       id: finalSession.id,

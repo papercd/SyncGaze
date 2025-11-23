@@ -10,7 +10,7 @@ import DetailedResultsPage from './pages/DetailedResultsPage';
 import TrackerFlowPage from './pages/TrackerFlowPage';
 import SurveyPage from './pages/onboarding/SurveyPage';
 import ResearchConsentPage from './pages/onboarding/ResearchConsentPage';
-import { ReactElement } from 'react';
+import { ReactElement, useEffect} from 'react';
 import { useAuth } from './state/authContext';
 
 const RouteLoader = () => (
@@ -19,6 +19,16 @@ const RouteLoader = () => (
     <span>Loading...</span>
   </div>
 );
+
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [pathname]);
+
+  return null;
+};
 
 const ProtectedRoute = ({ children }: { children: ReactElement }) => {
   const location = useLocation();
@@ -54,6 +64,7 @@ const PublicOnlyRoute = ({ children }: { children: ReactElement }) => {
 const AppRouter = () => {
   return (
     <BrowserRouter>
+     <ScrollToTop />
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route

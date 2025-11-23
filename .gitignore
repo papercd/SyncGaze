@@ -31,8 +31,13 @@ frontend/process.env
 *.sw?
 
 package-lock.json
-<<<<<<< HEAD
 package.json
-=======
 frontend/package-lock.json
->>>>>>> origin/feat/frontend_calibration
+.firebase/hosting.ZnJvbnRlbmQvZGlzdA.cache
+
+# Firebase cache
+.firebase
+
+# Firebase
+.firebase/
+firebase-debug.log*

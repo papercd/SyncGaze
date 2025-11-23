@@ -1,0 +1,17 @@
+{
+  "name": "syncgaze-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^4.19.2",
+    "firebase": "^12.6.0",
+    "firebase-admin": "^13.0.1"
+  }
+}

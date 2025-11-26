@@ -140,22 +140,23 @@
 /* Action Section */
 .action-section {
   margin-bottom: 3rem;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.5rem;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 1rem;
   width: 100%;
-  max-width: 900px;
+  max-width: 1100px;
   margin-left: auto;
   margin-right: auto;
+  justify-content: center;
 }
 
 .start-training-button {
-  padding: 1.25rem 3rem;
+  padding: 1.1rem 2.4rem;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border: none;
   color: #fff;
   border-radius: 12px;
-  font-size: 1.2rem;
+  font-size: 1.12rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -164,7 +165,7 @@
   align-items: center;
   justify-content: center;
   gap: 1rem;
-  width: 100%;
+  min-width: 200px;
 }
 
 .start-training-button:hover {
@@ -302,6 +303,10 @@
 
   .stats-grid {
     grid-template-columns: 1fr;
+  }
+
+  .action-section {
+    flex-wrap: wrap;
   }
 
   .start-training-button {

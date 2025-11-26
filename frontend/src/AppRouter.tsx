@@ -12,6 +12,7 @@ import SurveyPage from './pages/onboarding/SurveyPage';
 import ResearchConsentPage from './pages/onboarding/ResearchConsentPage';
 import { ReactElement, useEffect } from 'react';
 import { useAuth } from './state/authContext';
+import SessionRemoteHydrator from './components/SessionRemoteHydrator';
 
 //연구 감사인사용 페이지
 import ThankYouPage from './pages/onboarding/ThankYouPage';
@@ -67,6 +68,7 @@ const PublicOnlyRoute = ({ children }: { children: ReactElement }) => {
 const AppRouter = () => {
   return (
     <BrowserRouter>
+     <SessionRemoteHydrator />
      <ScrollToTop />
       <Routes>
         <Route path="/" element={<LandingPage />} />

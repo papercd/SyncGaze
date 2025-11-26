@@ -9,10 +9,11 @@ import {
   TrainingDataPoint,
   useTrackingSession,
 } from '../state/trackingSessionContext';
-import { exportSessionData } from '../utils/sessionExport';
+import { exportSessionData, type CsvUploadResult } from '../utils/sessionExport';
 import { useWebgazer } from '../hooks/tracking/useWebgazer';
 import { useAuth } from '../state/authContext';
 import { persistLatestSession } from '../utils/resultsStorage';
+import { saveSessionForUser } from '../utils/remoteSessions';
 // Analytics 인터페이스와 함수를 utils에서 import (ResultsPage 내의 중복 정의 제거)
 import { calculatePerformanceAnalytics, generateErrorTimeSeries, PerformanceAnalytics } from '../utils/analytics';
 
@@ -294,6 +295,7 @@ const ResultsPage = () => {
 
   const [missingRawData, setMissingRawData] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [lastUploadResult, setLastUploadResult] = useState<CsvUploadResult | null>(null);
   const [autoUploadAttemptedFor, setAutoUploadAttemptedFor] = useState<string | null>(null);
   // 초기화 시점에 바로 sessionStorage를 확인하여 상태를 설정합니다. - csv 수동 업로드 버튼 재활성화 방지
   const [autoUploadStatus, setAutoUploadStatus] = useState<AutoUploadStatus>(() => {
@@ -302,6 +304,7 @@ const ResultsPage = () => {
   });
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const toastTimeoutRef = useRef<number | null>(null);
+  const lastSyncedRef = useRef<{ id: string; uploadKey: string | null } | null>(null);
   const heatmapCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const heatmapContainerRef = useRef<HTMLDivElement | null>(null);
   const participantLabel = user?.email ?? user?.displayName ?? user?.uid;
@@ -508,6 +511,36 @@ const ResultsPage = () => {
     persistLatestSession(sessionData, calibrationResult);
   }, [sessionData, calibrationResult]);
 
+  useEffect(() => {
+    if (!sessionData || !user) {
+      return;
+    }
+
+    const uploadKey = lastUploadResult?.storagePath ?? lastUploadResult?.downloadUrl ?? null;
+    const alreadySynced =
+      lastSyncedRef.current?.id === sessionData.id && lastSyncedRef.current?.uploadKey === uploadKey;
+
+    if (alreadySynced) {
+      return;
+    }
+
+    const sync = async () => {
+      try {
+        await saveSessionForUser(user.uid, sessionData, {
+          calibrationResult,
+          surveyResponses,
+          consentAccepted,
+          uploadResult: lastUploadResult,
+        });
+        lastSyncedRef.current = { id: sessionData.id, uploadKey };
+      } catch (error) {
+        console.warn('Failed to sync session to Firestore', error);
+      }
+    };
+
+    sync();
+  }, [sessionData, calibrationResult, surveyResponses, consentAccepted, user, lastUploadResult]);
+
   const showToast = useCallback((message: string, type: 'success' | 'error') => {
     setToast({ message, type });
     if (toastTimeoutRef.current) {
@@ -550,6 +583,9 @@ const ResultsPage = () => {
             },
           },
         );
+        if (upload) {
+          setLastUploadResult(exportResult.uploadResult ?? null);
+        }
         const uploadPath = exportResult.uploadResult?.storagePath || exportResult.uploadResult?.downloadUrl;
         const successMessage = upload
           ? uploadPath
@@ -563,6 +599,7 @@ const ResultsPage = () => {
         return true;
       } catch (error) {
         console.error('Failed to export session data', error);
+        setLastUploadResult(null);
         const message = error instanceof Error ? error.message : 'Unexpected error occurred.';
         showToast(
           upload ? `CSV upload failed: ${message}` : `CSV export failed: ${message}`,

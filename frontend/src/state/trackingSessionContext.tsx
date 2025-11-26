@@ -66,6 +66,7 @@ export interface TrackingSessionContextValue extends TrackingSessionState {
   setConsentAccepted: (accepted: boolean) => void;
   saveCalibrationResult: (result: CalibrationResult | null) => void;
   addSession: (session: TrainingSessionSummary) => void;
+  hydrateSessions: (sessions: TrainingSessionSummary[]) => void;
   setActiveSessionId: (sessionId: string | null) => void;
   clearRecentSessions: () => void;
   activeSession: TrainingSessionSummary | null;
@@ -204,6 +205,15 @@ export const TrackingSessionProvider = ({ children }: { children: ReactNode }) =
     });
   };
 
+  const hydrateSessions = (sessions: TrainingSessionSummary[]) => {
+    setState(prev => ({
+      ...prev,
+      recentSessions: sessions,
+      lastSession: sessions[0] ?? null,
+      activeSessionId: sessions[0]?.id ?? null,
+    }));
+  };
+
   const setActiveSessionId = (sessionId: string | null) => {
     setState(prev => ({
       ...prev,
@@ -247,6 +257,7 @@ export const TrackingSessionProvider = ({ children }: { children: ReactNode }) =
     setConsentAccepted,
     saveCalibrationResult,
     addSession,
+    hydrateSessions,
     setActiveSessionId,
     clearRecentSessions,
     activeSession,

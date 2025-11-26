@@ -55,8 +55,9 @@ export const uploadCsvRoute = async (req, res) => {
     });
   }
 
+  let decodedToken = null;
   try {
-    await verifyIdTokenIfPresent(req.headers.authorization);
+    decodedToken = await verifyIdTokenIfPresent(req.headers.authorization);
   } catch (error) {
     console.error('Invalid Firebase ID token:', error);
     return res.status(401).json({ message: 'Unauthorized Firebase token.' });
@@ -79,17 +80,29 @@ export const uploadCsvRoute = async (req, res) => {
       expires: Date.now() + 7 * 24 * 60 * 60 * 1000,
     });
 
-    await db
-      .collection('sessions')
-      .doc(sessionId)
-      .set(
-        {
-          exportPath: storagePath,
-          exportDownloadUrl: downloadUrl,
-          exportUploadedAt: admin.firestore.FieldValue.serverTimestamp(),
-        },
-        { merge: true },
-      );
+    const uploadMeta = {
+      exportPath: storagePath,
+      exportDownloadUrl: downloadUrl,
+      exportUploadedAt: admin.firestore.FieldValue.serverTimestamp(),
+      ...(decodedToken?.uid ? { uid: decodedToken.uid } : {}),
+    };
+
+    await db.collection('sessions').doc(sessionId).set(uploadMeta, { merge: true });
+
+    if (decodedToken?.uid) {
+      await db
+        .collection('users')
+        .doc(decodedToken.uid)
+        .collection('sessions')
+        .doc(sessionId)
+        .set(
+          {
+            ...uploadMeta,
+            sessionId,
+          },
+          { merge: true },
+        );
+    }
 
     return res.status(200).json({
       message: 'Upload successful',

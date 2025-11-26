@@ -267,6 +267,7 @@ const ResultsPage = () => {
     consentAccepted,
     calibrationResult,
     setActiveSessionId,
+    isAnonymousSession
   } = useTrackingSession();
   
   const { stopSession } = useWebgazer();
@@ -531,6 +532,9 @@ const ResultsPage = () => {
           surveyResponses,
           consentAccepted,
           uploadResult: lastUploadResult,
+          analytics,
+          leaderboardOptIn: true,
+          leaderboardLabel: participantLabel,
         });
         lastSyncedRef.current = { id: sessionData.id, uploadKey };
       } catch (error) {
@@ -539,7 +543,17 @@ const ResultsPage = () => {
     };
 
     sync();
-  }, [sessionData, calibrationResult, surveyResponses, consentAccepted, user, lastUploadResult]);
+  }, [
+    analytics,
+    calibrationResult,
+    consentAccepted,
+    isAnonymousSession,
+    lastUploadResult,
+    participantLabel,
+    surveyResponses,
+    sessionData,
+    user,
+  ]);
 
   const showToast = useCallback((message: string, type: 'success' | 'error') => {
     setToast({ message, type });

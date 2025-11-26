@@ -11,7 +11,6 @@ import TrackerFlowPage from './pages/TrackerFlowPage';
 import SurveyPage from './pages/onboarding/SurveyPage';
 import ResearchConsentPage from './pages/onboarding/ResearchConsentPage';
 import { ReactElement, useEffect } from 'react';
-import { useTrackingSession } from './state/trackingSessionContext';
 import { useAuth } from './state/authContext';
 import SessionRemoteHydrator from './components/SessionRemoteHydrator';
 
@@ -37,8 +36,6 @@ const ScrollToTop = () => {
 
 const ProtectedRoute = ({ children }: { children: ReactElement }) => {
   const location = useLocation();
- 
-  const { surveyResponses } = useTrackingSession();
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -47,13 +44,6 @@ const ProtectedRoute = ({ children }: { children: ReactElement }) => {
 
   if (!user) {
     return <Navigate to="/auth" replace state={{ from: location }} />;
-  }
-
-  const needsSurvey = !surveyResponses;
-  const isSurveyRoute = location.pathname === '/onboarding/survey';
-
-  if (needsSurvey && !isSurveyRoute) {
-    return <Navigate to="/onboarding/survey" replace state={{ from: location }} />;
   }
 
   return children;

@@ -58,12 +58,8 @@ export const saveSessionForUser = async (
   });
 
   const userSessionRef = doc(db, 'users', uid, 'sessions', session.id);
-  const globalSessionRef = doc(db, 'sessions', session.id);
 
-  await Promise.all([
-    setDoc(userSessionRef, payload, { merge: true }),
-    setDoc(globalSessionRef, { ...payload, sessionId: session.id }, { merge: true }),
-  ]);
+  await setDoc(userSessionRef, payload, { merge: true });
 };
 
 export interface StoredSessionRecord {

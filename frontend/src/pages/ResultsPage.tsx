@@ -295,7 +295,11 @@ const ResultsPage = () => {
   const [missingRawData, setMissingRawData] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [autoUploadAttemptedFor, setAutoUploadAttemptedFor] = useState<string | null>(null);
-  const [autoUploadStatus, setAutoUploadStatus] = useState<AutoUploadStatus>('idle');
+  // 초기화 시점에 바로 sessionStorage를 확인하여 상태를 설정합니다. - csv 수동 업로드 버튼 재활성화 방지
+  const [autoUploadStatus, setAutoUploadStatus] = useState<AutoUploadStatus>(() => {
+    // sessionToDisplay가 있다면 해당 ID에 대한 저장된 상태를 불러오고, 없으면 'idle'
+    return loadStoredUploadStatus(sessionToDisplay?.id) ?? 'idle';
+  });
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const toastTimeoutRef = useRef<number | null>(null);
   const heatmapCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -895,6 +899,33 @@ const ResultsPage = () => {
           {toast.message}
         </div>
       )}
+      {/* --- 연구 감사 인사용 페이지 이동 영역--- */}
+      <div className="finish-action-area" style={{ 
+        marginTop: '-50px', 
+        padding: '15px', 
+        textAlign: 'center',
+        borderTop: '0.5px solid #eee' 
+      }}>
+        <p style={{ marginBottom: '15px', color: '#ffffffff' }}>
+          모든 결과를 확인하셨나요? 아래 버튼을 눌러 연구 참여를 종료해 주세요.
+        </p>
+        <button 
+          onClick={() => navigate('/thank-you')}
+          style={{
+            padding: '15px 40px',
+            fontSize: '1rem',
+            fontWeight: 'bold',
+            backgroundColor: '#760215ff', // 혹은 기존 테마의 primary color
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            boxShadow: '0 4px 6px rgba(36, 26, 26, 0.1)'
+          }}
+        >
+          연구 참여 종료하기
+        </button>
+      </div>
     </div>
   );
 };

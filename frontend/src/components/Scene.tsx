@@ -171,7 +171,15 @@ export const Scene: React.FC<SceneProps> = ({
         z: playerPosition.z
       };
       
-      recordTargetHit(targetId, targetPos, camRot, playerPos);
+      // Pass the required arguments to recordTargetHit
+      recordTargetHit(
+        targetId, 
+        targetPos, 
+        { x: 0, y: 0 }, // Placeholder for targetScreenPos as it's not calculated here
+        mouseData, 
+        camRot, 
+        playerPos
+      );
     }
   }, [phase, playerPosition, recordTargetHit]);
 

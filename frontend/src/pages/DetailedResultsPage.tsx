@@ -1078,22 +1078,30 @@ const DetailedResultsPage = () => {
           <p className="muted">최근 8개의 수집 포인트를 기준으로 오차를 보여줍니다.</p>
         </div>
         <div className="samples-table">
-          <div className="table-head">
-            <span>Target</span>
-            <span>Gaze error</span>
-            <span>Mouse error</span>
-            <span>Hit</span>
-          </div>
-          {recentSamples.map((sample, idx) => (
-            <div key={`${sample.timestamp}-${idx}`} className="table-row">
-              <span>{sample.targetId ?? '—'}</span>
-              <span>{sample.gazeErr !== null ? `${sample.gazeErr.toFixed(1)} px` : 'N/A'}</span>
-              <span>{sample.mouseErr !== null ? `${sample.mouseErr.toFixed(1)} px` : 'N/A'}</span>
-              <span className={sample.targetHit ? 'pill pill-green' : 'pill'}>
-                {sample.targetHit ? 'Hit' : 'Miss'}
-              </span>
-            </div>
-          ))}
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Target</th>
+                <th scope="col">Gaze error</th>
+                <th scope="col">Mouse error</th>
+                <th scope="col">Hit</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recentSamples.map((sample, idx) => (
+                <tr key={`${sample.timestamp}-${idx}`}>
+                  <td className="align-left">{sample.targetId ?? '—'}</td>
+                  <td>{sample.gazeErr !== null ? `${sample.gazeErr.toFixed(1)} px` : 'N/A'}</td>
+                  <td>{sample.mouseErr !== null ? `${sample.mouseErr.toFixed(1)} px` : 'N/A'}</td>
+                  <td>
+                    <span className={sample.targetHit ? 'pill pill-green' : 'pill'}>
+                      {sample.targetHit ? 'Hit' : 'Miss'}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </section>
     </div>

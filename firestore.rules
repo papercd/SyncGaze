@@ -1,0 +1,13 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 사용자 데이터 경로: users/{userId} 안의 모든 문서
+    match /users/{userId}/{document=**} {
+      // 로그인되어 있고, 본인의 ID와 경로의 userId가 일치할 때만 읽기/쓰기 허용
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+  }
+}

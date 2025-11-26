@@ -10,8 +10,11 @@ import DetailedResultsPage from './pages/DetailedResultsPage';
 import TrackerFlowPage from './pages/TrackerFlowPage';
 import SurveyPage from './pages/onboarding/SurveyPage';
 import ResearchConsentPage from './pages/onboarding/ResearchConsentPage';
-import { ReactElement } from 'react';
+import { ReactElement, useEffect } from 'react';
 import { useAuth } from './state/authContext';
+
+//연구 감사인사용 페이지
+import ThankYouPage from './pages/onboarding/ThankYouPage';
 
 const RouteLoader = () => (
   <div className="route-loader" role="status" aria-live="polite">
@@ -19,6 +22,16 @@ const RouteLoader = () => (
     <span>Loading...</span>
   </div>
 );
+
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [pathname]);
+
+  return null;
+};
 
 const ProtectedRoute = ({ children }: { children: ReactElement }) => {
   const location = useLocation();
@@ -54,6 +67,7 @@ const PublicOnlyRoute = ({ children }: { children: ReactElement }) => {
 const AppRouter = () => {
   return (
     <BrowserRouter>
+     <ScrollToTop />
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route
@@ -117,6 +131,15 @@ const AppRouter = () => {
           element={(
             <ProtectedRoute>
               <ResearchConsentPage />
+            </ProtectedRoute>
+          )}
+        />
+
+        <Route
+          path="/thank-you"
+          element={(
+            <ProtectedRoute>
+              <ThankYouPage />
             </ProtectedRoute>
           )}
         />

@@ -10,6 +10,7 @@ import DetailedResultsPage from './pages/DetailedResultsPage';
 import TrackerFlowPage from './pages/TrackerFlowPage';
 import SurveyPage from './pages/onboarding/SurveyPage';
 import ResearchConsentPage from './pages/onboarding/ResearchConsentPage';
+import LeaderboardPage from './pages/LeaderboardPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage.tsx';
 import { ReactElement, useEffect } from 'react';
@@ -156,6 +157,14 @@ const AppRouter = () => {
           element={(
             <ProtectedRoute>
               <TrackerFlowPage />
+            </ProtectedRoute>
+          )}
+        />
+        <Route
+          path="/leaderboard"
+          element={(
+            <ProtectedRoute>
+              <LeaderboardPage />
             </ProtectedRoute>
           )}
         />

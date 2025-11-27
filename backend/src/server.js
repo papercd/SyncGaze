@@ -1,7 +1,9 @@
+// backend/src/server.js
 import cors from 'cors';
 import express from 'express';
 import { submitSurveyRoute } from './routes/submitSurvey.js';
 import { uploadCsvRoute } from './routes/uploadCsv.js';
+import { generateReportRoute } from './routes/generateReport.js';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -11,6 +13,7 @@ const port = process.env.PORT || 4000;
 app.use(cors());
 app.use('/api/upload-csv', express.text({ type: '*/*', limit: '10mb' }), uploadCsvRoute);
 app.use('/api/submit-survey', express.json({ limit: '1mb' }), submitSurveyRoute);
+app.use('/api/generate-report', express.json({ limit: '1mb' }), generateReportRoute);
 
 app.use((req, res) => {
   res.status(404).json({ message: 'Not Found' });

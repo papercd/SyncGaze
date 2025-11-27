@@ -8,6 +8,11 @@ service cloud.firestore {
       // 로그인되어 있고, 본인의 ID와 경로의 userId가 일치할 때만 읽기/쓰기 허용
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
+
+    // 자기 auth에 해당하는 세션에 대한 리포트 작성 가능 
+    match /users/{userId}/reports/{reportId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
     
     // 공개 리더보드: 익명화된 점수만 저장하고, 누구나 읽을 수 있도록 허용
     match /leaderboardEntries/{entryId} {

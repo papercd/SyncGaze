@@ -1,6 +1,6 @@
 // src/pages/AuthPage.tsx
 import { useState, type ChangeEvent, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import './AuthPage.css';
 import {
   auth,
@@ -14,6 +14,7 @@ import {
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { FirebaseError } from 'firebase/app';
 import { useTrackingSession } from '../state/trackingSessionContext';
+import { SIGNUP_NOTICE } from '../assets/policies';
 
 const AuthPage = () => {
   const navigate = useNavigate();
@@ -209,6 +210,20 @@ const AuthPage = () => {
               </p>
             </div>
 
+            {!isLogin && (
+              <div className="signup-notice" aria-label="회원가입 안내문">
+                <h3>{SIGNUP_NOTICE.title}</h3>
+                {SIGNUP_NOTICE.paragraphs.map((paragraph, index) => (
+                  <p key={index}>{paragraph}</p>
+                ))}
+                <ul>
+                  {SIGNUP_NOTICE.bullets?.map((bullet, index) => (
+                    <li key={index}>{bullet}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="auth-form">
               {!isLogin && (
                 <div className="form-group">
@@ -290,6 +305,10 @@ const AuthPage = () => {
             <button type="submit" className="submit-button" disabled={loading}>
               {loading ? 'Please wait…' : isLogin ? 'Sign In' : 'Create Account'}
             </button>
+
+            <p className="policy-disclaimer">
+              로그인 시 <Link to="/terms">이용약관</Link> 및 <Link to="/privacy">개인정보 처리방침</Link>에 동의하는 것으로 간주합니다.
+            </p>
 
             <div className="oauth-divider">
               <span />

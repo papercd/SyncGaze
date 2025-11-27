@@ -1,5 +1,5 @@
 import { ChangeEvent, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import './ResearchConsentPage.css';
 import { useAuth } from '../../state/authContext';
 import { saveSurveyAndConsent, useTrackingSession } from '../../state/trackingSessionContext';
@@ -126,6 +126,13 @@ const ResearchConsentPage = () => {
           </span>
         </label>
       </section>
+
+      <div className="legal-links" aria-label="연구 관련 정책 링크">
+        <span>자세히 보기:</span>
+        <Link to="/terms">연구 참여 이용약관</Link>
+        <span aria-hidden="true">·</span>
+        <Link to="/privacy">개인정보 처리방침</Link>
+      </div>
 
         {(error || persistError) && (
           <div className="error-banner" role="alert">

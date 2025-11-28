@@ -34,9 +34,10 @@ const SORT_LABELS: Record<SortKey, string> = {
 
 const LIMIT_OPTIONS = [10, 50];
 
-type LeaderboardMetric = 'accuracy' | 'avgReactionTime' | 'gazeAimLatency';
+type LeaderboardMetric = 'accuracy' | 'avgReactionTime' | 'gazeAimLatency' | 'score';
 
 const METRIC_CONFIG: Record<LeaderboardMetric, { key: SortKey; direction: SortDirection; label: string }> = {
+  score: { key: 'score', direction: 'desc', label: 'Score' },
   accuracy: { key: 'accuracy', direction: 'desc', label: 'Accuracy' },
   avgReactionTime: { key: 'avgReactionTime', direction: 'asc', label: 'Reaction time' },
   gazeAimLatency: { key: 'gazeAimLatency', direction: 'asc', label: 'Gaze aim latency' },
@@ -90,6 +91,8 @@ const LeaderboardPage = () => {
 
   const formatMetricValue = (entry: LeaderboardEntry) => {
     switch (leaderboardMetric) {
+      case 'score':
+        return `${entry.score.toLocaleString()} pts`;
       case 'accuracy':
         return `${entry.accuracy.toFixed(1)}%`;
       case 'avgReactionTime':
@@ -104,6 +107,8 @@ const LeaderboardPage = () => {
   const getMetricValue = useCallback(
     (entry: LeaderboardEntry) => {
       switch (leaderboardMetric) {
+        case 'score':
+          return entry.score;
         case 'accuracy':
           return entry.accuracy;
         case 'avgReactionTime':
@@ -284,7 +289,7 @@ const LeaderboardPage = () => {
                 <div>
                   <p className="eyebrow">전체 순위</p>
                   <h2>상위 {Math.min(rankedEntries.length, visibleCount)}명</h2>
-                  </div>
+                </div>
                 <div className="table-meta">
                   <p className="meta-text sort-hint">원하는 항목명을 클릭해 테이블을 정렬할 수 있습니다.</p>
                   <span className="meta-text">{`${activeMetric.label} 리더보드 • ${sortDescription}`}</span>

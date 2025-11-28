@@ -9,6 +9,27 @@ interface RankedEntry extends LeaderboardEntry {
   rank: number;
 }
 
+type SortKey =
+  | 'rank'
+  | 'label'
+  | 'score'
+  | 'accuracy'
+  | 'avgReactionTime'
+  | 'targetsHit'
+  | 'sessionDate';
+
+type SortDirection = 'asc' | 'desc';
+
+const SORT_LABELS: Record<SortKey, string> = {
+  rank: 'rank',
+  label: 'player',
+  score: 'score',
+  accuracy: 'accuracy',
+  avgReactionTime: 'avg RT',
+  targetsHit: 'targets',
+  sessionDate: 'date',
+};
+
 const LIMIT_OPTIONS = [10, 50];
 
 const formatDate = (value: string) => {
@@ -24,6 +45,12 @@ const LeaderboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState<number>(LIMIT_OPTIONS[0]);
+  const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: SortDirection }>(
+    {
+      key: 'score',
+      direction: 'desc',
+    },
+  );
 
   useEffect(() => {
     const fetchLeaderboard = async () => {
@@ -54,6 +81,61 @@ const LeaderboardPage = () => {
         rank: index + 1,
       }));
   }, [entries]);
+
+  const sortedEntries = useMemo<RankedEntry[]>(() => {
+    const compareValues = (a: RankedEntry, b: RankedEntry) => {
+      const directionMultiplier = sortConfig.direction === 'asc' ? 1 : -1;
+
+      switch (sortConfig.key) {
+        case 'rank':
+          return (a.rank - b.rank) * directionMultiplier;
+        case 'label': {
+          const labelA = (a.label || 'Anonymous').toLowerCase();
+          const labelB = (b.label || 'Anonymous').toLowerCase();
+          return labelA.localeCompare(labelB) * directionMultiplier;
+        }
+        case 'score':
+          return (a.score - b.score) * directionMultiplier;
+        case 'accuracy':
+          return (a.accuracy - b.accuracy) * directionMultiplier;
+        case 'avgReactionTime':
+          return (a.avgReactionTime - b.avgReactionTime) * directionMultiplier;
+        case 'targetsHit':
+          return (a.targetsHit - b.targetsHit) * directionMultiplier;
+        case 'sessionDate': {
+          const dateA = new Date(a.sessionDate).getTime();
+          const dateB = new Date(b.sessionDate).getTime();
+          return (dateA - dateB) * directionMultiplier;
+        }
+        default:
+          return 0;
+      }
+    };
+
+    return [...rankedEntries].sort(compareValues);
+  }, [rankedEntries, sortConfig]);
+
+  const toggleSort = (key: SortKey) => {
+    setSortConfig(prev => {
+      if (prev.key === key) {
+        return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
+      }
+
+      return { key, direction: key === 'rank' ? 'asc' : 'desc' };
+    });
+  };
+
+  const getSortLabel = (key: SortKey, label: string) => {
+    const isActive = sortConfig.key === key;
+    const arrow = !isActive ? '↕' : sortConfig.direction === 'asc' ? '▲' : '▼';
+
+    return (
+      <button className={`sortable-button ${isActive ? 'active' : ''}`} onClick={() => toggleSort(key)}>
+        <span>{label}</span>
+        <span className="sort-indicator">{arrow}</span>
+      </button>
+    );
+  };
 
   return (
     <div className="leaderboard-page">
@@ -128,23 +210,25 @@ const LeaderboardPage = () => {
                   <p className="eyebrow">전체 순위</p>
                   <h2>상위 {Math.min(rankedEntries.length, visibleCount)}명</h2>
                 </div>
-                <span className="meta-text">score 기준 내림차순</span>
+                <span className="meta-text">
+                  {`${SORT_LABELS[sortConfig.key]} 기준 ${sortConfig.direction === 'asc' ? '오름차순' : '내림차순'}`}
+                </span>
               </div>
               <div className="table-wrapper">
                 <table>
                   <thead>
                     <tr>
-                      <th scope="col">Rank</th>
-                      <th scope="col">Player</th>
-                      <th scope="col">Score</th>
-                      <th scope="col">Accuracy</th>
-                      <th scope="col">Avg RT</th>
-                      <th scope="col">Targets</th>
-                      <th scope="col">Date</th>
+                      <th scope="col">{getSortLabel('rank', 'Rank')}</th>
+                      <th scope="col">{getSortLabel('label', 'Player')}</th>
+                      <th scope="col">{getSortLabel('score', 'Score')}</th>
+                      <th scope="col">{getSortLabel('accuracy', 'Accuracy')}</th>
+                      <th scope="col">{getSortLabel('avgReactionTime', 'Avg RT')}</th>
+                      <th scope="col">{getSortLabel('targetsHit', 'Targets')}</th>
+                      <th scope="col">{getSortLabel('sessionDate', 'Date')}</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {rankedEntries.map(entry => {
+                    {sortedEntries.map(entry => {
                       const label = entry.label || 'Anonymous';
                       return (
                         <tr key={`${entry.uid}-${entry.sessionId}`}>

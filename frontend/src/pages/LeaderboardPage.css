@@ -215,6 +215,27 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.sortable-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.sortable-button .sort-indicator {
+  font-size: 0.9em;
+  color: #c6c7d6;
+}
+
+.sortable-button.active .sort-indicator {
+  color: #8cc6ff;
+}
+
 .table-wrapper tbody td {
   padding: 12px 10px;
   color: #d9d9e7;

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, getDocs, limit, orderBy, query } from 'firebase/firestore';
 import './LeaderboardPage.css';
@@ -15,6 +15,7 @@ type SortKey =
   | 'score'
   | 'accuracy'
   | 'avgReactionTime'
+  | 'gazeAimLatency'
   | 'targetsHit'
   | 'sessionDate';
 
@@ -26,11 +27,20 @@ const SORT_LABELS: Record<SortKey, string> = {
   score: 'score',
   accuracy: 'accuracy',
   avgReactionTime: 'avg RT',
+  gazeAimLatency: 'gaze aim latency',
   targetsHit: 'targets',
   sessionDate: 'date',
 };
 
 const LIMIT_OPTIONS = [10, 50];
+
+type LeaderboardMetric = 'accuracy' | 'avgReactionTime' | 'gazeAimLatency';
+
+const METRIC_CONFIG: Record<LeaderboardMetric, { key: SortKey; direction: SortDirection; label: string }> = {
+  accuracy: { key: 'accuracy', direction: 'desc', label: 'Accuracy' },
+  avgReactionTime: { key: 'avgReactionTime', direction: 'asc', label: 'Reaction time' },
+  gazeAimLatency: { key: 'gazeAimLatency', direction: 'asc', label: 'Gaze aim latency' },
+};
 
 const formatDate = (value: string) => {
   const parsed = new Date(value);
@@ -45,18 +55,17 @@ const LeaderboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState<number>(LIMIT_OPTIONS[0]);
+  const [leaderboardMetric, setLeaderboardMetric] = useState<LeaderboardMetric>('accuracy');
   const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: SortDirection }>(
-    {
-      key: 'score',
-      direction: 'desc',
-    },
+    METRIC_CONFIG.accuracy,
   );
 
   useEffect(() => {
     const fetchLeaderboard = async () => {
       try {
+        const { key, direction } = METRIC_CONFIG[leaderboardMetric];
         const ref = collection(db, 'leaderboardEntries');
-        const leaderboardQuery = query(ref, orderBy('score', 'desc'), limit(visibleCount));
+        const leaderboardQuery = query(ref, orderBy(key, direction), limit(visibleCount));
         const snapshot = await getDocs(leaderboardQuery);
         const data = snapshot.docs.map(docSnap => docSnap.data() as LeaderboardEntry);
 
@@ -71,16 +80,58 @@ const LeaderboardPage = () => {
 
     setLoading(true);
     fetchLeaderboard();
-  }, [visibleCount]);
+  }, [leaderboardMetric, visibleCount]);
+
+  useEffect(() => {
+    setSortConfig(METRIC_CONFIG[leaderboardMetric]);
+  }, [leaderboardMetric]);
+
+  const activeMetric = METRIC_CONFIG[leaderboardMetric];
+
+  const formatMetricValue = (entry: LeaderboardEntry) => {
+    switch (leaderboardMetric) {
+      case 'accuracy':
+        return `${entry.accuracy.toFixed(1)}%`;
+      case 'avgReactionTime':
+        return `${entry.avgReactionTime.toFixed(0)}ms`;
+      case 'gazeAimLatency':
+        return `${entry.gazeAimLatency.toFixed(0)}ms`;
+      default:
+        return '';
+    }
+  };
+
+  const getMetricValue = useCallback(
+    (entry: LeaderboardEntry) => {
+      switch (leaderboardMetric) {
+        case 'accuracy':
+          return entry.accuracy;
+        case 'avgReactionTime':
+          return entry.avgReactionTime;
+        case 'gazeAimLatency':
+          return entry.gazeAimLatency;
+        default:
+          return 0;
+      }
+    },
+    [leaderboardMetric],
+  );
 
   const rankedEntries = useMemo<RankedEntry[]>(() => {
+    const { key, direction } = METRIC_CONFIG[leaderboardMetric];
+    const directionMultiplier = direction === 'asc' ? 1 : -1;
+
     return [...entries]
-      .sort((a, b) => b.score - a.score)
+      .sort((a, b) => {
+        const valueA = getMetricValue(a);
+        const valueB = getMetricValue(b);
+        return (valueA - valueB) * directionMultiplier;
+      })
       .map((entry, index) => ({
         ...entry,
         rank: index + 1,
       }));
-  }, [entries]);
+  }, [entries, getMetricValue]);
 
   const sortedEntries = useMemo<RankedEntry[]>(() => {
     const compareValues = (a: RankedEntry, b: RankedEntry) => {
@@ -100,6 +151,8 @@ const LeaderboardPage = () => {
           return (a.accuracy - b.accuracy) * directionMultiplier;
         case 'avgReactionTime':
           return (a.avgReactionTime - b.avgReactionTime) * directionMultiplier;
+        case 'gazeAimLatency':
+          return (a.gazeAimLatency - b.gazeAimLatency) * directionMultiplier;
         case 'targetsHit':
           return (a.targetsHit - b.targetsHit) * directionMultiplier;
         case 'sessionDate': {
@@ -137,6 +190,9 @@ const LeaderboardPage = () => {
     );
   };
 
+  const sortDirectionLabel = sortConfig.direction === 'asc' ? '오름차순' : '내림차순';
+  const sortDescription = `${SORT_LABELS[sortConfig.key]} 기준 ${sortDirectionLabel}`;
+
   return (
     <div className="leaderboard-page">
       <header className="leaderboard-header">
@@ -144,6 +200,7 @@ const LeaderboardPage = () => {
           <p className="eyebrow">Leaderboard</p>
           <h1>최신 트레이닝 순위</h1>
           <p className="subtext">파이어베이스 리더보드 API에서 불러온 상위 {visibleCount}개 세션입니다.</p>
+          <p className="subtext">선택 지표: {activeMetric.label}</p>
         </div>
         <div className="leaderboard-actions">
           <button className="leaderboard-button ghost" onClick={() => navigate('/dashboard')}>
@@ -155,18 +212,35 @@ const LeaderboardPage = () => {
         </div>
       </header>
 
-      <div className="leaderboard-card filter-bar">
-        <span className="filter-label">보기: </span>
-        <div className="filter-buttons">
-          {LIMIT_OPTIONS.map(option => (
-            <button
-              key={option}
-              className={`chip-button ${visibleCount === option ? 'active' : ''}`}
-              onClick={() => setVisibleCount(option)}
-            >
-              Top {option}
-            </button>
-          ))}
+      <div className="filter-stack">
+        <div className="leaderboard-card filter-bar">
+          <span className="filter-label">리더보드 기준: </span>
+          <div className="filter-buttons">
+            {Object.entries(METRIC_CONFIG).map(([key, config]) => (
+              <button
+                key={key}
+                className={`chip-button ${leaderboardMetric === key ? 'active' : ''}`}
+                onClick={() => setLeaderboardMetric(key as LeaderboardMetric)}
+              >
+                {config.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="leaderboard-card filter-bar">
+          <span className="filter-label">보기: </span>
+          <div className="filter-buttons">
+            {LIMIT_OPTIONS.map(option => (
+              <button
+                key={option}
+                className={`chip-button ${visibleCount === option ? 'active' : ''}`}
+                onClick={() => setVisibleCount(option)}
+              >
+                Top {option}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -194,8 +268,10 @@ const LeaderboardPage = () => {
                     </div>
                     <p className="score-text">{entry.score.toLocaleString()} pts</p>
                     <div className="metric-row">
+                      <span>
+                        {activeMetric.label} {formatMetricValue(entry)}
+                      </span>
                       <span>Accuracy {entry.accuracy.toFixed(1)}%</span>
-                      <span>Avg RT {entry.avgReactionTime.toFixed(0)}ms</span>
                     </div>
                   </article>
                 );
@@ -211,7 +287,7 @@ const LeaderboardPage = () => {
                   <h2>상위 {Math.min(rankedEntries.length, visibleCount)}명</h2>
                 </div>
                 <span className="meta-text">
-                  {`${SORT_LABELS[sortConfig.key]} 기준 ${sortConfig.direction === 'asc' ? '오름차순' : '내림차순'}`}
+                  {`${activeMetric.label} 리더보드 • ${sortDescription}`}
                 </span>
               </div>
               <div className="table-wrapper">
@@ -223,6 +299,7 @@ const LeaderboardPage = () => {
                       <th scope="col">{getSortLabel('score', 'Score')}</th>
                       <th scope="col">{getSortLabel('accuracy', 'Accuracy')}</th>
                       <th scope="col">{getSortLabel('avgReactionTime', 'Avg RT')}</th>
+                      <th scope="col">{getSortLabel('gazeAimLatency', 'Gaze Aim Latency')}</th>
                       <th scope="col">{getSortLabel('targetsHit', 'Targets')}</th>
                       <th scope="col">{getSortLabel('sessionDate', 'Date')}</th>
                     </tr>
@@ -245,6 +322,7 @@ const LeaderboardPage = () => {
                           <td>{entry.score.toLocaleString()}</td>
                           <td>{entry.accuracy.toFixed(1)}%</td>
                           <td>{entry.avgReactionTime.toFixed(0)}ms</td>
+                          <td>{entry.gazeAimLatency.toFixed(0)}ms</td>
                           <td>
                             {entry.targetsHit}/{entry.totalTargets}
                           </td>

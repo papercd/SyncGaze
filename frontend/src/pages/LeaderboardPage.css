@@ -91,10 +91,17 @@
 
 .filter-bar {
   max-width: 1200px;
-  margin: 0 auto 16px auto;
+  margin: 0 auto;
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.filter-stack {
+  max-width: 1200px;
+  margin: 0 auto 16px auto;
+  display: grid;
+  gap: 12px;
 }
 
 .filter-label {

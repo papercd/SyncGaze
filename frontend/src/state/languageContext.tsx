@@ -16,7 +16,7 @@ const LANGUAGE_STORAGE_KEY = 'syncgaze.language';
 
 const getInitialLanguage = (): Language => {
   if (typeof window === 'undefined') {
-    return 'ko';
+    return 'en';
   }
 
   const stored = window.localStorage.getItem(LANGUAGE_STORAGE_KEY) as Language | null;
@@ -24,8 +24,7 @@ const getInitialLanguage = (): Language => {
     return stored;
   }
 
-  const browserLang = window.navigator.language?.toLowerCase() ?? 'ko';
-  return browserLang.startsWith('en') ? 'en' : 'ko';
+  return 'en';
 };
 
 export const LanguageProvider = ({ children }: { children: ReactNode }) => {

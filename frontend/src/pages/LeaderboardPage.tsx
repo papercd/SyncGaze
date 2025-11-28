@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { collection, getDocs, limit, orderBy, query } from 'firebase/firestore';
 import './LeaderboardPage.css';
 import { db } from '../lib/firebase';
+import { useTranslation } from '../state/languageContext';
 import type { LeaderboardEntry } from '../utils/remoteSessions';
 
 interface RankedEntry extends LeaderboardEntry {
@@ -21,37 +22,41 @@ type SortKey =
 
 type SortDirection = 'asc' | 'desc';
 
-const SORT_LABELS: Record<SortKey, string> = {
-  rank: 'rank',
-  label: 'player',
-  score: 'score',
-  accuracy: 'accuracy',
-  avgReactionTime: 'avg RT',
-  gazeAimLatency: 'gaze aim latency',
-  targetsHit: 'targets',
-  sessionDate: 'date',
+const SORT_LABEL_KEYS: Record<SortKey, string> = {
+  rank: 'leaderboard.column.rank',
+  label: 'leaderboard.column.player',
+  score: 'leaderboard.column.score',
+  accuracy: 'leaderboard.column.accuracy',
+  avgReactionTime: 'leaderboard.column.avgReactionTime',
+  gazeAimLatency: 'leaderboard.column.gazeAimLatency',
+  targetsHit: 'leaderboard.column.targetsHit',
+  sessionDate: 'leaderboard.column.sessionDate',
 };
 
 const LIMIT_OPTIONS = [10, 50];
 
 type LeaderboardMetric = 'accuracy' | 'avgReactionTime' | 'gazeAimLatency' | 'score';
 
-const METRIC_CONFIG: Record<LeaderboardMetric, { key: SortKey; direction: SortDirection; label: string }> = {
-  score: { key: 'score', direction: 'desc', label: 'Score' },
-  accuracy: { key: 'accuracy', direction: 'desc', label: 'Accuracy' },
-  avgReactionTime: { key: 'avgReactionTime', direction: 'asc', label: 'Reaction time' },
-  gazeAimLatency: { key: 'gazeAimLatency', direction: 'asc', label: 'Gaze aim latency' },
-};
-
-const formatDate = (value: string) => {
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return '-';
-
-  return parsed.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+const METRIC_CONFIG: Record<LeaderboardMetric, { key: SortKey; direction: SortDirection; labelKey: string; fallback: string }> = {
+  score: { key: 'score', direction: 'desc', labelKey: 'leaderboard.metric.score', fallback: 'Score' },
+  accuracy: { key: 'accuracy', direction: 'desc', labelKey: 'leaderboard.metric.accuracy', fallback: 'Accuracy' },
+  avgReactionTime: {
+    key: 'avgReactionTime',
+    direction: 'asc',
+    labelKey: 'leaderboard.metric.reaction',
+    fallback: 'Reaction time',
+  },
+  gazeAimLatency: {
+    key: 'gazeAimLatency',
+    direction: 'asc',
+    labelKey: 'leaderboard.metric.gazeAim',
+    fallback: 'Gaze aim latency',
+  },
 };
 
 const LeaderboardPage = () => {
   const navigate = useNavigate();
+  const { t, language } = useTranslation();
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -59,6 +64,16 @@ const LeaderboardPage = () => {
   const [leaderboardMetric, setLeaderboardMetric] = useState<LeaderboardMetric>('accuracy');
   const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: SortDirection }>(
     METRIC_CONFIG.accuracy,
+  );
+
+  const formatDate = useCallback(
+    (value: string) => {
+      const parsed = new Date(value);
+      if (Number.isNaN(parsed.getTime())) return '-';
+
+      return parsed.toLocaleDateString(language === 'ko' ? 'ko-KR' : 'en-US', { month: 'short', day: 'numeric' });
+    },
+    [language],
   );
 
   useEffect(() => {
@@ -73,7 +88,7 @@ const LeaderboardPage = () => {
         setEntries(data);
       } catch (err) {
         console.error('Failed to load leaderboard', err);
-        setError('리더보드 데이터를 불러오지 못했습니다.');
+        setError(t('leaderboard.error', 'Failed to load leaderboard data.'));
       } finally {
         setLoading(false);
       }
@@ -81,20 +96,27 @@ const LeaderboardPage = () => {
 
     setLoading(true);
     fetchLeaderboard();
-  }, [leaderboardMetric, visibleCount]);
+  }, [leaderboardMetric, visibleCount, t]);
 
   useEffect(() => {
     setSortConfig(METRIC_CONFIG[leaderboardMetric]);
   }, [leaderboardMetric]);
 
   const activeMetric = METRIC_CONFIG[leaderboardMetric];
+  const activeMetricLabel = t(activeMetric.labelKey, activeMetric.fallback);
 
   const formatMetricValue = (entry: LeaderboardEntry) => {
     switch (leaderboardMetric) {
       case 'score':
-        return `${entry.score.toLocaleString()} pts`;
+        return t('leaderboard.card.score', `${entry.score.toLocaleString()} pts`).replace(
+          '{value}',
+          entry.score.toLocaleString(),
+        );
       case 'accuracy':
-        return `${entry.accuracy.toFixed(1)}%`;
+        return t('leaderboard.card.accuracy', `${entry.accuracy.toFixed(1)}%`).replace(
+          '{value}',
+          entry.accuracy.toFixed(1),
+        );
       case 'avgReactionTime':
         return `${entry.avgReactionTime.toFixed(0)}ms`;
       case 'gazeAimLatency':
@@ -146,8 +168,9 @@ const LeaderboardPage = () => {
         case 'rank':
           return (a.rank - b.rank) * directionMultiplier;
         case 'label': {
-          const labelA = (a.label || 'Anonymous').toLowerCase();
-          const labelB = (b.label || 'Anonymous').toLowerCase();
+          const fallback = t('leaderboard.player.anonymous', 'Anonymous').toLowerCase();
+          const labelA = (a.label || fallback).toLowerCase();
+          const labelB = (b.label || fallback).toLowerCase();
           return labelA.localeCompare(labelB) * directionMultiplier;
         }
         case 'score':
@@ -195,31 +218,45 @@ const LeaderboardPage = () => {
     );
   };
 
-  const sortDirectionLabel = sortConfig.direction === 'asc' ? '오름차순' : '내림차순';
-  const sortDescription = `${SORT_LABELS[sortConfig.key]} 기준 ${sortDirectionLabel}`;
+  const getSortLabelText = (key: SortKey) => t(SORT_LABEL_KEYS[key], SORT_LABEL_KEYS[key]);
+  const sortLabel = getSortLabelText(sortConfig.key);
+  const sortDirectionLabel =
+    sortConfig.direction === 'asc'
+      ? t('leaderboard.sort.asc', 'ascending')
+      : t('leaderboard.sort.desc', 'descending');
+  const sortDescription = t('leaderboard.sort.description', `${sortLabel} ${sortDirectionLabel}`)
+    .replace('{label}', sortLabel)
+    .replace('{direction}', sortDirectionLabel);
 
   return (
     <div className="leaderboard-page">
       <header className="leaderboard-header">
         <div>
-          <p className="eyebrow">Leaderboard</p>
-          <h1>최신 트레이닝 순위</h1>
-          <p className="subtext">파이어베이스 리더보드 API에서 불러온 상위 {visibleCount}개 세션입니다.</p>
-          <p className="subtext">선택 지표: {activeMetric.label}</p>
+          <p className="eyebrow">{t('leaderboard.title.eyebrow')}</p>
+          <h1>{t('leaderboard.title.main')}</h1>
+          <p className="subtext">
+            {t('leaderboard.subtitle.count', 'Top {count} sessions fetched from the Firebase leaderboard API.').replace(
+              '{count}',
+              visibleCount.toString(),
+            )}
+          </p>
+          <p className="subtext">
+            {t('leaderboard.subtitle.metric', 'Selected metric: {metric}').replace('{metric}', activeMetricLabel)}
+          </p>
         </div>
         <div className="leaderboard-actions">
           <button className="leaderboard-button ghost" onClick={() => navigate('/dashboard')}>
-            Dashboard
+            {t('leaderboard.action.dashboard', 'Dashboard')}
           </button>
           <button className="leaderboard-button" onClick={() => navigate('/tracker-flow')}>
-            View tracker flow
+            {t('leaderboard.action.trackerFlow', 'View tracker flow')}
           </button>
         </div>
       </header>
 
       <div className="filter-stack">
         <div className="leaderboard-card filter-bar">
-          <span className="filter-label">리더보드 기준: </span>
+          <span className="filter-label">{t('leaderboard.filter.metric', 'Leaderboard metric:')}</span>
           <div className="filter-buttons">
             {Object.entries(METRIC_CONFIG).map(([key, config]) => (
               <button
@@ -227,14 +264,14 @@ const LeaderboardPage = () => {
                 className={`chip-button ${leaderboardMetric === key ? 'active' : ''}`}
                 onClick={() => setLeaderboardMetric(key as LeaderboardMetric)}
               >
-                {config.label}
+                {t(config.labelKey, config.fallback)}
               </button>
             ))}
           </div>
         </div>
 
         <div className="leaderboard-card filter-bar">
-          <span className="filter-label">보기: </span>
+          <span className="filter-label">{t('leaderboard.filter.limit', 'Show:')}</span>
           <div className="filter-buttons">
             {LIMIT_OPTIONS.map(option => (
               <button
@@ -242,7 +279,7 @@ const LeaderboardPage = () => {
                 className={`chip-button ${visibleCount === option ? 'active' : ''}`}
                 onClick={() => setVisibleCount(option)}
               >
-                Top {option}
+                {t('leaderboard.filter.limitOption', `Top {count}`).replace('{count}', option.toString())}
               </button>
             ))}
           </div>
@@ -250,17 +287,17 @@ const LeaderboardPage = () => {
       </div>
 
       {loading ? (
-        <div className="leaderboard-card loading-state">불러오는 중...</div>
+        <div className="leaderboard-card loading-state">{t('leaderboard.loading')}</div>
       ) : error ? (
         <div className="leaderboard-card error-state">{error}</div>
       ) : (
         <>
           <section className="top-grid">
             {rankedEntries.length === 0 ? (
-              <div className="leaderboard-card empty-state">아직 등록된 점수가 없습니다.</div>
+              <div className="leaderboard-card empty-state">{t('leaderboard.empty', 'No scores have been submitted yet.')}</div>
             ) : (
               rankedEntries.slice(0, 3).map(entry => {
-                const label = entry.label || 'Anonymous';
+                const label = entry.label || t('leaderboard.player.anonymous', 'Anonymous');
                 return (
                   <article
                     key={`${entry.uid}-${entry.sessionId}`}
@@ -272,11 +309,21 @@ const LeaderboardPage = () => {
                       <p>{formatDate(entry.sessionDate)}</p>
                     </div>
                     <div className="metric-highlight">
-                      <p className="metric-label">{activeMetric.label}</p>
+                      <p className="metric-label">{activeMetricLabel}</p>
                       <p className="metric-value">{formatMetricValue(entry)}</p>
-                      <p className="metric-subtext">Accuracy {entry.accuracy.toFixed(1)}%</p>
+                      <p className="metric-subtext">
+                        {t('leaderboard.card.accuracy', 'Accuracy {value}%').replace(
+                          '{value}',
+                          entry.accuracy.toFixed(1),
+                        )}
+                      </p>
                     </div>
-                    <p className="score-subtext">{entry.score.toLocaleString()} pts</p>
+                    <p className="score-subtext">
+                      {t('leaderboard.card.score', '{value} pts').replace(
+                        '{value}',
+                        entry.score.toLocaleString(),
+                      )}
+                    </p>
                   </article>
                 );
               })
@@ -287,31 +334,40 @@ const LeaderboardPage = () => {
             <section className="leaderboard-table">
               <div className="table-head">
                 <div>
-                  <p className="eyebrow">전체 순위</p>
-                  <h2>상위 {Math.min(rankedEntries.length, visibleCount)}명</h2>
+                  <p className="eyebrow">{t('leaderboard.table.eyebrow', 'Overall rankings')}</p>
+                  <h2>
+                    {t('leaderboard.table.title', 'Top {count} players').replace(
+                      '{count}',
+                      Math.min(rankedEntries.length, visibleCount).toString(),
+                    )}
+                  </h2>
                 </div>
                 <div className="table-meta">
-                  <p className="meta-text sort-hint">원하는 항목명을 클릭해 테이블을 정렬할 수 있습니다.</p>
-                  <span className="meta-text">{`${activeMetric.label} 리더보드 • ${sortDescription}`}</span>
+                  <p className="meta-text sort-hint">{t('leaderboard.table.hint', 'Click a column header to sort the leaderboard.')}</p>
+                  <span className="meta-text">
+                    {t('leaderboard.table.meta', '{metric} leaderboard • {sort}')
+                      .replace('{metric}', activeMetricLabel)
+                      .replace('{sort}', sortDescription)}
+                  </span>
                 </div>
               </div>
               <div className="table-wrapper">
                 <table>
                   <thead>
                     <tr>
-                      <th scope="col">{getSortLabel('rank', 'Rank')}</th>
-                      <th scope="col">{getSortLabel('label', 'Player')}</th>
-                      <th scope="col">{getSortLabel('score', 'Score')}</th>
-                      <th scope="col">{getSortLabel('accuracy', 'Accuracy')}</th>
-                      <th scope="col">{getSortLabel('avgReactionTime', 'Avg RT')}</th>
-                      <th scope="col">{getSortLabel('gazeAimLatency', 'Gaze Aim Latency')}</th>
-                      <th scope="col">{getSortLabel('targetsHit', 'Targets')}</th>
-                      <th scope="col">{getSortLabel('sessionDate', 'Date')}</th>
+                      <th scope="col">{getSortLabel('rank', getSortLabelText('rank'))}</th>
+                      <th scope="col">{getSortLabel('label', getSortLabelText('label'))}</th>
+                      <th scope="col">{getSortLabel('score', getSortLabelText('score'))}</th>
+                      <th scope="col">{getSortLabel('accuracy', getSortLabelText('accuracy'))}</th>
+                      <th scope="col">{getSortLabel('avgReactionTime', getSortLabelText('avgReactionTime'))}</th>
+                      <th scope="col">{getSortLabel('gazeAimLatency', getSortLabelText('gazeAimLatency'))}</th>
+                      <th scope="col">{getSortLabel('targetsHit', getSortLabelText('targetsHit'))}</th>
+                      <th scope="col">{getSortLabel('sessionDate', getSortLabelText('sessionDate'))}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {sortedEntries.map(entry => {
-                      const label = entry.label || 'Anonymous';
+                      const label = entry.label || t('leaderboard.player.anonymous', 'Anonymous');
                       return (
                         <tr key={`${entry.uid}-${entry.sessionId}`}>
                           <td>#{entry.rank}</td>
@@ -320,7 +376,10 @@ const LeaderboardPage = () => {
                               <span className="avatar-circle">{label.charAt(0).toUpperCase()}</span>
                               <div>
                                 <div className="player-name">{label}</div>
-                                <div className="player-meta">Session {entry.sessionId.slice(0, 6)}</div>
+                                <div className="player-meta">
+                                  {t('leaderboard.player.session', `Session ${entry.sessionId.slice(0, 6)}`)
+                                    .replace('{id}', entry.sessionId.slice(0, 6))}
+                                </div>
                               </div>
                             </div>
                           </td>

@@ -5,11 +5,13 @@ import './LandingPage.css';
 import DarkVeilBackground from '../components/DarkVeil';
 import Crosshair from '../components/ScreenCrosshair';
 import { useAuth } from '../state/authContext';
+import { useTranslation } from '../state/languageContext';
 
 const LandingPage = () => {
   const navigate = useNavigate();
   const ctaSectionRef = useRef<HTMLElement>(null);
   const { user, signOut } = useAuth();
+  const { t } = useTranslation();
 
   const handleNavClick = async () => {
     if (user) {
@@ -47,23 +49,21 @@ const LandingPage = () => {
         <nav className="navbar">
           <div className="logo">SyncGaze</div>
           <button className="nav-button" onClick={handleNavClick}>
-            {user ? 'Sign Out' : 'Sign In'}
+            {user ? t('landing.nav.signOut') : t('landing.nav.signIn')}
           </button>
         </nav>
-        
+
         <div className="hero-content">
-          <h1>Master Your Aim with AI-Powered Eye Tracking</h1>
-          <p className="hero-subtitle">
-            Analyze your gaze patterns, improve reaction time, and unlock peak performance
-          </p>
+          <h1>{t('landing.hero.title')}</h1>
+          <p className="hero-subtitle">{t('landing.hero.subtitle')}</p>
           <div className="cta-buttons">
             <button className="primary-button" onClick={handlePrimaryCta}>
-              {user ? 'Go to Dashboard' : 'Get Started'}
+              {user ? t('landing.cta.primary.dashboard') : t('landing.cta.primary.auth')}
             </button>
             <button className="secondary-button" onClick={() => {
               document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
             }}>
-              Learn More
+              {t('landing.cta.learnMore')}
             </button>
           </div>
         </div>
@@ -71,60 +71,60 @@ const LandingPage = () => {
 
       {/* Features Section */}
       <section id="features" className="features">
-        <h2>Why Choose SyncGaze?</h2>
+        <h2>{t('landing.section.features.title')}</h2>
         <div className="feature-grid">
           <div className="feature-card">
-          
-            <h3>Eye Tracking Technology</h3>
-            <p>Advanced WebGazer integration for precise gaze tracking and analysis</p>
+
+            <h3>{t('landing.feature.eyeTracking.title')}</h3>
+            <p>{t('landing.feature.eyeTracking.desc')}</p>
           </div>
-          
+
           <div className="feature-card">
-          
-            <h3>Data-Driven Insights</h3>
-            <p>Comprehensive CSV reports with visualizations of your performance metrics</p>
+
+            <h3>{t('landing.feature.insights.title')}</h3>
+            <p>{t('landing.feature.insights.desc')}</p>
           </div>
-          
+
           <div className="feature-card">
-      
-            <h3>Calibrated Training</h3>
-            <p>Personalized calibration ensures accurate tracking tailored to you</p>
+
+            <h3>{t('landing.feature.calibrated.title')}</h3>
+            <p>{t('landing.feature.calibrated.desc')}</p>
           </div>
-          
+
           <div className="feature-card">
-            
-            <h3>Real-Time Feedback</h3>
-            <p>60-second training sessions with instant performance tracking</p>
+
+            <h3>{t('landing.feature.realtime.title')}</h3>
+            <p>{t('landing.feature.realtime.desc')}</p>
           </div>
         </div>
       </section>
 
       {/* How It Works Section */}
       <section className="how-it-works">
-        <h2>How It Works</h2>
+        <h2>{t('landing.section.how.title')}</h2>
         <div className="steps">
           <div className="step">
             <div className="step-number">1</div>
-            <h3>Create Account</h3>
-            <p>Sign up and access your personal dashboard</p>
+            <h3>{t('landing.step.1.title')}</h3>
+            <p>{t('landing.step.1.desc')}</p>
           </div>
-          
+
           <div className="step">
             <div className="step-number">2</div>
-            <h3>Calibrate</h3>
-            <p>Quick calibration process to optimize eye tracking</p>
+            <h3>{t('landing.step.2.title')}</h3>
+            <p>{t('landing.step.2.desc')}</p>
           </div>
-          
+
           <div className="step">
             <div className="step-number">3</div>
-            <h3>Train</h3>
-            <p>60-second sessions to improve your aim and reaction time</p>
+            <h3>{t('landing.step.3.title')}</h3>
+            <p>{t('landing.step.3.desc')}</p>
           </div>
-          
+
           <div className="step">
             <div className="step-number">4</div>
-            <h3>Analyze</h3>
-            <p>Review detailed metrics and track your progress</p>
+            <h3>{t('landing.step.4.title')}</h3>
+            <p>{t('landing.step.4.desc')}</p>
           </div>
         </div>
       </section>
@@ -132,25 +132,25 @@ const LandingPage = () => {
       {/* CTA Section with Crosshair */}
       <section ref={ctaSectionRef} className="cta-section">
         <Crosshair containerRef={ctaSectionRef} color='#ffffff'  circleRadius={50}/>
-        <h2>Ready to Level Up Your Aim?</h2>
-        <p>Join thousands of users improving their performance</p>
+        <h2>{t('landing.cta.section.title')}</h2>
+        <p>{t('landing.cta.section.desc')}</p>
         <button className="primary-button large" onClick={handlePrimaryCta}>
-          {user ? 'Go to Dashboard' : 'Start Training Now'}
+          {user ? t('landing.cta.section.primary.dashboard') : t('landing.cta.section.primary.auth')}
         </button>
       </section>
 
       {/* Footer */}
       <footer className="footer">
-        <p>&copy; 2025 SyncGaze. All rights reserved.</p>
+        <p>{t('landing.footer.copyright')}</p>
         {/* 깃허브 연결 */}
-        <a 
-          href="https://github.com/papercd/syncgaze" 
-          target="_blank" 
+        <a
+          href="https://github.com/papercd/syncgaze"
+          target="_blank"
           rel="noopener noreferrer"
           className="github-link"
           style={{ marginLeft: '1rem', color: 'inherit', textDecoration: 'none', opacity: 0.8 }}
         >
-          View Project on GitHub 🔗
+          {t('landing.footer.github')}
         </a>
       </footer>
     </div>

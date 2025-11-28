@@ -16,6 +16,7 @@ import { useAuth } from '../state/authContext';
 import { useWebgazer } from '../hooks/tracking/useWebgazer';
 import { serializeSessionToCsv } from '../utils/sessionExport';
 import { calculatePerformanceAnalytics } from '../utils/analytics';
+import { useTranslation } from '../state/languageContext';
 
 const TrainingPage = () => {
   const navigate = useNavigate();
@@ -30,6 +31,7 @@ const TrainingPage = () => {
   
   const { user } = useAuth();
   const { stopSession } = useWebgazer();
+  const { t } = useTranslation();
   
   const [timeRemaining, setTimeRemaining] = useState(60);
   const [isTraining, setIsTraining] = useState(false);
@@ -168,42 +170,42 @@ const TrainingPage = () => {
       )}
       
       {/* Pre-Training Instructions */}
-      {!isTraining && !isComplete && (
-        <div className="training-overlay">
-          <div className="training-instructions">
-            <h1>Ready to Train?</h1>
+          {!isTraining && !isComplete && (
+            <div className="training-overlay">
+              <div className="training-instructions">
+            <h1>{t('training.overlay.title')}</h1>
             <div className="training-info">
               <div className="info-item">
                 <span className="info-icon">⏱️</span>
                 <div>
-                  <h3>60-Second Session</h3>
-                  <p>Hit as many targets as possible within 60 seconds</p>
+                  <h3>{t('training.info.session.title')}</h3>
+                  <p>{t('training.info.session.desc')}</p>
                 </div>
               </div>
 
               <div className="info-item">
                 <span className="info-icon">🎯</span>
                 <div>
-                  <h3>Track Your Gaze</h3>
-                  <p>Your eye movements and mouse clicks will be recorded</p>
+                  <h3>{t('training.info.gaze.title')}</h3>
+                  <p>{t('training.info.gaze.desc')}</p>
                 </div>
               </div>
 
               <div className="info-item">
                 <span className="info-icon">📊</span>
                 <div>
-                  <h3>Improve Your Performance</h3>
-                  <p>Compare your results with previous sessions</p>
+                  <h3>{t('training.info.performance.title')}</h3>
+                  <p>{t('training.info.performance.desc')}</p>
                 </div>
               </div>
             </div>
 
             <div className="training-controls">
               <button className="start-button" onClick={handleStartTraining}>
-                Start Training
+                {t('training.button.start')}
               </button>
               <button className="back-button-inline" onClick={handleBackToDashboard}>
-                Back to Dashboard
+                {t('training.button.back')}
               </button>
             </div>
           </div>
@@ -214,19 +216,19 @@ const TrainingPage = () => {
       {isComplete && (
         <div className="training-overlay">
           <div className="training-complete">
-            <h1>Training Complete!</h1>
+            <h1>{t('training.complete.title')}</h1>
             <div className="completion-stats">
               <div className="stat-card">
                 <span className="stat-icon">🎯</span>
                 <div className="stat-content">
-                  <h3>Final Score</h3>
+                  <h3>{t('training.complete.score')}</h3>
                   <p className="stat-value">{finalScore}</p>
                 </div>
               </div>
               <div className="stat-card">
                 <span className="stat-icon">⏱️</span>
                 <div className="stat-content">
-                  <h3>Duration</h3>
+                  <h3>{t('training.complete.duration')}</h3>
                   <p className="stat-value">60s</p>
                 </div>
               </div>
@@ -234,13 +236,13 @@ const TrainingPage = () => {
 
             <div className="training-controls">
               <button className="view-results-button" onClick={handleViewResults}>
-                View Detailed Results
+                {t('training.button.viewResults')}
               </button>
               <button className="start-button" onClick={handleStartTraining}>
-                Train Again
+                {t('training.button.trainAgain')}
               </button>
               <button className="back-button-inline" onClick={handleBackToDashboard}>
-                Back to Dashboard
+                {t('training.button.back')}
               </button>
             </div>
           </div>

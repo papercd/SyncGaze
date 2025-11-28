@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { CALIBRATION_DOTS } from '../constants';
-import { LiveGaze } from '../types';
+import type { CalibrationProps, LiveGaze } from '../types';
+import { useTranslation } from '../../../../state/languageContext';
 
 interface StageInstructionProps {
   stage: number;
@@ -8,41 +9,31 @@ interface StageInstructionProps {
 }
 
 const StageInstruction = ({ stage, onStart }: StageInstructionProps) => {
-  let title = '';
-  let description = '';
+  const { t } = useTranslation();
 
-  switch (stage) {
-    case 2:
-      title = '1단계: 정밀 보정';
-      description = '화면의 여러 위치에 빨간 점이 나타납니다. 각 점이 나타날 때마다 정확하게 3번씩 클릭해 주세요.';
-      break;
-    case 3:
-      title = '2단계: 최종 미세조정';
-      description = '다시 움직이는 녹색 점이 나타납니다. 이번에는 화면에 표시되는 자신의 시선(빨간 점)을 녹색 점 안에 유지하도록 노력해 주세요.';
-      break;
-    default:
-      break;
-  }
+  const stageTranslations = {
+    title: stage === 2 ? t('calibration.stage1.title') : t('calibration.stage2.title'),
+    description: stage === 2 ? t('calibration.stage1.desc') : t('calibration.stage2.desc'),
+  };
+
+  const progressLabel = t('calibration.stage.progress', '캘리브레이션 ({current}/{total})')
+    .replace('{current}', String(stage - 1))
+    .replace('{total}', '2');
 
   return (
     <div className="instruction-box">
-      <h2>캘리브레이션 ({stage - 1}/2)</h2>
-      <h3>{title}</h3>
-      <p>{description}</p>
+      <h2>{progressLabel}</h2>
+      <h3>{stageTranslations.title}</h3>
+      <p>{stageTranslations.description}</p>
       <button className="primary-button" onClick={onStart}>
-        시작하기
+        {t('calibration.stage.start', '시작하기')}
       </button>
     </div>
   );
 };
 
-interface CalibrationProps {
-  onComplete: () => void;
-  liveGaze: LiveGaze;
-  onCalStage3Complete: (successRate: number) => void;
-}
-
 const Calibration = ({ onComplete, liveGaze, onCalStage3Complete }: CalibrationProps) => {
+  const { t } = useTranslation();
   const [step, setStep] = useState(2);
   const [dotIndex, setDotIndex] = useState(0);
   const [clickCount, setClickCount] = useState(0);
@@ -168,6 +159,9 @@ const Calibration = ({ onComplete, liveGaze, onCalStage3Complete }: CalibrationP
 
   if (step === 2) {
     const currentDot = CALIBRATION_DOTS[dotIndex];
+    const hint = t('calibration.stage2.hint', '각 점을 3회씩 클릭해 주세요. ({current}/{total})')
+      .replace('{current}', String(dotIndex + 1))
+      .replace('{total}', String(CALIBRATION_DOTS.length));
     return (
       <div className="calibration-grid">
         <div
@@ -176,18 +170,24 @@ const Calibration = ({ onComplete, liveGaze, onCalStage3Complete }: CalibrationP
           onClick={handleDotClick}
         />
         <div className="calibration-hint">
-          <p>각 점을 3회씩 클릭해 주세요. ({dotIndex + 1}/{CALIBRATION_DOTS.length})</p>
+          <p>{hint}</p>
         </div>
       </div>
     );
   }
 
   if (step === 3) {
+    const pursuitMessage = t(
+      'calibration.stage3.message',
+      '캘리브레이션 (2/2): 시선(녹색 점)을 움직이는 목표점 안에 유지해주세요.',
+    );
     return (
       <div className="pursuit-container">
-        <p>캘리브레이션 (2/2): 시선(녹색 점)을 움직이는 목표점 안에 유지해주세요.</p>
-        <div className="progress-bar-container">
-          <div className="progress-bar" style={{ width: `${progress * 100}%` }} />
+        <div className="pursuit-overlay">
+          <p className="pursuit-message">{pursuitMessage}</p>
+          <div className="progress-bar-container pursuit-progress">
+            <div className="progress-bar" style={{ width: `${progress * 100}%` }} />
+          </div>
         </div>
         <div
           className={`pursuit-dot ${isGazeOnTarget ? 'on-target' : ''}`}

@@ -1,11 +1,16 @@
 import AppRouter from './AppRouter';
+import LanguageToggle from './components/LanguageToggle';
 import { AuthProvider } from './state/authContext';
+import { LanguageProvider } from './state/languageContext';
 
 const App = () => {
   return (
-    <AuthProvider>
-      <AppRouter />
-    </AuthProvider>
+    <LanguageProvider>
+      <AuthProvider>
+        <LanguageToggle />
+        <AppRouter />
+      </AuthProvider>
+    </LanguageProvider>
   );
 };
 

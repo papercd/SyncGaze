@@ -4,11 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import './DashboardPage.css';
 import { useTrackingSession, TrainingSessionSummary } from '../state/trackingSessionContext';
 import { useAuth } from '../state/authContext';
+import { useTranslation } from '../state/languageContext';
 
 const DashboardPage = () => {
   const navigate = useNavigate();
   const { recentSessions, setActiveSessionId, calibrationResult, resetState, isAnonymousSession } = useTrackingSession();
   const { user, signOut: signOutUser } = useAuth();
+  const { t } = useTranslation();
   const hasRealSession = recentSessions.some(session => !session.id.startsWith('mock-'));
   const isNewUser = isAnonymousSession || !hasRealSession;
 
@@ -56,18 +58,21 @@ const DashboardPage = () => {
 
   const calibrationMessage = useMemo(() => {
     if (!calibrationResult) {
-      return 'Calibration required before starting.';
+      return t('dashboard.calibration.required');
     }
     if (calibrationResult.status === 'validated') {
-      return `Validated • ${calibrationResult.validationError ? Math.round(calibrationResult.validationError) : 0}px error`;
+      return t('dashboard.calibration.validated').replace(
+        '{error}',
+        `${calibrationResult.validationError ? Math.round(calibrationResult.validationError) : 0}`,
+      );
     }
     if (calibrationResult.status === 'in-progress') {
-      return 'Calibration in progress.';
+      return t('dashboard.calibration.inProgress');
     }
     if (calibrationResult.status === 'skipped') {
-      return 'Calibration skipped for testing';
+      return t('dashboard.calibration.skipped');
     }
-    return 'Calibration pending.';
+    return t('dashboard.calibration.pending');
   }, [calibrationResult]);
 
   // ✅ NEW: Conditional welcome message based on session history
@@ -87,9 +92,9 @@ const DashboardPage = () => {
           </button>
           <div className="header-actions">
             <div className="calibration-status">{calibrationMessage}</div>
-            <span className="user-email">{user?.displayName || user?.email || 'Account'}</span>
+            <span className="user-email">{user?.displayName || user?.email || t('dashboard.header.account')}</span>
             <button className="logout-button" onClick={handleLogout}>
-              Logout
+              {t('dashboard.button.logout')}
             </button>
           </div>
         </div>
@@ -99,12 +104,8 @@ const DashboardPage = () => {
       <main className="dashboard-main">
         {/* Welcome Section - ✅ NOW CONDITIONAL */}
         <section className="welcome-section">
-          <h2>{isFirstTime ? 'Welcome to SyncGaze!' : 'Welcome back!'}</h2>
-          <p>
-            {isFirstTime 
-              ? 'Start your first training session to track your eye-tracking performance' 
-              : 'Track your progress and start a new training session'}
-          </p>
+          <h2>{isFirstTime ? t('dashboard.welcome.first') : t('dashboard.welcome.return')}</h2>
+          <p>{isFirstTime ? t('dashboard.welcome.first.desc') : t('dashboard.welcome.return.desc')}</p>
         </section>
 
         {/* Quick Stats */}
@@ -113,7 +114,7 @@ const DashboardPage = () => {
             <div className="stat-icon">📊</div>
             <div className="stat-info">
               <h3>{stats.totalSessions}</h3>
-              <p>Total Sessions</p>
+              <p>{t('dashboard.stats.total')}</p>
             </div>
           </div>
 
@@ -121,7 +122,7 @@ const DashboardPage = () => {
             <div className="stat-icon">🎯</div>
             <div className="stat-info">
               <h3>{stats.avgAccuracy}%</h3>
-              <p>Avg Accuracy</p>
+              <p>{t('dashboard.stats.avgAccuracy')}</p>
             </div>
           </div>
 
@@ -129,7 +130,7 @@ const DashboardPage = () => {
             <div className="stat-icon">⚡</div>
             <div className="stat-info">
               <h3>{stats.avgReactionTime}ms</h3>
-              <p>Avg Reaction Time</p>
+              <p>{t('dashboard.stats.avgReaction')}</p>
             </div>
           </div>
 
@@ -137,7 +138,7 @@ const DashboardPage = () => {
             <div className="stat-icon">🏆</div>
             <div className="stat-info">
               <h3>{stats.bestAccuracy}%</h3>
-              <p>Best Accuracy</p>
+              <p>{t('dashboard.stats.bestAccuracy')}</p>
             </div>
           </div>
         </section>
@@ -146,37 +147,37 @@ const DashboardPage = () => {
         <section className="action-section">
           <button className="start-training-button" onClick={handleStartTraining}>
             <span className="button-icon">🎮</span>
-            Start training
+            {t('dashboard.action.train')}
           </button>
           <button className="start-training-button" onClick={() => navigate('/tracker-flow')}>
             <span className="button-icon">🧭</span>
-            Tracker flow
+            {t('dashboard.action.flow')}
           </button>
           <button className="start-training-button" onClick={() => navigate('/leaderboard')}>
             <span className="button-icon">🏆</span>
-            Leaderboard
+            {t('dashboard.action.leaderboard')}
           </button>
         </section>
 
         {/* Recent Sessions */}
         <section className="recent-sessions">
-          <h2>Recent Training Sessions</h2>
+          <h2>{t('dashboard.recent.title')}</h2>
 
           {recentSessions.length === 0 ? (
             <div className="no-sessions">
-              <p>No training sessions yet. Start your first session to see results!</p>
+              <p>{t('dashboard.recent.empty')}</p>
             </div>
           ) : (
             <div className="sessions-table">
               <table>
                 <thead>
                   <tr>
-                    <th scope="col">Date</th>
-                    <th scope="col">Duration</th>
-                    <th scope="col">Accuracy</th>
-                    <th scope="col">Targets Hit</th>
-                    <th scope="col">Avg Reaction</th>
-                    <th scope="col">Actions</th>
+                    <th scope="col">{t('dashboard.table.date')}</th>
+                    <th scope="col">{t('dashboard.table.duration')}</th>
+                    <th scope="col">{t('dashboard.table.accuracy')}</th>
+                    <th scope="col">{t('dashboard.table.targets')}</th>
+                    <th scope="col">{t('dashboard.table.reaction')}</th>
+                    <th scope="col">{t('dashboard.table.actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -199,7 +200,7 @@ const DashboardPage = () => {
                       <td>{session.avgReactionTime.toFixed(2)}ms</td>
                       <td className="table-actions">
                         <button className="view-button" onClick={() => handleViewResults(session.id)}>
-                          View Details
+                          {t('dashboard.table.view')}
                         </button>
                       </td>
                     </tr>

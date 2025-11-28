@@ -266,13 +266,12 @@ const LeaderboardPage = () => {
                       <h3>{label}</h3>
                       <p>{formatDate(entry.sessionDate)}</p>
                     </div>
-                    <p className="score-text">{entry.score.toLocaleString()} pts</p>
-                    <div className="metric-row">
-                      <span>
-                        {activeMetric.label} {formatMetricValue(entry)}
-                      </span>
-                      <span>Accuracy {entry.accuracy.toFixed(1)}%</span>
+                    <div className="metric-highlight">
+                      <p className="metric-label">{activeMetric.label}</p>
+                      <p className="metric-value">{formatMetricValue(entry)}</p>
+                      <p className="metric-subtext">Accuracy {entry.accuracy.toFixed(1)}%</p>
                     </div>
+                    <p className="score-subtext">{entry.score.toLocaleString()} pts</p>
                   </article>
                 );
               })
@@ -285,10 +284,11 @@ const LeaderboardPage = () => {
                 <div>
                   <p className="eyebrow">전체 순위</p>
                   <h2>상위 {Math.min(rankedEntries.length, visibleCount)}명</h2>
+                  </div>
+                <div className="table-meta">
+                  <p className="meta-text sort-hint">원하는 항목명을 클릭해 테이블을 정렬할 수 있습니다.</p>
+                  <span className="meta-text">{`${activeMetric.label} 리더보드 • ${sortDescription}`}</span>
                 </div>
-                <span className="meta-text">
-                  {`${activeMetric.label} 리더보드 • ${sortDescription}`}
-                </span>
               </div>
               <div className="table-wrapper">
                 <table>

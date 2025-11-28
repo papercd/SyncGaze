@@ -150,17 +150,37 @@
   color: #c6c7d6;
 }
 
-.score-text {
-  margin: 12px 0 8px 0;
-  font-size: 1.5rem;
-  font-weight: 800;
+.metric-highlight {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
-.metric-row {
-  display: flex;
-  justify-content: space-between;
+.metric-label {
+  margin: 0 0 4px 0;
+  color: #c6c7d6;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+}
+
+.metric-value {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 900;
+}
+
+.metric-subtext {
+  margin: 6px 0 0 0;
   color: #d9d9e7;
-  font-size: 0.95rem;
+}
+
+.score-subtext {
+  margin: 10px 0 0 0;
+  color: #c6c7d6;
+  font-weight: 700;
 }
 
 .leaderboard-card.loading-state,
@@ -195,6 +215,13 @@
   margin-bottom: 12px;
 }
 
+.table-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
 .table-head h2 {
   margin: 4px 0 0 0;
 }
@@ -202,6 +229,10 @@
 .meta-text {
   color: #c6c7d6;
   font-size: 0.95rem;
+}
+
+.sort-hint {
+  margin: 6px 0 0 0;
 }
 
 .table-wrapper {

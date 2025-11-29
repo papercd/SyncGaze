@@ -27,6 +27,7 @@ export interface GazeTrackerContextType {
   validationTargets: DotPosition[];
   currentValidationTarget: DotPosition | null;
   validationIndex: number;
+  awaitingValidationConfirmation: boolean;
   screenSize: { width: number; height: number } | null;
   quality: QualitySetting;
   regressionModel: RegressionModel;
@@ -69,6 +70,7 @@ export interface GazeTrackerContextType {
 
   // --- 라우팅을 위한 새 핸들러 (TrackerLayout에서 구현) ---
   startValidation: () => void; // ConfirmValidation -> Validation 이동
+  confirmNextValidationPoint: () => void;
   goToResults: () => void; // Validation -> Results 이동
   returnToStart: () => void; // Results -> Instructions 이동 (예시)
 }

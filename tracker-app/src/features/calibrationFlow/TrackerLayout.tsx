@@ -34,6 +34,7 @@ const TrackerLayout: React.FC = () => {
   const [validationTargets, setValidationTargets] = useState<DotPosition[]>([]);
   const [currentValidationTarget, setCurrentValidationTarget] = useState<DotPosition | null>(null);
   const [validationIndex, setValidationIndex] = useState(0);
+  const [awaitingValidationConfirmation, setAwaitingValidationConfirmation] = useState(false);
   const validationSamples = useRef<{ x: number; y: number; timestamp: number }[]>([]);
   const [validationRecords, setValidationRecords] = useState<ValidationPointResult[]>([]);
   const validationTimer = useRef<number | null>(null);
@@ -305,6 +306,12 @@ const TrackerLayout: React.FC = () => {
 
     if (validationIndex >= validationTargets.length) {
       setCurrentValidationTarget(null);
+      setAwaitingValidationConfirmation(false);
+      return;
+    }
+
+    if (awaitingValidationConfirmation) {
+      setCurrentValidationTarget(null);
       return;
     }
 
@@ -342,6 +349,7 @@ const TrackerLayout: React.FC = () => {
           samples: [],
         }]);
         setValidationIndex(idx => idx + 1);
+        setAwaitingValidationConfirmation(true);
         return;
       }
 
@@ -386,6 +394,7 @@ const TrackerLayout: React.FC = () => {
       });
 
       setValidationIndex(idx => idx + 1);
+      setAwaitingValidationConfirmation(true);
     }, VALIDATION_DURATION_MS);
 
     return () => {
@@ -397,7 +406,7 @@ const TrackerLayout: React.FC = () => {
         window.webgazer.clearGazeListener();
       }
     };
-  }, [gameState, validationIndex, validationTargets]);
+  }, [awaitingValidationConfirmation, gameState, validationIndex, validationTargets]);
 
   // (과제용 랜덤 점 생성)
   useEffect(() => {
@@ -544,11 +553,17 @@ const TrackerLayout: React.FC = () => {
     setValidationRecords([]);
     setValidationIndex(0);
     setCurrentValidationTarget(null);
+    setAwaitingValidationConfirmation(true);
     validationSamples.current = [];
     setValidationError(null);
     setGazeStability(null);
     setGameState('validating');
     navigate('/tracker/validate');
+  };
+
+  const confirmNextValidationPoint = () => {
+    if (validationIndex >= validationTargets.length) return;
+    setAwaitingValidationConfirmation(false);
   };
 
   // Validation -> Results
@@ -591,6 +606,7 @@ const TrackerLayout: React.FC = () => {
     validationTargets,
     currentValidationTarget,
     validationIndex,
+    awaitingValidationConfirmation,
     screenSize,
     quality,
     regressionModel,
@@ -626,6 +642,7 @@ const TrackerLayout: React.FC = () => {
     generateCsvContent,
     // New Nav Handlers
     startValidation,
+    confirmNextValidationPoint,
     goToResults,
     returnToStart,
   };

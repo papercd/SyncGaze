@@ -1,28 +1,100 @@
 // tracker-app/src/components/GazeTracker/Results.tsx
 
-import React from 'react';
-import { useGazeTracker } from './GazeTrackerContext'; // 2. Context 훅 임포트
-import './CalibrationFlow.css'; // 3. 기존 스타일 유지를 위해 CSS 임포트
+import React, { useEffect, useMemo, useRef } from 'react';
+import { useGazeTracker } from './GazeTrackerContext';
+import './CalibrationFlow.css';
 
-// 4. props 인터페이스(ResultsProps) 정의 제거
+const ValidationHeatmap: React.FC<{
+  width: number;
+  height: number;
+  records: ReturnType<typeof useGazeTracker>['validationRecords'];
+}> = ({ width, height, records }) => {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-// 5. 컴포넌트 시그니처에서 props 매개변수를 제거합니다.
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, width, height);
+
+    const glowRadius = 70;
+    records.forEach(record => {
+      record.samples.forEach(sample => {
+        const gradient = ctx.createRadialGradient(
+          sample.x,
+          sample.y,
+          0,
+          sample.x,
+          sample.y,
+          glowRadius
+        );
+        gradient.addColorStop(0, 'rgba(102, 126, 234, 0.35)');
+        gradient.addColorStop(1, 'rgba(102, 126, 234, 0)');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(sample.x - glowRadius, sample.y - glowRadius, glowRadius * 2, glowRadius * 2);
+      });
+    });
+
+    ctx.lineWidth = 2;
+    ctx.font = '14px sans-serif';
+    records.forEach((record, idx) => {
+      ctx.beginPath();
+      ctx.strokeStyle = '#0ec7a7';
+      ctx.fillStyle = 'rgba(14, 199, 167, 0.25)';
+      ctx.arc(record.target.x, record.target.y, 12, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#0ec7a7';
+      ctx.fillText(`${idx + 1}`, record.target.x + 16, record.target.y + 4);
+    });
+  }, [width, height, records]);
+
+  return (
+    <div className="heatmap-card" style={{ aspectRatio: `${width}/${height}` }}>
+      <canvas ref={canvasRef} style={{ width: '100%', height: '100%' }} />
+    </div>
+  );
+};
+
 const Results: React.FC = () => {
-
-  // 6. Context 훅을 사용하여 GazeTracker(Layout)의 모든 상태와 핸들러를 가져옵니다.
   const {
     taskResults,
-    downloadCSV, // 'onDownload' 대신 'downloadCSV'
+    downloadCSV,
     screenSize,
     avgGazeMouseDivergence,
     avgGazeTimeToTarget,
     avgClickTimeTaken,
     avgGazeToClickError,
-    uploadStatus, // (신규) 업로드 상태
-    returnToStart // (신규) 다시 시작 핸들러
+    uploadStatus,
+    returnToStart,
+    validationRecords,
+    validationError,
+    gazeStability,
+    validationDurationMs,
   } = useGazeTracker();
 
-  // (신규) 업로드 상태를 표시하는 헬퍼 컴포넌트
+  const validationSamples = useMemo(
+    () => validationRecords.reduce((acc, record) => acc + record.sampleCount, 0),
+    [validationRecords]
+  );
+
+  const avgSampleError = useMemo(() => {
+    const distances = validationRecords
+      .map(record => record.meanDistance)
+      .filter((v): v is number => v !== null);
+    if (!distances.length) return null;
+    return distances.reduce((acc, v) => acc + v, 0) / distances.length;
+  }, [validationRecords]);
+
+  const viewportWidth = screenSize?.width ?? 1280;
+  const viewportHeight = screenSize?.height ?? 720;
+  const displayWidth = Math.min(960, viewportWidth);
+  const displayHeight = Math.max(480, Math.round((displayWidth / viewportWidth) * viewportHeight));
+
   const UploadStatusDisplay: React.FC = () => {
     let message = '';
     let className = '';
@@ -40,7 +112,7 @@ const Results: React.FC = () => {
         message = '데이터 업로드 실패. 수동으로 CSV를 다운로드하세요.';
         className = 'status-error';
         break;
-      default: // 'idle' (이론상 finished 상태에서는 idle이 아니어야 함)
+      default:
         return null;
     }
 
@@ -52,16 +124,83 @@ const Results: React.FC = () => {
   };
 
   return (
-    // 7. 기존의 JSX 내용과 클래스명은 그대로 유지합니다.
     <div className="results-container">
       <h2>실험 완료!</h2>
-      <p>실험에 참여해 주셔서 감사합니다. 아래는 측정된 데이터의 요약입니다.</p>
+      <p>9점 고정 응시 검증과 캘리브레이션을 마쳤습니다. 아래에서 정확도와 분포를 확인하세요.</p>
 
-      {/* (신규) 업로드 상태 표시 */}
       <UploadStatusDisplay />
 
-      {/* 1. 요약 통계 테이블 */}
-      <h3>요약 통계 (Derived Metrics)</h3>
+      <section className="results-section">
+        <h3>검증 요약</h3>
+        <div className="summary-grid">
+          <div className="summary-card">
+            <p className="eyebrow">평균 오차 (타겟 vs. 평균 시선)</p>
+            <strong>{validationError !== null ? `${validationError.toFixed(2)} px` : 'N/A'}</strong>
+          </div>
+          <div className="summary-card">
+            <p className="eyebrow">평균 표준편차</p>
+            <strong>{gazeStability !== null ? `${gazeStability.toFixed(2)} px` : 'N/A'}</strong>
+          </div>
+          <div className="summary-card">
+            <p className="eyebrow">평균 샘플 오차</p>
+            <strong>{avgSampleError !== null ? `${avgSampleError.toFixed(2)} px` : 'N/A'}</strong>
+          </div>
+          <div className="summary-card">
+            <p className="eyebrow">수집된 샘플 수</p>
+            <strong>{validationSamples}</strong>
+          </div>
+        </div>
+        <p className="summary-note">
+          각 지점을 {validationDurationMs / 1000}초씩 응시해 수집한 시선 좌표를 기반으로 오차(타겟↔평균 시선)와 분산을 계산했습니다.
+        </p>
+      </section>
+
+      <section className="results-section">
+        <h3>히트맵 및 타겟 분포</h3>
+        {validationRecords.length > 0 ? (
+          <ValidationHeatmap width={displayWidth} height={displayHeight} records={validationRecords} />
+        ) : (
+          <p className="summary-note">아직 검증 데이터가 없습니다.</p>
+        )}
+        <p className="summary-note">녹색 원은 실제 검증 타겟 위치, 파란 빛 번짐은 해당 지점 근처에서 기록된 시선 분포입니다.</p>
+      </section>
+
+      <section className="results-section">
+        <h3>지점별 검증 결과</h3>
+        <div className="results-table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>지점</th>
+                <th>위치 (px)</th>
+                <th>샘플 수</th>
+                <th>오차 (타겟↔평균)</th>
+                <th>평균 샘플 오차</th>
+                <th>표준편차</th>
+                <th>최소/최대 오차</th>
+              </tr>
+            </thead>
+            <tbody>
+              {validationRecords.map((record, idx) => (
+                <tr key={`${record.target.x}-${record.target.y}-${idx}`}>
+                  <td>#{idx + 1}</td>
+                  <td>{record.target.x}px, {record.target.y}px</td>
+                  <td>{record.sampleCount}</td>
+                  <td>{record.meanError !== null ? `${record.meanError.toFixed(2)} px` : 'N/A'}</td>
+                  <td>{record.meanDistance !== null ? `${record.meanDistance.toFixed(2)} px` : 'N/A'}</td>
+                  <td>{record.stdDev !== null ? `${record.stdDev.toFixed(2)} px` : 'N/A'}</td>
+                  <td>
+                    {record.minError !== null ? record.minError.toFixed(2) : 'N/A'} px /
+                    {record.maxError !== null ? ` ${record.maxError.toFixed(2)} px` : ' N/A'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <h3>요약 통계 (과제 Derived Metrics)</h3>
       <table className="results-table">
         <thead>
           <tr>
@@ -71,7 +210,6 @@ const Results: React.FC = () => {
           </tr>
         </thead>
         <tbody>
-          {/* Context의 값들을 사용합니다 */}
           <tr>
             <td>평균 클릭 소요 시간</td>
             <td><strong>{avgClickTimeTaken !== null ? `${avgClickTimeTaken.toFixed(2)} ms` : 'N/A'}</strong></td>
@@ -95,7 +233,6 @@ const Results: React.FC = () => {
         </tbody>
       </table>
 
-      {/* 2. 개별 과제 결과 테이블 */}
       <h3>개별 과제 결과 (Task Results)</h3>
       <table className="results-table individual-results">
         <thead>
@@ -117,19 +254,17 @@ const Results: React.FC = () => {
           ))}
         </tbody>
       </table>
-      
-      {/* 3. 환경 정보 (참고) */}
+
       <p style={{ marginTop: '20px', fontSize: '0.9em', color: '#666' }}>
         * 참고: 실험은 {screenSize ? `${screenSize.width}x${screenSize.height}` : 'N/A'} 해상도 환경에서 진행되었습니다.
       </p>
 
-      {/* 4. 다운로드 버튼 (핸들러만 변경) */}
       <p>
         모든 원시 데이터(시선 좌표, 마우스 좌표)와 위 요약 지표가 포함된 CSV 파일을 다운로드할 수 있습니다.
         {uploadStatus === 'error' && <strong> (업로드 실패. 반드시 다운로드하세요!)</strong>}
       </p>
-      
-      <div className="results-actions"> {/* (신규) 버튼 그룹 */}
+
+      <div className="results-actions">
         <button onClick={downloadCSV} className="download-button">
           CSV 데이터 다운로드
         </button>

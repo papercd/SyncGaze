@@ -6,8 +6,8 @@ import { GazeTrackerProvider } from './GazeTrackerContext'; // 1. Context Provid
 import './CalibrationFlow.css';
 
 // GazeTracker.tsx에서 사용하던 모든 import를 그대로 가져옵니다.
-import { GameState, DataRecord, TaskResult, DotPosition, QualitySetting, RegressionModel, LiveGaze } from './types';
-import { FORBIDDEN_ZONE, TOTAL_TASKS } from './constants';
+import { GameState, DataRecord, TaskResult, DotPosition, QualitySetting, RegressionModel, LiveGaze, ValidationPointResult } from './types';
+import { FORBIDDEN_ZONE, TOTAL_TASKS, VALIDATION_POINTS, VALIDATION_DURATION_MS } from './constants';
 // (하위 컴포넌트 import는 App.tsx로 이동했으므로 여기서는 필요 없습니다)
 
 // GazeTracker.tsx의 모든 상수 정의를 가져옵니다.
@@ -31,6 +31,12 @@ const TrackerLayout: React.FC = () => {
   const taskStartTime = useRef<number | null>(null);
   const [validationError, setValidationError] = useState<number | null>(null);
   const validationGazePoints = useRef<{ x: number; y: number }[]>([]);
+  const [validationTargets, setValidationTargets] = useState<DotPosition[]>([]);
+  const [currentValidationTarget, setCurrentValidationTarget] = useState<DotPosition | null>(null);
+  const [validationIndex, setValidationIndex] = useState(0);
+  const validationSamples = useRef<{ x: number; y: number; timestamp: number }[]>([]);
+  const [validationRecords, setValidationRecords] = useState<ValidationPointResult[]>([]);
+  const validationTimer = useRef<number | null>(null);
   const [screenSize, setScreenSize] = useState<{ width: number; height: number } | null>(null);
   const [quality, setQuality] = useState<QualitySetting>('medium');
   const [regressionModel, setRegressionModel] = useState<RegressionModel>('ridge');
@@ -55,6 +61,9 @@ const TrackerLayout: React.FC = () => {
   const handleRecalibrate = useCallback(() => {
     setValidationError(null);
     setGazeStability(null);
+    setValidationRecords([]);
+    setValidationIndex(0);
+    setCurrentValidationTarget(null);
     window.webgazer.clearData();
     setRecalibrationCount(prevCount => prevCount + 1);
 
@@ -292,46 +301,103 @@ const TrackerLayout: React.FC = () => {
   // (정확도 측정 로직)
   useEffect(() => {
     if (gameState !== 'validating') return;
-    
+    if (!validationTargets.length) return;
+
+    if (validationIndex >= validationTargets.length) {
+      setCurrentValidationTarget(null);
+      return;
+    }
+
+    const target = validationTargets[validationIndex];
+    setCurrentValidationTarget(target);
     validationGazePoints.current = [];
+    validationSamples.current = [];
     setValidationError(null);
     setGazeStability(null);
 
     const validationListener = (data: any) => {
-      if (data) validationGazePoints.current.push({ x: data.x, y: data.y });
+      if (data && data.x !== null && data.y !== null) {
+        validationGazePoints.current.push({ x: data.x, y: data.y });
+        validationSamples.current.push({ x: data.x, y: data.y, timestamp: performance.now() });
+      }
     };
     window.webgazer.setGazeListener(validationListener);
 
-    const timer = setTimeout(() => {
-      window.webgazer.clearGazeListener();
-      if (validationGazePoints.current.length === 0) {
-        alert("시선이 감지되지 않았습니다. 재보정을 진행합니다.");
-        handleRecalibrate();
+    validationTimer.current = window.setTimeout(() => {
+      if (window.webgazer) {
+        window.webgazer.clearGazeListener();
+      }
+
+      const samples = [...validationSamples.current];
+      if (samples.length === 0) {
+        setValidationRecords(prev => [...prev, {
+          target,
+          meanGaze: null,
+          sampleCount: 0,
+          meanError: null,
+          meanDistance: null,
+          stdDev: null,
+          minError: null,
+          maxError: null,
+          samples: [],
+        }]);
+        setValidationIndex(idx => idx + 1);
         return;
       }
-      // ... (정확도/안정성 계산 로직) ...
-      const avgGaze = validationGazePoints.current.reduce(
+
+      const meanGaze = samples.reduce(
         (acc, p) => ({ x: acc.x + p.x, y: acc.y + p.y }),
         { x: 0, y: 0 }
       );
-      avgGaze.x /= validationGazePoints.current.length;
-      avgGaze.y /= validationGazePoints.current.length;
+      meanGaze.x /= samples.length;
+      meanGaze.y /= samples.length;
 
-      const target = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-      const error = Math.sqrt(Math.pow(target.x - avgGaze.x, 2) + Math.pow(target.y - avgGaze.y, 2));
-      setValidationError(error);
+      const distances = samples.map(p => Math.sqrt(Math.pow(target.x - p.x, 2) + Math.pow(target.y - p.y, 2)));
+      const meanDistance = distances.reduce((acc, d) => acc + d, 0) / distances.length;
+      const variance = distances.reduce((acc, d) => acc + Math.pow(d - meanDistance, 2), 0) / distances.length;
+      const stdDev = Math.sqrt(variance);
+      const minError = Math.min(...distances);
+      const maxError = Math.max(...distances);
+      const targetToMeanError = Math.sqrt(Math.pow(target.x - meanGaze.x, 2) + Math.pow(target.y - meanGaze.y, 2));
 
-      const sumSqDiffX = validationGazePoints.current.reduce((acc, p) => acc + Math.pow(p.x - avgGaze.x, 2), 0);
-      const sumSqDiffY = validationGazePoints.current.reduce((acc, p) => acc + Math.pow(p.y - avgGaze.y, 2), 0);
-      const stdDevX = Math.sqrt(sumSqDiffX / validationGazePoints.current.length);
-      const stdDevY = Math.sqrt(sumSqDiffY / validationGazePoints.current.length);
-      
-      const stability = (stdDevX + stdDevY) / 2;
-      setGazeStability(stability);
+      const summary: ValidationPointResult = {
+        target,
+        meanGaze,
+        sampleCount: samples.length,
+        meanError: targetToMeanError,
+        meanDistance,
+        stdDev,
+        minError,
+        maxError,
+        samples,
+      };
 
-    }, 3000);
-    return () => clearTimeout(timer);
-  }, [gameState, handleRecalibrate]);
+      setValidationRecords(prev => {
+        const next = [...prev, summary];
+        const errorValues = next.map(r => r.meanError).filter((v): v is number => v !== null);
+        const stdValues = next.map(r => r.stdDev).filter((v): v is number => v !== null);
+        if (errorValues.length > 0) {
+          setValidationError(errorValues.reduce((acc, v) => acc + v, 0) / errorValues.length);
+        }
+        if (stdValues.length > 0) {
+          setGazeStability(stdValues.reduce((acc, v) => acc + v, 0) / stdValues.length);
+        }
+        return next;
+      });
+
+      setValidationIndex(idx => idx + 1);
+    }, VALIDATION_DURATION_MS);
+
+    return () => {
+      if (validationTimer.current) {
+        clearTimeout(validationTimer.current);
+        validationTimer.current = null;
+      }
+      if (window.webgazer) {
+        window.webgazer.clearGazeListener();
+      }
+    };
+  }, [gameState, validationIndex, validationTargets]);
 
   // (과제용 랜덤 점 생성)
   useEffect(() => {
@@ -464,9 +530,23 @@ const TrackerLayout: React.FC = () => {
 
 
   // --- 6. Context API를 위한 새 핸들러 정의 ---
-  
+
   // ConfirmValidation -> Validation
   const startValidation = () => {
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    setScreenSize({ width, height });
+    const targets = VALIDATION_POINTS.map(pct => ({
+      x: Math.round(pct.x * width),
+      y: Math.round(pct.y * height),
+    }));
+    setValidationTargets(targets);
+    setValidationRecords([]);
+    setValidationIndex(0);
+    setCurrentValidationTarget(null);
+    validationSamples.current = [];
+    setValidationError(null);
+    setGazeStability(null);
     setGameState('validating');
     navigate('/tracker/validate');
   };
@@ -507,6 +587,10 @@ const TrackerLayout: React.FC = () => {
     currentDot,
     taskResults,
     validationError,
+    validationRecords,
+    validationTargets,
+    currentValidationTarget,
+    validationIndex,
     screenSize,
     quality,
     regressionModel,
@@ -520,6 +604,7 @@ const TrackerLayout: React.FC = () => {
     avgGazeToClickError,
     isGazeDetected,
     uploadStatus,
+    validationDurationMs: VALIDATION_DURATION_MS,
     // State Setters
     setGameState,
     setQuality,

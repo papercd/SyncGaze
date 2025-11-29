@@ -191,6 +191,56 @@
   text-align: center;
 }
 
+.validation-grid-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.validation-panel {
+  position: relative;
+  margin: 0 auto;
+  margin-top: 40px;
+  max-width: 720px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 20px 24px 30px;
+  box-shadow: 0 10px 40px rgba(15, 23, 42, 0.08);
+  z-index: 3;
+}
+
+.validation-marker {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  background: rgba(0, 123, 255, 0.3);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 12px;
+  box-shadow: 0 0 12px rgba(0, 123, 255, 0.35);
+}
+
+.validation-marker.complete {
+  background: rgba(14, 199, 167, 0.8);
+  box-shadow: 0 0 16px rgba(14, 199, 167, 0.45);
+}
+
+.validation-hint {
+  color: #374151;
+  margin-top: 10px;
+  font-size: 0.95rem;
+}
+
 .validation-container button {
   margin-top: 20px;
   padding: 12px 24px;
@@ -729,4 +779,51 @@
 .confirm-row .primary-button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+.results-section {
+  margin-top: 32px;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin: 12px 0 10px;
+}
+
+.summary-card {
+  padding: 14px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 6px 24px rgba(15, 23, 42, 0.06);
+  text-align: center;
+}
+
+.summary-card strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 1.2rem;
+  color: #111827;
+}
+
+.summary-note {
+  color: #4b5563;
+  margin-top: 6px;
+}
+
+.heatmap-card {
+  width: min(100%, 960px);
+  margin: 16px auto 0 auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #0b1024;
+  box-shadow: 0 12px 36px rgba(7, 10, 34, 0.35);
+}
+
+.progress-bar-container.thin {
+  height: 12px;
+  margin-top: 10px;
 }

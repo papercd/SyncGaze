@@ -8,7 +8,8 @@ import {
   DotPosition,
   QualitySetting,
   RegressionModel,
-  LiveGaze
+  LiveGaze,
+  ValidationPointResult
 } from './types'; // GazeTracker.tsx에서 사용하던 타입들을 가져옵니다.
 
 // 1. Context가 하위 컴포넌트에 제공할 값들의 타입을 정의합니다.
@@ -22,6 +23,10 @@ export interface GazeTrackerContextType {
   currentDot: DotPosition | null;
   taskResults: TaskResult[];
   validationError: number | null;
+  validationRecords: ValidationPointResult[];
+  validationTargets: DotPosition[];
+  currentValidationTarget: DotPosition | null;
+  validationIndex: number;
   screenSize: { width: number; height: number } | null;
   quality: QualitySetting;
   regressionModel: RegressionModel;
@@ -35,6 +40,7 @@ export interface GazeTrackerContextType {
   avgGazeToClickError: number | null;
   isGazeDetected: boolean;
   uploadStatus: 'idle' | 'uploading' | 'success' | 'error';
+  validationDurationMs: number;
 
   // --- State Setters ---
   // (필요한 경우 Setter도 제공할 수 있습니다. 예: quality, regressionModel)

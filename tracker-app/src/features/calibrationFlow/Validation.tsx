@@ -3,7 +3,7 @@ import { useGazeTracker } from './GazeTrackerContext';
 import './CalibrationFlow.css';
 
 const Validation = () => {
-  const { validationError, gazeStability, handleRecalibrate, startTask } = useGazeTracker();
+  const { validationError, gazeStability, handleRecalibrate, goToResults } = useGazeTracker();
   const needsRecalibration = validationError !== null && validationError > RECALIBRATION_THRESHOLD;
   const canProceed = validationError !== null && !needsRecalibration;
 
@@ -38,8 +38,8 @@ const Validation = () => {
           <div className="controls">
             <button onClick={handleRecalibrate}>재보정</button>
             {canProceed && (
-              <button className="primary-button" onClick={startTask}>
-                트레이닝으로 진행
+              <button className="primary-button" onClick={goToResults}>
+                결과 보기
               </button>
             )}
           </div>

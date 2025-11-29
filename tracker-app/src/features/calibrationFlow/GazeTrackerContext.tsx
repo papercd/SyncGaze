@@ -63,7 +63,7 @@ export interface GazeTrackerContextType {
 
   // --- 라우팅을 위한 새 핸들러 (TrackerLayout에서 구현) ---
   startValidation: () => void; // ConfirmValidation -> Validation 이동
-  startTask: () => void; // Validation -> Task 이동
+  goToResults: () => void; // Validation -> Results 이동
   returnToStart: () => void; // Results -> Instructions 이동 (예시)
 }
 

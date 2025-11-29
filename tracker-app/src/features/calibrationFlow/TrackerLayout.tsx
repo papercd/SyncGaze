@@ -208,28 +208,11 @@ const TrackerLayout: React.FC = () => {
 
   const generateCsvContent = useCallback(() => {
     // (GazeTracker.tsx의 generateCsvContent 로직과 동일)
-    // ... (sessionStorage에서 데이터 가져오기) ...
-    const surveyDataString = sessionStorage.getItem('surveyData');
-    const consentTimestamp = sessionStorage.getItem('consentTimestamp');
-    let participantMetaData = [`# --- Participant Survey & Consent ---`];
-    // ... (메타데이터 CSV 생성 로직) ...
-    if (surveyDataString) {
-      try {
-        const surveyData: any = JSON.parse(surveyDataString);
-        participantMetaData.push(`# Survey Age Check: ${surveyData.ageCheck}`);
-        participantMetaData.push(`# Survey Webcam Check: ${surveyData.webcamCheck}`);
-        participantMetaData.push(`# Survey Games Played: ${Array.isArray(surveyData.gamesPlayed) ? surveyData.gamesPlayed.join('; ') : surveyData.gamesPlayed}`);
-        participantMetaData.push(`# Survey Main Game: ${surveyData.mainGame}`);
-        participantMetaData.push(`# Survey In-Game Rank: ${surveyData.inGameRank}`);
-        participantMetaData.push(`# Survey Play Time: ${surveyData.playTime}`);
-        participantMetaData.push(`# Survey Self-Assessment: ${surveyData.selfAssessment}`);
-      } catch (e: any) {
-        participantMetaData.push(`# Error Parsing Survey Data: ${e.message}`);
-      }
-    } else {
-      participantMetaData.push(`# Survey Data: NOT_FOUND`);
-    }
-    participantMetaData.push(`# Consent Timestamp: ${consentTimestamp || 'NOT_FOUND'}`);
+    const participantMetaData = [
+      `# --- Participant Survey & Consent ---`,
+      `# Survey Data: NOT_COLLECTED`,
+      `# Consent Timestamp: NOT_COLLECTED`,
+    ];
     const participantMetaDataCSV = participantMetaData.join('\n');
     const systemMetaData = [
       `# --- System & Environment Settings ---`,
@@ -283,8 +266,6 @@ const TrackerLayout: React.FC = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    sessionStorage.removeItem('surveyData');
-    sessionStorage.removeItem('consentTimestamp');
   };
 
   // --- 4. GazeTracker.tsx의 모든 useEffect 훅을 그대로 복사 ---
@@ -469,8 +450,6 @@ const TrackerLayout: React.FC = () => {
         const result = await response.json();
         console.log('Upload Success:', result.url);
         setUploadStatus('success');
-        sessionStorage.removeItem('surveyData');
-        sessionStorage.removeItem('consentTimestamp');
       } catch (error) {
         console.error('Upload Failed:', error);
         setUploadStatus('error');
@@ -492,10 +471,14 @@ const TrackerLayout: React.FC = () => {
     navigate('/tracker/validate');
   };
 
-  // Validation -> Task
-  const startTask = () => {
-    setGameState('task');
-    navigate('/tracker/task');
+  // Validation -> Results
+  const goToResults = () => {
+    if (window.webgazer) {
+      window.webgazer.clearGazeListener();
+    }
+    setGameState('finished');
+    setUploadStatus('idle');
+    navigate('/tracker/results');
   };
 
   // Results -> Instructions (시작 페이지로)
@@ -558,7 +541,7 @@ const TrackerLayout: React.FC = () => {
     generateCsvContent,
     // New Nav Handlers
     startValidation,
-    startTask,
+    goToResults,
     returnToStart,
   };
 

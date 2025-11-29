@@ -27,7 +27,7 @@ export const CALIBRATION_DOTS = [
   { x: '35%', y: '35%' },  // 13. [수정됨] Safe Inner Top-Left
 ];
 
-export const RECALIBRATION_THRESHOLD = 100;
+export const RECALIBRATION_THRESHOLD = 100000;
 
 // 과제(측정) 점 개수
 export const TOTAL_TASKS = 9;

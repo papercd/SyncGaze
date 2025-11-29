@@ -1,8 +1,6 @@
 // tracker-app/src/components/GazeTracker/Results.tsx
 
 import React from 'react';
-// 1. TaskResult 타입을 types.ts에서 직접 가져옵니다. (기존과 동일)
-import { TaskResult } from './types'; 
 import { useGazeTracker } from './GazeTrackerContext'; // 2. Context 훅 임포트
 import './CalibrationFlow.css'; // 3. 기존 스타일 유지를 위해 CSS 임포트
 

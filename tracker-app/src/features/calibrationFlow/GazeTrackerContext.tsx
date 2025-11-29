@@ -3,8 +3,6 @@
 import React, { createContext, useContext } from 'react';
 import {
   GameState,
-  DataRecord,
-  TaskResult,
   DotPosition,
   QualitySetting,
   RegressionModel,
@@ -19,9 +17,6 @@ export interface GazeTrackerContextType {
   // --- States ---
   gameState: GameState;
   isScriptLoaded: boolean;
-  taskCount: number;
-  currentDot: DotPosition | null;
-  taskResults: TaskResult[];
   validationError: number | null;
   validationRecords: ValidationPointResult[];
   validationTargets: DotPosition[];
@@ -35,12 +30,7 @@ export interface GazeTrackerContextType {
   recalibrationCount: number;
   gazeStability: number | null;
   calStage3SuccessRate: number | null;
-  avgGazeMouseDivergence: number | null;
-  avgGazeTimeToTarget: number | null;
-  avgClickTimeTaken: number | null;
-  avgGazeToClickError: number | null;
   isGazeDetected: boolean;
-  uploadStatus: 'idle' | 'uploading' | 'success' | 'error';
   validationDurationMs: number;
 
   // --- State Setters ---
@@ -52,10 +42,7 @@ export interface GazeTrackerContextType {
 
   // --- Refs (MutableRefObject) ---
   // Ref 객체 자체를 전달하여 하위 컴포넌트가 .current에 접근할 수 있게 합니다.
-  collectedData: React.MutableRefObject<DataRecord[]>;
-  taskStartTime: React.MutableRefObject<number | null>;
-  validationGazePoints: React.MutableRefObject<{ x: number; y: number }[]>;
-  taskStartTimes: React.MutableRefObject<Record<number, number>>;
+  validationSamples: React.MutableRefObject<{ x: number; y: number; timestamp: number }[]>;
 
   // --- Event Handlers & Functions ---
   handleStart: () => void;
@@ -63,9 +50,7 @@ export interface GazeTrackerContextType {
   handleCalibrationComplete: () => void;
   handleCalStage3Complete: (successRate: number) => void;
   handleRecalibrate: () => void;
-  handleTaskDotClick: (event: React.MouseEvent<HTMLDivElement>) => void;
   downloadCSV: () => void;
-  analyzeTaskData: () => void; // 필요시 호출할 수 있도록
   generateCsvContent: () => string; // 필요시 호출할 수 있도록
 
   // --- 라우팅을 위한 새 핸들러 (TrackerLayout에서 구현) ---

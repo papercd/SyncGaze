@@ -79,7 +79,6 @@ const Results: React.FC = () => {
   const {
     downloadCSV,
     screenSize,
-    uploadStatus,
     returnToStart,
     validationRecords,
     validationError,
@@ -106,40 +105,10 @@ const Results: React.FC = () => {
   const aspectRatio = sourceWidth > 0 ? sourceHeight / sourceWidth : 0.75;
   const displayHeight = Math.round(displayWidth * aspectRatio);
 
-  const UploadStatusDisplay: React.FC = () => {
-    let message = '';
-    let className = '';
-
-    switch (uploadStatus) {
-      case 'uploading':
-        message = '결과 자동 업로드 중... 창을 닫지 마세요.';
-        className = 'status-pending';
-        break;
-      case 'success':
-        message = '데이터가 성공적으로 업로드되었습니다.';
-        className = 'status-success';
-        break;
-      case 'error':
-        message = '데이터 업로드 실패. 수동으로 CSV를 다운로드하세요.';
-        className = 'status-error';
-        break;
-      default:
-        return null;
-    }
-
-    return (
-      <div className={`detection-status-container ${className}`} style={{ marginBottom: '20px' }}>
-        <h4>{message}</h4>
-      </div>
-    );
-  };
-
   return (
     <div className="results-container">
       <h2>실험 완료!</h2>
       <p>9점 고정 응시 검증과 캘리브레이션을 마쳤습니다. 아래에서 정확도와 분포를 확인하세요.</p>
-
-      <UploadStatusDisplay />
 
       <section className="results-section">
         <h3>검증 요약</h3>
@@ -246,10 +215,7 @@ const Results: React.FC = () => {
         * 참고: 실험은 {screenSize ? `${screenSize.width}x${screenSize.height}` : 'N/A'} 해상도 환경에서 진행되었습니다.
       </p>
 
-      <p>
-        모든 원시 데이터(시선 좌표, 마우스 좌표)와 위 요약 지표가 포함된 CSV 파일을 다운로드할 수 있습니다.
-        {uploadStatus === 'error' && <strong> (업로드 실패. 반드시 다운로드하세요!)</strong>}
-      </p>
+      <p>모든 원시 데이터(시선 좌표)와 위 요약 지표가 포함된 CSV 파일을 다운로드할 수 있습니다.</p>
 
       <div className="results-actions">
         <button onClick={downloadCSV} className="download-button">

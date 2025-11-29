@@ -2,19 +2,18 @@
 
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
-// import GazeTracker from './components/GazeTracker/GazeTracker'; // <--- 기존 컴포넌트 대신 Layout을 사용
 import ScreenerSurvey from './components/Onboarding/ScreenerSurvey';
 import ConsentForm from './components/Onboarding/ConsentForm';
 
-// --- 새로 만들거나 분리할 컴포넌트들 ---
-import TrackerLayout from './components/GazeTracker/TrackerLayout'; // 1. 상태 관리를 할 레이아웃
-import Instructions from './components/GazeTracker/Instructions';
-import WebcamCheck from './components/GazeTracker/WebcamCheck';
-import Calibration from './components/GazeTracker/Calibration';
-import ConfirmValidation from './components/GazeTracker/ConfirmValidation'; // 2. 분리될 컴포넌트
-import Validation from './components/GazeTracker/Validation';
-import Task from './components/GazeTracker/Task';
-import Results from './components/GazeTracker/Results';
+// --- 캘리브레이션/검증/분석 플로우 ---
+import TrackerLayout from './features/calibrationFlow/TrackerLayout';
+import Instructions from './features/calibrationFlow/Instructions';
+import WebcamCheck from './features/calibrationFlow/WebcamCheck';
+import Calibration from './features/calibrationFlow/Calibration';
+import ConfirmValidation from './features/calibrationFlow/ConfirmValidation'; // 2. 분리될 컴포넌트
+import Validation from './features/calibrationFlow/Validation';
+import Task from './features/calibrationFlow/Task';
+import Results from './features/calibrationFlow/Results';
 // ------------------------------------
 
 function App() {

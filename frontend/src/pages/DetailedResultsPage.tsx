@@ -317,6 +317,7 @@ const DetailedResultsPage = () => {
   const [replaySamples, setReplaySamples] = useState<TrainingDataPoint[]>([]);
   const [replayIndex, setReplayIndex] = useState(0);
   const [isReplaying, setIsReplaying] = useState(false);
+  const [replaySpeed, setReplaySpeed] = useState(0.2);
 
   // --- NEW: Metric Visibility State ---
   const [visibleMetrics, setVisibleMetrics] = useState<Record<string, boolean>>({
@@ -819,15 +820,14 @@ const DetailedResultsPage = () => {
 
     const current = replaySamples[currentIndex];
     const next = replaySamples[currentIndex + 1];
-    const slowdown = 3;
-    const delay = Math.max(90, (next.timestamp - current.timestamp) / slowdown);
+    const delay = Math.max(120, (next.timestamp - current.timestamp) / replaySpeed);
 
     const timeout = window.setTimeout(() => {
       setReplayIndex(idx => Math.min(idx + 1, replaySamples.length - 1));
     }, delay);
 
     return () => window.clearTimeout(timeout);
-  }, [isReplaying, replayIndex, replaySamples]);
+  }, [isReplaying, replayIndex, replaySamples, replaySpeed]);
 
   const closeReplay = useCallback(() => {
     setIsReplaying(false);
@@ -888,6 +888,19 @@ const DetailedResultsPage = () => {
   const replayStartTime = replaySamples[0]?.timestamp ?? 0;
   const replayDurationMs = (replaySamples.at(-1)?.timestamp ?? replayStartTime) - replayStartTime;
   const replayElapsedMs = currentReplayFrame ? currentReplayFrame.timestamp - replayStartTime : 0;
+  const replayProgressPct = replayDurationMs > 0 ? Math.min(100, Math.max(0, (replayElapsedMs / replayDurationMs) * 100)) : 0;
+
+  const scrubToProgress = (percent: number) => {
+    if (!replaySamples.length || replayDurationMs <= 0) return;
+    const clamped = Math.min(100, Math.max(0, percent));
+    const targetTime = replayStartTime + (clamped / 100) * replayDurationMs;
+    const nextIndex = replaySamples.findIndex(p => p.timestamp >= targetTime);
+    if (nextIndex === -1) {
+      setReplayIndex(replaySamples.length - 1);
+    } else {
+      setReplayIndex(nextIndex);
+    }
+  };
 
   const projectReplayPoint = useCallback((value: number | null, isX: boolean, size: number) => {
     const min = isX ? replayBounds.minX : replayBounds.minY;
@@ -1277,11 +1290,11 @@ const DetailedResultsPage = () => {
         </div>
       </section>
 
-      {/* Recent Samples 섹션 */}
+      {/* Session Targets 섹션 */}
       <section className="detail-section">
         <div className="section-header">
-          <h2>Recent Samples</h2>
-          <p className="muted">최근 타겟의 오차와 반응 시간을 확인하세요. 한 번에 8개씩 표시되며 스크롤로 이전 타겟까지 탐색할 수 있습니다. 타겟 ID를 누르면 해당 타겟 등장부터 사라질 때까지의 슬로우모션 리플레이가 재생됩니다.</p>
+          <h2>Recent Targets</h2>
+          <p className="muted">세션동안 등장한 타겟의 오차와 반응 시간을 확인하세요. 한 번에 8개씩 표시되며 스크롤로 다음 타겟까지 탐색할 수 있습니다. 타겟 ID를 누르면 해당 타겟 등장부터 사라질 때까지의 슬로우모션 리플레이가 재생됩니다.</p>
         </div>
         <div className="samples-table scrollable">
           <div className="samples-scroll">
@@ -1327,7 +1340,7 @@ const DetailedResultsPage = () => {
                 <p className="card-label">Target Replay</p>
                 <h3 className="replay-title">#{replayTargetId}</h3>
                 <p className="muted">
-                  등장부터 사라질 때까지를 {currentReplayFrame?.targetHit ? '명중 프레임 포함' : '마지막 프레임까지'} 0.3× 속도로 재생합니다.
+                  등장부터 사라질 때까지를 {currentReplayFrame?.targetHit ? '명중 프레임 포함' : '마지막 프레임까지'} 느린 속도로 재생합니다. 배속을 선택하거나, 재생바를 움직여 원하는 구간을 바로 확인할 수 있습니다.
                 </p>
               </div>
               <button type="button" className="detail-button ghost" onClick={closeReplay}>Close</button>
@@ -1391,6 +1404,11 @@ const DetailedResultsPage = () => {
                 </svg>
               </div>
               <div className="replay-meta">
+                <div className="replay-legend" aria-label="점 설명">
+                  <span><span className="legend-dot target" /> Target</span>
+                  <span><span className="legend-dot mouse" /> Mouse</span>
+                  <span><span className="legend-dot gaze" /> Gaze</span>
+                </div>
                 <div className="stat-row">
                   <span>Time window</span>
                   <strong>{(replayDurationMs / 1000).toFixed(2)} s</strong>
@@ -1404,9 +1422,30 @@ const DetailedResultsPage = () => {
                   <strong>{currentReplayFrame?.targetHit ? 'Hit' : 'Tracking'}</strong>
                 </div>
                 <div className="replay-progress" aria-label="replay progress">
-                  <div style={{ width: `${replayDurationMs > 0 ? Math.min(100, (replayElapsedMs / replayDurationMs) * 100) : 0}%` }} />
+                  <div style={{ width: `${replayProgressPct}%` }} />
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    step={0.1}
+                    value={replayProgressPct}
+                    onChange={e => scrubToProgress(Number(e.target.value))}
+                    aria-label="재생 위치 조절"
+                  />
                 </div>
                 <div className="replay-controls">
+                  <label className="replay-speed" htmlFor="replay-speed-select">
+                    Speed
+                    <select
+                      id="replay-speed-select"
+                      value={replaySpeed}
+                      onChange={e => setReplaySpeed(Number(e.target.value))}
+                    >
+                      {[0.1, 0.2, 0.3, 0.5, 1].map(speed => (
+                        <option key={speed} value={speed}>{`${speed.toFixed(1)}×`}</option>
+                      ))}
+                    </select>
+                  </label>
                   <button
                     type="button"
                     className="detail-button small"

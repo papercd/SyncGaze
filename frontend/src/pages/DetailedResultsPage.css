@@ -1,4 +1,4 @@
-/* src/pages/DetailedResultsPage.css */
+ /* src/pages/DetailedResultsPage.css */
 .detailed-results-page {
   min-height: 100vh;
   background: linear-gradient(135deg, #0b1021 0%, #1d1f3a 50%, #0f0c29 100%);
@@ -184,6 +184,16 @@
   overflow: hidden;
   width: 100%;
   margin-top: 0.75rem;
+}
+
+.samples-table.scrollable {
+  overflow: visible;
+}
+
+.samples-scroll {
+  max-height: 520px;
+  overflow-y: auto;
+  border-radius: 12px;
 }
 
 .samples-table table {

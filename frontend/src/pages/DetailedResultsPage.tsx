@@ -44,6 +44,14 @@ type SeriesConfig = {
 };
 
 type HeatmapPoint = { x: number; y: number };
+type TargetSampleSummary = {
+  targetId: string;
+  gazeErr: number | null;
+  mouseErr: number | null;
+  targetHit: boolean;
+  timeToHitMs: number | null;
+  lastTimestamp: number;
+};
 
 // --- Zoom Control Component ---
 const ZoomControls = ({ 
@@ -378,18 +386,44 @@ const DetailedResultsPage = () => {
     };
   }, [analytics, coverage, sessionData]);
 
-  const recentSamples = useMemo(() => {
-    if (!sessionData) return [];
-    const sliced = sessionData.rawData.slice(-8).reverse();
-    return sliced.map(sample => {
-      const gazeErr = sample.targetX !== null && sample.targetY !== null && sample.gazeX !== null && sample.gazeY !== null
-        ? Math.hypot(sample.gazeX - sample.targetX, sample.gazeY - sample.targetY)
-        : null;
-      const mouseErr = sample.targetX !== null && sample.targetY !== null && sample.mouseX !== null && sample.mouseY !== null
-        ? Math.hypot(sample.mouseX - sample.targetX, sample.mouseY - sample.targetY)
-        : null;
-      return { ...sample, gazeErr, mouseErr };
+  const recentTargets = useMemo<TargetSampleSummary[]>(() => {
+    if (!sessionData?.rawData.length) return [];
+
+    const withTargetId = sessionData.rawData.filter(point => point.targetId !== null);
+    if (!withTargetId.length) return [];
+
+    const summaries = new Map<string, { firstTimestamp: number; lastSample: TrainingDataPoint; hitTimestamp: number | null }>();
+
+    withTargetId.forEach(point => {
+      const targetId = point.targetId as string;
+      const existing = summaries.get(targetId);
+      const firstTimestamp = existing ? existing.firstTimestamp : point.timestamp;
+      const hitTimestamp = existing?.hitTimestamp ?? (point.targetHit ? point.timestamp : null);
+      const lastSample = !existing || point.timestamp >= existing.lastSample.timestamp ? point : existing.lastSample;
+
+      summaries.set(targetId, { firstTimestamp, lastSample, hitTimestamp });
     });
+
+    return Array.from(summaries.entries())
+      .map(([targetId, { firstTimestamp, lastSample, hitTimestamp }]) => {
+        const gazeErr = lastSample.targetX !== null && lastSample.targetY !== null && lastSample.gazeX !== null && lastSample.gazeY !== null
+          ? Math.hypot(lastSample.gazeX - lastSample.targetX, lastSample.gazeY - lastSample.targetY)
+          : null;
+        const mouseErr = lastSample.targetX !== null && lastSample.targetY !== null && lastSample.mouseX !== null && lastSample.mouseY !== null
+          ? Math.hypot(lastSample.mouseX - lastSample.targetX, lastSample.mouseY - lastSample.targetY)
+          : null;
+        const timeToHitMs = hitTimestamp !== null ? hitTimestamp - firstTimestamp : null;
+
+        return {
+          targetId,
+          gazeErr,
+          mouseErr,
+          targetHit: hitTimestamp !== null,
+          timeToHitMs,
+          lastTimestamp: lastSample.timestamp,
+        };
+      })
+      .sort((a, b) => b.lastTimestamp - a.lastTimestamp);
   }, [sessionData]);
 
   const performanceSeries = useMemo<SeriesConfig[]>(() => {
@@ -1075,33 +1109,37 @@ const DetailedResultsPage = () => {
       <section className="detail-section">
         <div className="section-header">
           <h2>Recent Samples</h2>
-          <p className="muted">최근 8개의 수집 포인트를 기준으로 오차를 보여줍니다.</p>
+          <p className="muted">최근 타겟의 오차와 반응 시간을 확인하세요. 한 번에 8개씩 표시되며 스크롤로 이전 타겟까지 탐색할 수 있습니다.</p>
         </div>
-        <div className="samples-table">
-          <table>
-            <thead>
-              <tr>
-                <th scope="col">Target</th>
-                <th scope="col">Gaze error</th>
-                <th scope="col">Mouse error</th>
-                <th scope="col">Hit</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentSamples.map((sample, idx) => (
-                <tr key={`${sample.timestamp}-${idx}`}>
-                  <td className="align-left">{sample.targetId ?? '—'}</td>
-                  <td>{sample.gazeErr !== null ? `${sample.gazeErr.toFixed(1)} px` : 'N/A'}</td>
-                  <td>{sample.mouseErr !== null ? `${sample.mouseErr.toFixed(1)} px` : 'N/A'}</td>
-                  <td>
-                    <span className={sample.targetHit ? 'pill pill-green' : 'pill'}>
-                      {sample.targetHit ? 'Hit' : 'Miss'}
-                    </span>
-                  </td>
+        <div className="samples-table scrollable">
+          <div className="samples-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col" className="align-left">Target</th>
+                  <th scope="col">Gaze error</th>
+                  <th scope="col">Mouse error</th>
+                  <th scope="col">Time to hit</th>
+                  <th scope="col">Hit</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {recentTargets.map((sample, idx) => (
+                  <tr key={`${sample.targetId}-${idx}`}>
+                    <td className="align-left">{sample.targetId ?? '—'}</td>
+                    <td>{sample.gazeErr !== null ? `${sample.gazeErr.toFixed(1)} px` : 'N/A'}</td>
+                    <td>{sample.mouseErr !== null ? `${sample.mouseErr.toFixed(1)} px` : 'N/A'}</td>
+                    <td>{sample.timeToHitMs !== null ? `${(sample.timeToHitMs / 1000).toFixed(2)} s` : '—'}</td>
+                    <td>
+                      <span className={sample.targetHit ? 'pill pill-green' : 'pill'}>
+                        {sample.targetHit ? 'Hit' : 'Miss'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
     </div>

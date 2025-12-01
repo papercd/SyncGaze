@@ -51,6 +51,7 @@ type TargetSampleSummary = {
   targetHit: boolean;
   timeToHitMs: number | null;
   lastTimestamp: number;
+  firstTimestamp: number;
 };
 
 // --- Zoom Control Component ---
@@ -392,25 +393,45 @@ const DetailedResultsPage = () => {
     const withTargetId = sessionData.rawData.filter(point => point.targetId !== null);
     if (!withTargetId.length) return [];
 
-    const summaries = new Map<string, { firstTimestamp: number; lastSample: TrainingDataPoint; hitTimestamp: number | null }>();
+    const summaries = new Map<
+      string,
+      {
+        firstTimestamp: number;
+        lastSample: TrainingDataPoint;
+        hitTimestamp: number | null;
+        preHitSample: TrainingDataPoint | null;
+      }
+    >();
 
     withTargetId.forEach(point => {
       const targetId = point.targetId as string;
       const existing = summaries.get(targetId);
-      const firstTimestamp = existing ? existing.firstTimestamp : point.timestamp;
-      const hitTimestamp = existing?.hitTimestamp ?? (point.targetHit ? point.timestamp : null);
-      const lastSample = !existing || point.timestamp >= existing.lastSample.timestamp ? point : existing.lastSample;
 
-      summaries.set(targetId, { firstTimestamp, lastSample, hitTimestamp });
+      const firstTimestamp = existing ? existing.firstTimestamp : point.timestamp;
+      let hitTimestamp = existing?.hitTimestamp ?? null;
+      let lastSample = !existing || point.timestamp >= existing.lastSample.timestamp ? point : existing.lastSample;
+      let preHitSample = existing?.preHitSample ?? null;
+
+      if (hitTimestamp === null) {
+        if (point.targetHit) {
+          hitTimestamp = point.timestamp;
+          preHitSample = existing?.lastSample ?? point;
+        } else {
+          preHitSample = point;
+        }
+      }
+
+      summaries.set(targetId, { firstTimestamp, lastSample, hitTimestamp, preHitSample });
     });
 
     return Array.from(summaries.entries())
-      .map(([targetId, { firstTimestamp, lastSample, hitTimestamp }]) => {
-        const gazeErr = lastSample.targetX !== null && lastSample.targetY !== null && lastSample.gazeX !== null && lastSample.gazeY !== null
-          ? Math.hypot(lastSample.gazeX - lastSample.targetX, lastSample.gazeY - lastSample.targetY)
+      .map(([targetId, { firstTimestamp, lastSample, hitTimestamp, preHitSample }]) => {
+        const sampleForError = hitTimestamp !== null ? preHitSample ?? lastSample : lastSample;
+        const gazeErr = sampleForError.targetX !== null && sampleForError.targetY !== null && sampleForError.gazeX !== null && sampleForError.gazeY !== null
+          ? Math.hypot(sampleForError.gazeX - sampleForError.targetX, sampleForError.gazeY - sampleForError.targetY)
           : null;
-        const mouseErr = lastSample.targetX !== null && lastSample.targetY !== null && lastSample.mouseX !== null && lastSample.mouseY !== null
-          ? Math.hypot(lastSample.mouseX - lastSample.targetX, lastSample.mouseY - lastSample.targetY)
+        const mouseErr = sampleForError.targetX !== null && sampleForError.targetY !== null && sampleForError.mouseX !== null && sampleForError.mouseY !== null
+          ? Math.hypot(sampleForError.mouseX - sampleForError.targetX, sampleForError.mouseY - sampleForError.targetY)
           : null;
         const timeToHitMs = hitTimestamp !== null ? hitTimestamp - firstTimestamp : null;
 
@@ -421,9 +442,10 @@ const DetailedResultsPage = () => {
           targetHit: hitTimestamp !== null,
           timeToHitMs,
           lastTimestamp: lastSample.timestamp,
+          firstTimestamp,
         };
       })
-      .sort((a, b) => b.lastTimestamp - a.lastTimestamp);
+      .sort((a, b) => a.firstTimestamp - b.firstTimestamp);
   }, [sessionData]);
 
   const performanceSeries = useMemo<SeriesConfig[]>(() => {

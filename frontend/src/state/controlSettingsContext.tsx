@@ -1,7 +1,9 @@
 import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
 
 const STORAGE_KEY = 'controlSettings';
-const DEFAULT_SENSITIVITY = 0.002;
+export const DEFAULT_SENSITIVITY = 0.002;
+export const MIN_SENSITIVITY = 0.0001;
+export const MAX_SENSITIVITY = 0.02;
 
 export interface ControlSettingsState {
   controlSensitivity: number;
@@ -43,7 +45,7 @@ export const ControlSettingsProvider = ({ children }: { children: ReactNode }) =
   }, [settings]);
 
   const setControlSensitivity = (value: number) => {
-    const clamped = Math.min(Math.max(value, 0.0005), 0.02);
+    const clamped = Math.min(Math.max(value, MIN_SENSITIVITY), MAX_SENSITIVITY);
     setSettings(prev => ({ ...prev, controlSensitivity: clamped }));
   };
 

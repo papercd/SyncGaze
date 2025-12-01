@@ -39,6 +39,22 @@
   padding: 0.35rem 0.75rem;
   border-radius: 8px;
   font-weight: 700;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1rem;
+}
+
+.control-settings-value-primary {
+  font-size: 1.05rem;
+  line-height: 1.2;
+}
+
+.control-settings-value-subtext {
+  color: #cdd2f7;
+  font-size: 0.85rem;
+  font-weight: 600;
+  opacity: 0.9;
 }
 
 .control-settings-slider {
@@ -63,6 +79,12 @@
   justify-content: space-between;
   color: #9ea5d6;
   font-size: 0.85rem;
+}
+
+.control-settings-footnote {
+  color: #9ea5d6;
+  font-size: 0.85rem;
+  text-align: right;
 }
 
 .control-settings-actions {

@@ -416,9 +416,13 @@ export const TrainingScene: React.FC<TrainingSceneProps> = ({ onComplete }) => {
         </div>
       )}
   
+      <div className="absolute top-4 left-4 z-30">
+        <div className="text-sm text-gray-300">Press Esc to pause and adjust settings.</div>
+      </div>
+
       <div className="absolute top-4 right-4 text-white z-30">
         <div className="text-2xl font-bold">Score: {score}</div>
-        
+
         <div className="text-sm text-gray-300">Data: {dataCount} points</div>
       </div>
 

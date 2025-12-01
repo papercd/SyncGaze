@@ -13,6 +13,7 @@ import ResearchConsentPage from './pages/onboarding/ResearchConsentPage';
 import LeaderboardPage from './pages/LeaderboardPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage.tsx';
+import SettingsPage from './pages/SettingsPage';
 import { ReactElement, useEffect } from 'react';
 import { useAuth } from './state/authContext';
 import SessionRemoteHydrator from './components/SessionRemoteHydrator';
@@ -136,6 +137,15 @@ const AppRouter = () => {
           element={(
             <ProtectedRoute>
               <ResearchConsentPage />
+            </ProtectedRoute>
+          )}
+        />
+
+        <Route
+          path="/settings"
+          element={(
+            <ProtectedRoute>
+              <SettingsPage />
             </ProtectedRoute>
           )}
         />

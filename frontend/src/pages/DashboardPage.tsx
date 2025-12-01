@@ -156,6 +156,10 @@ const DashboardPage = () => {
             <span className="button-icon">🏆</span>
             Leaderboard
           </button>
+          <button className="start-training-button" onClick={() => navigate('/settings')}>
+            <span className="button-icon">⚙️</span>
+            Settings
+          </button>
         </section>
 
         {/* Recent Sessions */}

@@ -57,6 +57,9 @@ const formatBoolean = (value: boolean | undefined | null) =>
 const formatNumber = (value: number | null | undefined, digits = 2) =>
   value == null ? 'N/A' : value.toFixed(digits);
 
+const formatSensitivity = (value: number | null | undefined) =>
+  value == null ? 'N/A' : value.toFixed(4);
+
 const convertTrainingData = (data: TrainingDataPoint[]): SessionExportRawDatum[] =>
   data.map((point, index) => ({
     timestamp: point.timestamp,
@@ -149,6 +152,7 @@ export const serializeSessionToCsv = ({
     `# Avg Reaction Time (ms): ${session.avgReactionTime.toFixed(2)}`,
     `# Gaze Accuracy (%): ${session.gazeAccuracy.toFixed(2)}`,
     `# Mouse Accuracy (%): ${session.mouseAccuracy.toFixed(2)}`,
+    `# Control Sensitivity: ${formatSensitivity(session.controlSensitivity)}`,
   ];
 
   if (trackerMeta) {

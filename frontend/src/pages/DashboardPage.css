@@ -141,7 +141,7 @@
 .action-section {
   margin-bottom: 3rem;
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: 1rem;
   width: 100%;
   max-width: 1100px;

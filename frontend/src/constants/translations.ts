@@ -498,6 +498,10 @@ export const translations: Record<string, Record<Language, string>> = {
   // Calibration page
   'calibration.loader.title': { ko: '시선 추적 초기화 중...', en: 'Loading Eye Tracking...' },
   'calibration.loader.desc': { ko: '보정 시스템을 초기화하는 동안 잠시만 기다려주세요.', en: 'Please wait while we initialize the calibration system' },
+  'calibration.escapeHint': {
+    ko: 'ESC 키를 누르면 세션 종료 확인 창이 열립니다.',
+    en: 'Press Esc to open the exit confirmation.',
+  },
   'calibration.prep.eyebrow': { ko: '캘리브레이션 준비', en: 'Calibration Prep' },
   'calibration.prep.title': { ko: '시선 추적 환경 안내', en: 'Eye-tracking environment guide' },
   'calibration.prep.camera.title': { ko: '카메라 권한', en: 'Camera access' },

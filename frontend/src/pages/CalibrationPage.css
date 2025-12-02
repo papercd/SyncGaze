@@ -10,6 +10,15 @@
   overflow-y: auto;
 }
 
+.escape-hint {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  font-size: 0.875rem;
+  color: #d1d5db;
+  z-index: 20;
+}
+
 .calibration-screen {
   width: 100%;
   height: 100%;

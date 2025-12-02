@@ -248,6 +248,7 @@ const CalibrationPage = () => {
 
   return (
     <div className="calibration-page">
+      <div className="escape-hint">{t('calibration.escapeHint')}</div>
       {renderContent()}
       {renderExitPrompt()}
     </div>

@@ -6,6 +6,7 @@ import cors from "cors";
 // 중요: 경로에 '/src'가 포함되어야 하며, .js 확장자를 명시해야 합니다.
 import { submitSurveyRoute } from "./src/routes/submitSurvey.js";
 import { uploadCsvRoute } from "./src/routes/uploadCsv.js";
+import { generateReportRoute } from "./src/routes/generateReport.js";
 
 // dotenv는 functions 설정에서는 보통 process.env로 자동 주입되거나
 // firebase functions:config:set을 사용하므로 여기서는 생략 가능하나, 
@@ -22,6 +23,7 @@ app.use(cors({ origin: true }));
 // 기존 backend/src/server.js의 설정을 그대로 가져옵니다.
 app.use('/api/upload-csv', express.text({ type: '*/*', limit: '1mb' }), uploadCsvRoute);
 app.use('/api/submit-survey', express.json({ limit: '1mb' }), submitSurveyRoute);
+app.use('/api/generate-report', express.json({ limit: '1mb' }), generateReportRoute); // ADD THIS LINE
 
 app.use((req, res) => {
   res.status(404).json({ message: 'Not Found' });

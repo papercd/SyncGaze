@@ -146,6 +146,75 @@
   padding-top: clamp(1rem, 3vh, 2rem);
 }
 
+.exit-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 1.5rem;
+}
+
+.exit-modal {
+  background: #0f162c;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 1.75rem;
+  max-width: 420px;
+  width: 100%;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+}
+
+.exit-modal h3 {
+  margin: 0 0 0.5rem 0;
+  color: #fff;
+  font-size: 1.5rem;
+}
+
+.exit-modal p {
+  margin: 0 0 1.25rem 0;
+  color: #cfd3f5;
+  line-height: 1.5;
+}
+
+.exit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.secondary-button {
+  padding: 0.75rem 1.25rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.secondary-button:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.danger-button {
+  padding: 0.75rem 1.25rem;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(135deg, #ff4d6d 0%, #c9184a 100%);
+  color: #fff;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 8px 20px rgba(201, 24, 74, 0.35);
+}
+
+.danger-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(201, 24, 74, 0.45);
+}
+
 .calibrating-container h2 {
   font-size: 2rem;
   margin: 0;

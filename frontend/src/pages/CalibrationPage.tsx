@@ -1,5 +1,5 @@
 // src/pages/CalibrationPage.tsx
-import { useEffect, useRef, type FC } from 'react';
+import { useEffect, useRef, useState, type FC } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './CalibrationPage.css';
 import { useTrackingSession } from '../state/trackingSessionContext';
@@ -17,6 +17,7 @@ const CalibrationPage = () => {
   const navigate = useNavigate();
   const { saveCalibrationResult } = useTrackingSession();
   const { t } = useTranslation();
+  const [showExitPrompt, setShowExitPrompt] = useState(false);
   const {
     isReady,
     gameState,
@@ -39,15 +40,24 @@ const CalibrationPage = () => {
   const lastSequenceRef = useRef(validationSequence);
   const isNavigatingToTraining = useRef(false);
 
-   useEffect(() => {
-     return () => {
-       if (!isNavigatingToTraining.current) {
-         stopSession(); // Only stop if NOT going to training
-       }
-     };
-   }, [stopSession]);
+  useEffect(() => {
+    return () => {
+      if (!isNavigatingToTraining.current) {
+        stopSession(); // Only stop if NOT going to training
+      }
+    };
+  }, [stopSession]);
 
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setShowExitPrompt(true);
+    };
 
+    window.addEventListener('keydown', handleEscape);
+    return () => {
+      window.removeEventListener('keydown', handleEscape);
+    };
+  }, [navigate, stopSession]);
 
   useEffect(() => {
     if (
@@ -72,13 +82,39 @@ const CalibrationPage = () => {
     saveCalibrationResult,
   ]);
 
+  const handleConfirmExit = () => {
+    stopSession();
+    navigate('/dashboard');
+  };
+
   const handleProceedToTraining = () => {
-     isNavigatingToTraining.current = true; // Set flag
-     window.webgazer?.showPredictionPoints(false);
-     navigate('/training');
-   };
+    isNavigatingToTraining.current = true; // Set flag
+    window.webgazer?.showPredictionPoints(false);
+    navigate('/training');
+  };
 
   const CalibrationComponent = Calibration as FC<CalibrationProps>;
+
+  const renderExitPrompt = () => {
+    if (!showExitPrompt) return null;
+
+    return (
+      <div className="exit-overlay" role="dialog" aria-modal="true">
+        <div className="exit-modal">
+          <h3>{t('session.exit.title')}</h3>
+          <p>{t('session.exit.desc')}</p>
+          <div className="exit-actions">
+            <button className="secondary-button" onClick={() => setShowExitPrompt(false)}>
+              {t('session.exit.continue')}
+            </button>
+            <button className="danger-button" onClick={handleConfirmExit}>
+              {t('session.exit.dashboard')}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const renderContent = () => {
     if (!isReady) {
@@ -210,7 +246,12 @@ const CalibrationPage = () => {
     }
   };
 
-  return <div className="calibration-page">{renderContent()}</div>;
+  return (
+    <div className="calibration-page">
+      {renderContent()}
+      {renderExitPrompt()}
+    </div>
+  );
 };
 
 export default CalibrationPage;

@@ -6,6 +6,15 @@ export const translations: Record<string, Record<Language, string>> = {
   'language.english': { ko: '영어', en: 'English' },
   'language.switch': { ko: 'English', en: '한국어' },
 
+  // Shared session prompts
+  'session.exit.title': { ko: '대시보드로 돌아가시겠어요?', en: 'Return to dashboard?' },
+  'session.exit.desc': {
+    ko: '현재 진행 중인 세션이 종료되고 대시보드로 이동합니다.',
+    en: 'The current session will end and you will return to the dashboard.',
+  },
+  'session.exit.dashboard': { ko: '대시보드로 돌아가기', en: 'Go to Dashboard' },
+  'session.exit.continue': { ko: '계속 진행하기', en: 'Keep going' },
+
   // Survey page
   'survey.header.title': {
     ko: '연구 참여 스크리닝 설문',

@@ -248,9 +248,7 @@ const LeaderboardPage = () => {
           <button className="leaderboard-button ghost" onClick={() => navigate('/dashboard')}>
             {t('leaderboard.action.dashboard', 'Dashboard')}
           </button>
-          <button className="leaderboard-button" onClick={() => navigate('/tracker-flow')}>
-            {t('leaderboard.action.trackerFlow', 'View tracker flow')}
-          </button>
+         
         </div>
       </header>
 

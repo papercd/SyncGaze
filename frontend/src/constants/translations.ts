@@ -6,6 +6,15 @@ export const translations: Record<string, Record<Language, string>> = {
   'language.english': { ko: '영어', en: 'English' },
   'language.switch': { ko: 'English', en: '한국어' },
 
+  // Shared session prompts
+  'session.exit.title': { ko: '대시보드로 돌아가시겠어요?', en: 'Return to dashboard?' },
+  'session.exit.desc': {
+    ko: '현재 진행 중인 세션이 종료되고 대시보드로 이동합니다.',
+    en: 'The current session will end and you will return to the dashboard.',
+  },
+  'session.exit.dashboard': { ko: '대시보드로 돌아가기', en: 'Go to Dashboard' },
+  'session.exit.continue': { ko: '계속 진행하기', en: 'Keep going' },
+
   // Survey page
   'survey.header.title': {
     ko: '연구 참여 스크리닝 설문',
@@ -491,6 +500,10 @@ export const translations: Record<string, Record<Language, string>> = {
   // Calibration page
   'calibration.loader.title': { ko: '시선 추적 초기화 중...', en: 'Loading Eye Tracking...' },
   'calibration.loader.desc': { ko: '보정 시스템을 초기화하는 동안 잠시만 기다려주세요.', en: 'Please wait while we initialize the calibration system' },
+  'calibration.escapeHint': {
+    ko: 'ESC 키를 누르면 세션 종료 확인 창이 열립니다.',
+    en: 'Press Esc to open the exit confirmation.',
+  },
   'calibration.prep.eyebrow': { ko: '캘리브레이션 준비', en: 'Calibration Prep' },
   'calibration.prep.title': { ko: '시선 추적 환경 안내', en: 'Eye-tracking environment guide' },
   'calibration.prep.camera.title': { ko: '카메라 권한', en: 'Camera access' },

@@ -20,9 +20,10 @@ import ControlSettingsPanel from './ControlSettingsPanel';
 
 interface TrainingSceneProps {
   onComplete?: (score: number, targetsHit: number, rawData: TrackingDataRecord[]) => void;
+  onExitDashboard?: () => void;
 }
 
-export const TrainingScene: React.FC<TrainingSceneProps> = ({ onComplete }) => {
+export const TrainingScene: React.FC<TrainingSceneProps> = ({ onComplete, onExitDashboard }) => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const { isLocked, requestPointerLock, exitPointerLock } = usePointerLock(canvasRef);
   const [score, setScore] = useState(0);
@@ -407,6 +408,11 @@ export const TrainingScene: React.FC<TrainingSceneProps> = ({ onComplete }) => {
               <div className="pause-time">
                 Timer: {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
               </div>
+              {onExitDashboard && (
+                <button type="button" className="pause-secondary" onClick={onExitDashboard}>
+                  Return to dashboard
+                </button>
+              )}
             </div>
 
             <ControlSettingsPanel compact showReset />

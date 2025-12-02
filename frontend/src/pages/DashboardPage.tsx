@@ -1,18 +1,46 @@
 // src/pages/DashboardPage.tsx
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './DashboardPage.css';
 import { useTrackingSession, TrainingSessionSummary } from '../state/trackingSessionContext';
 import { useAuth } from '../state/authContext';
 import { useTranslation } from '../state/languageContext';
+import { getUserReports } from '../services/reportService';
 
 const DashboardPage = () => {
   const navigate = useNavigate();
   const { recentSessions, setActiveSessionId, calibrationResult, resetState, isAnonymousSession } = useTrackingSession();
   const { user, signOut: signOutUser } = useAuth();
   const { t } = useTranslation();
+  const [sessionReportMap, setSessionReportMap] = useState<Record<string, string>>({});
+  const [isLoadingReports, setIsLoadingReports] = useState(false);
   const hasRealSession = recentSessions.some(session => !session.id.startsWith('mock-'));
   const isNewUser = isAnonymousSession || !hasRealSession;
+
+  useEffect(() => {
+    const loadReports = async () => {
+      if (!user?.uid) {
+        setSessionReportMap({});
+        return;
+      }
+
+      setIsLoadingReports(true);
+      try {
+        const reports = await getUserReports(user.uid);
+        const reportMap = reports.reduce<Record<string, string>>((acc, report) => {
+          acc[report.sessionId] = report.id;
+          return acc;
+        }, {});
+        setSessionReportMap(reportMap);
+      } catch (error) {
+        console.error('Failed to load reports', error);
+      } finally {
+        setIsLoadingReports(false);
+      }
+    };
+
+    loadReports();
+  }, [user?.uid]);
 
   const handleLogout = async () => {
     try {
@@ -31,6 +59,11 @@ const DashboardPage = () => {
   const handleViewResults = (sessionId: string) => {
     setActiveSessionId(sessionId);
     navigate('/results', { state: { sessionId } });
+  };
+
+  const handleReportAction = (sessionId: string) => {
+    setActiveSessionId(sessionId);
+    navigate('/report', { state: { sessionId } });
   };
 
   const stats = useMemo(() => {
@@ -200,9 +233,20 @@ const DashboardPage = () => {
                       </td>
                       <td>{session.avgReactionTime.toFixed(2)}ms</td>
                       <td className="table-actions">
-                        <button className="view-button" onClick={() => handleViewResults(session.id)}>
-                          {t('dashboard.table.view')}
-                        </button>
+                        <div className="table-actions-group">
+                          <button className="view-button" onClick={() => handleViewResults(session.id)}>
+                            {t('dashboard.table.view')}
+                          </button>
+                          <button
+                            className="report-button"
+                            onClick={() => handleReportAction(session.id)}
+                            disabled={isLoadingReports}
+                          >
+                            {sessionReportMap[session.id]
+                              ? t('dashboard.table.report.viewExisting')
+                              : t('dashboard.table.report.create')}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}

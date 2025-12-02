@@ -1,6 +1,6 @@
 // frontend/src/pages/ReportPage.tsx
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../state/authContext';
 import { useTrackingSession } from '../state/trackingSessionContext';
 import { generatePerformanceReport, saveReport, getUserReports, PerformanceReport } from '../services/reportService';
@@ -8,8 +8,10 @@ import './ReportPage.css';
 
 const ReportPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const { activeSession, calibrationResult } = useTrackingSession();
+  const reportSessionId = (location.state as { sessionId?: string } | null)?.sessionId;
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentReport, setCurrentReport] = useState<PerformanceReport | null>(null);
@@ -23,6 +25,16 @@ const ReportPage = () => {
       loadSavedReports();
     }
   }, [user?.uid]);
+
+  useEffect(() => {
+    if (!reportSessionId || savedReports.length === 0) return;
+
+    const matchedReport = savedReports.find(report => report.sessionId === reportSessionId);
+    if (matchedReport) {
+      setCurrentReport(matchedReport);
+      setSelectedReportId(matchedReport.id);
+    }
+  }, [reportSessionId, savedReports]);
 
   const loadSavedReports = async () => {
     if (!user?.uid) return;
@@ -61,9 +73,10 @@ const ReportPage = () => {
       
       // Save to Firebase
       await saveReport(user.uid, report);
-      
+
       // Reload saved reports
       await loadSavedReports();
+      setSelectedReportId(report.id);
     } catch (err) {
       console.error('Report generation failed:', err);
       setError('리포트 생성에 실패했습니다. 다시 시도해주세요.');

@@ -3,7 +3,7 @@
 import React from 'react';
 import { useGazeTracker } from './GazeTrackerContext'; // 1. Context 훅 임포트
 // GazeTracker.css의 스타일을 재사용합니다.
-import './GazeTracker.css'; 
+import './CalibrationFlow.css'; 
 
 const ConfirmValidation: React.FC = () => {
   // 2. Context로부터 페이지 이동 핸들러(startValidation)를 가져옵니다.

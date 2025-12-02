@@ -3,7 +3,7 @@
 import React from 'react';
 import { useGazeTracker } from './GazeTrackerContext'; // 1. Context 훅 임포트
 // (필요시) GazeTracker.css의 스타일을 공유할 수 있습니다.
-import './GazeTracker.css'; 
+import './CalibrationFlow.css'; 
 
 const Instructions: React.FC = () => {
   // 2. Props 대신 Context에서 필요한 상태와 함수를 가져옵니다.

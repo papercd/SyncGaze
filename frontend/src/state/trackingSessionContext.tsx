@@ -40,6 +40,7 @@ export interface TrainingSessionSummary {
   date: string;
   duration: number;
   score: number;
+  predictedScore?: number | null;
   accuracy: number;
   targetsHit: number;
   totalTargets: number;

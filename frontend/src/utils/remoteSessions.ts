@@ -158,6 +158,7 @@ export const fetchSessionsForUser = async (uid: string): Promise<StoredSessionRe
         ...record.session,
         rawData: record.session.rawData ?? [],
         csvData: record.session.csvData ?? '',
+        predictedScore: record.session.predictedScore ?? record.predictedScore ?? null,
       },
       calibrationResult: record.calibrationResult ?? null,
       surveyResponses: record.surveyResponses ?? null,

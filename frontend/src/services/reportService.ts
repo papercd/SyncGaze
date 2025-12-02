@@ -11,6 +11,7 @@ export interface PerformanceMetrics {
   accuracy: number;
   targetsHit: number;
   totalTargets: number;
+  predictedScore?: number | null;
   calibrationError?: number | null;
 }
 
@@ -32,6 +33,7 @@ interface GenerateReportParams {
   accuracy: number;
   targetsHit: number;
   totalTargets: number;
+  predictedScore?: number | null;
   calibrationError?: number | null;
 }
 
@@ -80,6 +82,9 @@ export const generatePerformanceReport = async (
 - 트래킹 정확도: ${params.trackingAccuracy.toFixed(1)}%
 - 종합 정확도: ${params.accuracy.toFixed(1)}%
 - 적중률: ${params.targetsHit}/${params.totalTargets} (${((params.targetsHit / params.totalTargets) * 100).toFixed(1)}%)
+${params.predictedScore != null ? `- 예측 점수: ${params.predictedScore.toFixed(1)} (0-100 스케일, 모델 기반)` : ''}
+${params.predictedScore == null ? '- 예측 점수가 없어 기존 점수/정확도를 기준으로 평가합니다.' : ''}
+${params.predictedScore != null ? '- 점수 해석: 0~100에서 100에 가까울수록 상위 퍼포먼스' : ''}
 ${params.calibrationError != null ? `- 캘리브레이션 오차: ${params.calibrationError.toFixed(2)}px` : ''}
 
 [Task]
@@ -139,6 +144,7 @@ Markdown 형식으로 출력해주세요. 헤더는 ##을 사용하고, 각 섹�
         accuracy: params.accuracy,
         targetsHit: params.targetsHit,
         totalTargets: params.totalTargets,
+        predictedScore: params.predictedScore ?? null,
         calibrationError: params.calibrationError,
       },
       generatedAt: new Date().toISOString(),

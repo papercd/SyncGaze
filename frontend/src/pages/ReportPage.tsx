@@ -53,6 +53,7 @@ const ReportPage = () => {
         accuracy: activeSession.accuracy,
         targetsHit: activeSession.targetsHit,
         totalTargets: activeSession.totalTargets,
+        predictedScore: activeSession.predictedScore ?? null,
         calibrationError: calibrationResult?.validationError,
       });
 
@@ -97,7 +98,15 @@ const ReportPage = () => {
 
         <div className="report-data-summary">
           <h3>측정 데이터</h3>
-          <div className="data-grid">
+            <div className="data-grid">
+            <div className="data-item">
+              <span className="data-label">예측 점수</span>
+              <span className="data-value">
+                {report.metrics.predictedScore != null
+                  ? report.metrics.predictedScore.toFixed(1)
+                  : 'N/A'}
+              </span>
+            </div>
             <div className="data-item">
               <span className="data-label">반응 속도</span>
               <span className="data-value">{report.metrics.reactionTime.toFixed(0)}ms</span>
@@ -194,6 +203,14 @@ const ReportPage = () => {
                   <div className="session-summary">
                     <h3>현재 세션 데이터</h3>
                     <div className="summary-grid">
+                      <div className="summary-item">
+                        <span>예측 점수</span>
+                        <strong>
+                          {activeSession.predictedScore != null
+                            ? activeSession.predictedScore.toFixed(1)
+                            : 'N/A'}
+                        </strong>
+                      </div>
                       <div className="summary-item">
                         <span>반응 속도</span>
                         <strong>{activeSession.avgReactionTime.toFixed(0)}ms</strong>

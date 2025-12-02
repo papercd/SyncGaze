@@ -46,6 +46,7 @@ export interface TrainingSessionSummary {
   avgReactionTime: number;
   gazeAccuracy: number;
   mouseAccuracy: number;
+  controlSensitivity?: number;
   screenSize?: { width: number; height: number } | null;
   csvData: string;
   rawData: TrainingDataPoint[];

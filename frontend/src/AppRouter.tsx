@@ -18,16 +18,20 @@ import SettingsPage from './pages/SettingsPage';
 import { ReactElement, useEffect } from 'react';
 import { useAuth } from './state/authContext';
 import SessionRemoteHydrator from './components/SessionRemoteHydrator';
+import { useTranslation } from './state/languageContext';
 
 //연구 감사인사용 페이지
 import ThankYouPage from './pages/onboarding/ThankYouPage';
 
-const RouteLoader = () => (
-  <div className="route-loader" role="status" aria-live="polite">
-    <div className="route-loader__spinner" aria-hidden="true" />
-    <span>Loading...</span>
-  </div>
-);
+const RouteLoader = () => {
+  const { t } = useTranslation();
+  return (
+    <div className="route-loader" role="status" aria-live="polite">
+      <div className="route-loader__spinner" aria-hidden="true" />
+      <span>{t('app.loading')}</span>
+    </div>
+  );
+};
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();

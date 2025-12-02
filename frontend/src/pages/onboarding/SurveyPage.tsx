@@ -22,11 +22,13 @@ import {
   validateSurveyResponses,
 } from '../../features/onboarding/survey';
 import { useAuth } from '../../state/authContext';
+import { useTranslation } from '../../state/languageContext';
 import './SurveyPage.css';
 
 const SurveyPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t, language } = useTranslation();
   const { surveyResponses, setSurveyResponses, activeSession } = useTrackingSession();
   const [formData, setFormData] = useState<SurveyResponses>(
     surveyResponses ?? loadSurveyFromSession() ?? defaultSurveyResponses,
@@ -52,17 +54,20 @@ const SurveyPage = () => {
     }
   }, [formData]);
 
-  const isReadyToSubmit = useMemo(() => !validateSurveyResponses(formData), [formData]);
+  const isReadyToSubmit = useMemo(
+    () => !validateSurveyResponses(formData, t),
+    [formData, t],
+  );
   const selectedGameOptions = useMemo(
     () => surveyGameOptions.filter(option => formData.gamesPlayed.includes(option.value)),
     [formData.gamesPlayed],
   );
   const mainGameLabel = useMemo(() => {
     if (formData.mainGame === OTHER_GAME_VALUE) {
-      return formData.mainGameOther || '직접 입력';
+      return formData.mainGameOther || t('survey.q4.manualEntry', '직접 입력');
     }
     return findGameOption(formData.mainGame)?.label ?? formData.mainGame;
-  }, [formData.mainGame, formData.mainGameOther]);
+  }, [formData.mainGame, formData.mainGameOther, t]);
   const isNoneSelected = formData.gamesPlayed.includes(NONE_GAME_VALUE);
 
   const handleEligibilityToggle = (field: 'ageCheck' | 'webcamCheck', checked: boolean) => {
@@ -122,7 +127,10 @@ const SurveyPage = () => {
     });
   };
 
-  const rankExamples = useMemo(() => getRankExamples(formData.mainGame), [formData.mainGame]);
+  const rankExamples = useMemo(
+    () => getRankExamples(formData.mainGame, t),
+    [formData.mainGame, t],
+  );
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -130,7 +138,7 @@ const SurveyPage = () => {
     setStorageError(null);
     setCloudError(null);
 
-    const validationMessage = validateSurveyResponses(formData);
+    const validationMessage = validateSurveyResponses(formData, t);
     if (validationMessage) {
       setError(validationMessage);
       return;
@@ -156,19 +164,19 @@ const SurveyPage = () => {
         await saveSurveyAndConsent({ uid: user.uid, surveyResponses: formData });
         clearSurveyDraft();
       } else {
-        throw new Error('사용자 정보를 불러올 수 없습니다. 다시 로그인 후 시도해주세요.');
+        throw new Error(
+          t('survey.alert.notLoggedIn', '사용자 정보를 불러올 수 없습니다. 다시 로그인 후 시도해주세요.'),
+        );
       }
 
       if (submissionFailed) {
-        alert('백엔드 API 호출에 실패했지만 데모 모드로 다음 단계로 이동합니다.');
+        alert(t('survey.alert.demoMode', '백엔드 API 호출에 실패했지만 데모 모드로 다음 단계로 이동합니다.'));
       }
 
       navigate('/onboarding/consent');
     } catch (cloudSaveError) {
       console.error('Failed to persist survey to Firestore', cloudSaveError);
-      setCloudError(
-        '설문 응답을 클라우드에 저장하지 못했습니다. 네트워크 연결을 확인한 뒤 재시도해주세요.',
-      );
+      setCloudError(t('survey.storage.error', '설문 응답을 클라우드에 저장하지 못했습니다. 네트워크 연결을 확인한 뒤 재시도해주세요.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -176,7 +184,7 @@ const SurveyPage = () => {
 
   const handleRetryCloudSave = async () => {
     if (!user) {
-      setCloudError('로그인 세션을 확인할 수 없습니다. 다시 로그인한 뒤 시도해주세요.');
+      setCloudError(t('survey.storage.sessionMissing', '로그인 세션을 확인할 수 없습니다. 다시 로그인한 뒤 시도해주세요.'));
       return;
     }
 
@@ -188,7 +196,9 @@ const SurveyPage = () => {
       navigate('/onboarding/consent');
     } catch (retryError) {
       console.error('Retrying survey save failed', retryError);
-      setCloudError('여전히 저장되지 않았습니다. 잠시 후 다시 시도하거나 지원팀에 문의해주세요.');
+      setCloudError(
+        t('survey.storage.retryFailed', '여전히 저장되지 않았습니다. 잠시 후 다시 시도하거나 지원팀에 문의해주세요.'),
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -199,11 +209,11 @@ const SurveyPage = () => {
       <header className="survey-header">
         <div>
           <p className="eyebrow">Onboarding</p>
-          <h1>연구 참여 스크리닝 설문</h1>
-          <p>기본 자격을 확인하고 tracker-flow 컨텍스트에 설문 결과를 동기화합니다.</p>
+          <h1>{t('survey.header.title', '연구 참여 스크리닝 설문')}</h1>
+          <p>{t('survey.header.description', '기본 자격을 확인하고 tracker-flow 컨텍스트에 설문 결과를 동기화합니다.')}</p>
         </div>
         <button className="secondary-button" type="button" onClick={() => navigate('/tracker-flow')}>
-          진행 현황 보기
+          {t('survey.header.progress', '진행 현황 보기')}
         </button>
       </header>
 
@@ -211,53 +221,60 @@ const SurveyPage = () => {
         <section className="survey-card">
           <div className="survey-card__header">
             <div>
-              <h2>참여자 정보</h2>
-              <p>FPS 게임 경험과 장비 보유 여부를 확인합니다.</p>
+              <h2>{t('survey.section.participant', '참여자 정보')}</h2>
+              <p>{t('survey.section.participant.desc', 'FPS 게임 경험과 장비 보유 여부를 확인합니다.')}</p>
             </div>
             <span className={`status-pill ${isReadyToSubmit ? 'success' : 'pending'}`}>
-              {isReadyToSubmit ? '제출 준비 완료' : '입력 필요'}
+              {isReadyToSubmit
+                ? t('survey.status.ready', '제출 준비 완료')
+                : t('survey.status.pending', '입력 필요')}
             </span>
           </div>
 
           <form className="survey-form" onSubmit={handleSubmit}>
             <fieldset>
-              <legend>기본 자격</legend>
+              <legend>{t('survey.legend.eligibility', '기본 자격')}</legend>
               <EligibilityChecklist
                 values={{ ageCheck: formData.ageCheck, webcamCheck: formData.webcamCheck }}
                 onToggle={handleEligibilityToggle}
                 labelOverrides={{
-                  ageCheck:
+                  ageCheck: t(
+                    'survey.eligibility.age',
                     'Q1. 귀하는 만 18세 이상이며, 본 연구의 목적을 이해하고 자발적으로 참여하는 데 동의하십니까?',
-                  webcamCheck:
+                  ),
+                  webcamCheck: t(
+                    'survey.eligibility.webcam',
                     'Q2. 본 연구에 참여하기 위한 PC/노트북에 작동하는 웹캠이 설치되어 있습니까?',
+                  ),
                 }}
               />
             </fieldset>
 
             <fieldset>
-              <legend>게임 경험</legend>
+              <legend>{t('survey.legend.gameplay', '게임 경험')}</legend>
               <p className="question-title">
-                Q3. 지난 6개월간 다음 FPS 게임 중 하나 이상을 주 5시간 이상 정기적으로
-                플레이했습니까?
+                {t('survey.q3.title', 'Q3. 지난 6개월간 다음 FPS 게임 중 하나 이상을 주 5시간 이상 정기적으로 플레이했습니까?')}
                 <br />
-                <span className="hint-text">주요 장르별 분류, 중복 선택 가능</span>
+                <span className="hint-text">{t('survey.q3.hint', '주요 장르별 분류, 중복 선택 가능')}</span>
               </p>
               <GamePreferenceSelector
                 options={surveyGameOptions}
                 selectedGames={formData.gamesPlayed}
                 onToggle={handleGameToggle}
               />
-              <p className="hint-text">* "위 목록에 없음" 선택 시 주력 FPS를 직접 기입해주세요.</p>
+              <p className="hint-text">{t('survey.q3.note', '* "위 목록에 없음" 선택 시 주력 FPS를 직접 기입해주세요.')}</p>
             </fieldset>
 
             <fieldset>
-              <legend>주력 게임</legend>
+              <legend>{t('survey.legend.mainGame', '주력 게임')}</legend>
               <p className="question-title">
-                Q4. (질문 3에서 선택한 게임 중) 귀하의 "주력 게임"(가장 자신 있거나 시간을 많이
-                투자한 게임)은 무엇입니까?
+                {t(
+                  'survey.q4.title',
+                  'Q4. (질문 3에서 선택한 게임 중) 귀하의 "주력 게임"(가장 자신 있거나 시간을 많이 투자한 게임)은 무엇입니까?',
+                )}
               </p>
               <label className="form-field" htmlFor="mainGame">
-                <span>드롭다운 메뉴: 질문 3에서 선택한 모든 게임</span>
+                <span>{t('survey.q4.dropdownLabel', '드롭다운 메뉴: 질문 3에서 선택한 모든 게임')}</span>
                 <select
                   id="mainGame"
                   name="mainGame"
@@ -265,7 +282,7 @@ const SurveyPage = () => {
                   onChange={handleGeneralChange}
                   disabled={isNoneSelected || selectedGameOptions.length === 0}
                 >
-                  <option value="">주력 게임을 선택하세요</option>
+                  <option value="">{t('survey.q4.placeholder', '주력 게임을 선택하세요')}</option>
                   {selectedGameOptions.map(option => (
                     <option key={option.value} value={option.value}>
                       {option.label}
@@ -275,19 +292,22 @@ const SurveyPage = () => {
               </label>
               {formData.mainGame === OTHER_GAME_VALUE && (
                 <label className="form-field" htmlFor="mainGameOther">
-                  <span>위 목록에 없음: 플레이하는 주력 FPS를 입력해주세요.</span>
+                  <span>{t('survey.q4.otherLabel', '위 목록에 없음: 플레이하는 주력 FPS를 입력해주세요.')}</span>
                   <input
                     id="mainGameOther"
                     name="mainGameOther"
                     value={formData.mainGameOther}
                     onChange={handleGeneralChange}
-                    placeholder="예: Escape from Tarkov Arena"
+                    placeholder={t('survey.q4.otherPlaceholder', '예: Escape from Tarkov Arena')}
                   />
                 </label>
               )}
               <div className="form-field">
                 <span className="question-title">
-                  Q5. 지난 6개월간 Aim Trainer(예: KovaaK's, Aim Lab)를 정기적으로 사용했습니까?
+                  {t(
+                    'survey.q5.title',
+                    "Q5. 지난 6개월간 Aim Trainer(예: KovaaK's, Aim Lab)를 정기적으로 사용했습니까?",
+                  )}
                 </span>
                 <div className="radio-grid">
                   <label className="radio-chip">
@@ -298,7 +318,7 @@ const SurveyPage = () => {
                       checked={formData.aimTrainerUsage === 'yes'}
                       onChange={handleGeneralChange}
                     />
-                    <span>예</span>
+                    <span>{t('survey.q5.yes', '예')}</span>
                   </label>
                   <label className="radio-chip">
                     <input
@@ -308,19 +328,22 @@ const SurveyPage = () => {
                       checked={formData.aimTrainerUsage === 'no'}
                       onChange={handleGeneralChange}
                     />
-                    <span>아니오</span>
+                    <span>{t('survey.q5.no', '아니오')}</span>
                   </label>
                 </div>
-                <p className="hint-text">Aim Trainer 사용 여부는 스킬 분석의 중요한 변수가 될 수 있습니다.</p>
+                <p className="hint-text">{t('survey.q5.hint', 'Aim Trainer 사용 여부는 스킬 분석의 중요한 변수가 될 수 있습니다.')}</p>
               </div>
             </fieldset>
 
             <fieldset>
-              <legend>객관적 실력 지표</legend>
+              <legend>{t('survey.legend.rank', '객관적 실력 지표')}</legend>
               {formData.mainGame ? (
                 <label className="form-field">
                   <span>
-                    Q6. ({mainGameLabel}) 현재 인게임 랭크는 무엇입니까?{' '}
+                    {t('survey.q6.label', 'Q6. ({mainGame}) 현재 인게임 랭크는 무엇입니까?').replace(
+                      '{mainGame}',
+                      mainGameLabel,
+                    )}{' '}
                     {rankExamples && <span className="hint-text">{rankExamples}</span>}
                   </span>
                   <input
@@ -329,20 +352,22 @@ const SurveyPage = () => {
                     name="inGameRank"
                     value={formData.inGameRank}
                     onChange={handleGeneralChange}
-                    placeholder="현재 랭크를 정확히 입력하세요"
+                    placeholder={t('survey.q6.placeholder', '현재 랭크를 정확히 입력하세요')}
                   />
                 </label>
               ) : (
-                <p className="hint-text">Q6. (질문 4에서 주력 게임을 선택하세요)</p>
+                <p className="hint-text">{t('survey.q6.wait', 'Q6. (질문 4에서 주력 게임을 선택하세요)')}</p>
               )}
             </fieldset>
 
             <fieldset>
-              <legend>경험치와 자기 평가</legend>
+              <legend>{t('survey.legend.experience', '경험치와 자기 평가')}</legend>
               <label className="form-field" htmlFor="playTime">
                 <span>
-                  Q7. (질문 4에서 선택한) 귀하의 총 플레이 시간은 대략 어느 정도입니까? (Riot/Steam 계정에서
-                  확인 가능)
+                  {t(
+                    'survey.q7.label',
+                    'Q7. (질문 4에서 선택한) 귀하의 총 플레이 시간은 대략 어느 정도입니까? (Riot/Steam 계정에서 확인 가능)',
+                  )}
                 </span>
                 <select id="playTime" name="playTime" value={formData.playTime} onChange={handleGeneralChange}>
                   {playTimeOptions.map(option => (
@@ -353,7 +378,12 @@ const SurveyPage = () => {
                 </select>
               </label>
               <label className="form-field" htmlFor="selfAssessment">
-                <span>Q8. 다른 플레이어들과 비교하여, 귀하 스스로의 전반적인 FPS 게임 실력을 어떻게 평가하십니까?</span>
+                <span>
+                  {t(
+                    'survey.q8.label',
+                    'Q8. 다른 플레이어들과 비교하여, 귀하 스스로의 전반적인 FPS 게임 실력을 어떻게 평가하십니까?',
+                  )}
+                </span>
                 <div className="slider-row">
                   <span>(1)</span>
                   <input
@@ -367,7 +397,9 @@ const SurveyPage = () => {
                     onChange={handleGeneralChange}
                   />
                   <span>(10)</span>
-                  <strong>선택: {formData.selfAssessment}</strong>
+                  <strong>
+                    {t('survey.q8.selected', '선택')}: {formData.selfAssessment}
+                  </strong>
                 </div>
               </label>
             </fieldset>
@@ -388,7 +420,9 @@ const SurveyPage = () => {
                     onClick={handleRetryCloudSave}
                     disabled={isSubmitting}
                   >
-                    {isSubmitting ? '재시도 중...' : '클라우드에 다시 저장'}
+                    {isSubmitting
+                      ? t('survey.cloud.retrying', '재시도 중...')
+                      : t('survey.cloud.retry', '클라우드에 다시 저장')}
                   </button>
                   <button
                     type="button"
@@ -396,7 +430,7 @@ const SurveyPage = () => {
                     onClick={() => setCloudError(null)}
                     disabled={isSubmitting}
                   >
-                    닫기
+                    {t('survey.cloud.close', '닫기')}
                   </button>
                 </div>
               </div>
@@ -404,10 +438,12 @@ const SurveyPage = () => {
 
             <div className="form-actions">
               <button type="button" className="ghost-button" onClick={() => navigate(-1)}>
-                돌아가기
+                {t('survey.back', '돌아가기')}
               </button>
               <button type="submit" className="primary-button" disabled={isSubmitting}>
-                {isSubmitting ? '제출 중...' : '설문 제출 및 다음 단계로'}
+                {isSubmitting
+                  ? t('survey.submitting', '제출 중...')
+                  : t('survey.submit', '설문 제출 및 다음 단계로')}
               </button>
             </div>
           </form>

@@ -12,6 +12,7 @@ import {
 import { exportSessionData, type CsvUploadResult } from '../utils/sessionExport';
 import { useWebgazer } from '../hooks/tracking/useWebgazer';
 import { useAuth } from '../state/authContext';
+import { useTranslation } from '../state/languageContext';
 import { persistLatestSession } from '../utils/resultsStorage';
 import { saveSessionForUser } from '../utils/remoteSessions';
 // Analytics 인터페이스와 함수를 utils에서 import (ResultsPage 내의 중복 정의 제거)
@@ -51,19 +52,20 @@ type SeriesConfig = {
 type HeatmapPoint = { x: number; y: number };
 
 // --- PerformanceLineChart Component (UPDATED with Hit Markers) ---
-const PerformanceLineChart = ({ 
-  series, 
+const PerformanceLineChart = ({
+  series,
   duration,
   hitTimes = [] // NEW: 명중 시점 배열
-}: { 
-  series: SeriesConfig[]; 
+}: {
+  series: SeriesConfig[];
   duration: number;
   hitTimes?: number[];
 }) => {
+  const { t } = useTranslation();
   const activeSeries = series.filter(s => s.points.some(p => p.value !== null));
 
   if (!activeSeries.length) {
-    return <div className="chart-empty">No performance data collected for this session.</div>;
+    return <div className="chart-empty">{t('chart.performance.empty', 'No performance data collected for this session.')}</div>;
   }
 
   const width = 720;
@@ -172,7 +174,7 @@ const PerformanceLineChart = ({
 
         {/* Axis titles */}
         <text x={(width + padding) / 2} y={height - 12} className="chart-axis-title" textAnchor="middle">
-          Time (seconds)
+          {t('chart.performance.time', 'Time (seconds)')}
         </text>
         <text
           x={16}
@@ -181,7 +183,7 @@ const PerformanceLineChart = ({
           textAnchor="middle"
           transform={`rotate(-90 16 ${height / 2})`}
         >
-          Error (px)
+          {t('chart.performance.error', 'Error (px)')}
         </text>
 
         {/* Data lines */}
@@ -220,11 +222,14 @@ const PerformanceLineChart = ({
         {/* 명중 마커 범례 추가 */}
         <div className="legend-item">
           <span className="legend-swatch" style={{ backgroundColor: '#871212ff', width: 8, height: 8, borderRadius: '50%' }} aria-hidden />
-          <span className="legend-label">Hit Moment</span>
+          <span className="legend-label">{t('chart.performance.hitMoment', 'Hit Moment')}</span>
         </div>
       </div>
       <div className="chart-caption">
-        Lower values indicate better tracking accuracy. Markers indicate when targets were hit.
+        {t(
+          'chart.performance.caption',
+          'Lower values indicate better tracking accuracy. Markers show when targets were hit.',
+        )}
       </div>
     </div>
   );
@@ -260,6 +265,7 @@ const persistUploadStatus = (sessionId: string | undefined, status: AutoUploadSt
 const ResultsPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t, language } = useTranslation();
   const {
     activeSession,
     recentSessions,
@@ -310,6 +316,10 @@ const ResultsPage = () => {
   const heatmapContainerRef = useRef<HTMLDivElement | null>(null);
   const participantLabel = user?.email ?? user?.displayName ?? user?.uid;
   const isCalibrationValidated = calibrationResult?.status === 'validated';
+  const localizedDate = useMemo(() => {
+    if (!sessionData) return '';
+    return new Date(sessionData.date).toLocaleString(language === 'ko' ? 'ko-KR' : 'en-US');
+  }, [language, sessionData]);
 
   // --- NEW: Performance Series Data Generation ---
   const performanceSeries = useMemo<SeriesConfig[]>(() => {
@@ -603,11 +613,14 @@ const ResultsPage = () => {
         const uploadPath = exportResult.uploadResult?.storagePath || exportResult.uploadResult?.downloadUrl;
         const successMessage = upload
           ? uploadPath
-            ? `CSV uploaded to Firebase Storage: ${uploadPath}`
+            ? t('results.toast.uploadPath', `CSV uploaded to Firebase Storage: ${uploadPath}`).replace(
+                '{path}',
+                uploadPath,
+              )
             : download
-              ? 'CSV downloaded and uploaded successfully.'
-              : 'CSV uploaded successfully.'
-          : 'CSV downloaded successfully.';
+              ? t('results.toast.downloadAndUpload', 'CSV downloaded and uploaded successfully.')
+              : t('results.toast.uploadSuccess', 'CSV uploaded successfully.')
+          : t('results.toast.downloadSuccess', 'CSV downloaded successfully.');
 
         showToast(successMessage, 'success');
         return true;
@@ -616,7 +629,9 @@ const ResultsPage = () => {
         setLastUploadResult(null);
         const message = error instanceof Error ? error.message : 'Unexpected error occurred.';
         showToast(
-          upload ? `CSV upload failed: ${message}` : `CSV export failed: ${message}`,
+          upload
+            ? t('results.toast.uploadFailed', `CSV upload failed: ${message}`).replace('{message}', message)
+            : t('results.toast.exportFailed', `CSV export failed: ${message}`).replace('{message}', message),
           'error',
         );
         return false;
@@ -681,7 +696,7 @@ const ResultsPage = () => {
   if (!sessionData || !analytics) {
     return (
       <div className="results-page">
-        <div className="loading">Loading results...</div>
+        <div className="loading">{t('results.loading', 'Loading results...')}</div>
       </div>
     );
   }
@@ -691,11 +706,16 @@ const ResultsPage = () => {
       {/* Header */}
       <header className="results-header">
         <div className="header-content">
-          <h1>Training Results</h1>
+          <h1>{t('results.title')}</h1>
           <div className="header-meta">
-            <span>{new Date(sessionData.date).toLocaleString()}</span>
+            <span>{localizedDate}</span>
             <span>•</span>
-            <span>{sessionData.duration}s session</span>
+            <span>
+              {t('results.meta.duration', `${sessionData.duration}s session`).replace(
+                '{seconds}',
+                sessionData.duration.toString(),
+              )}
+            </span>
           </div>
         </div>
       </header>
@@ -706,8 +726,14 @@ const ResultsPage = () => {
         {(!isCalibrationValidated || missingRawData) && (
           <div className="alert-banner warning" role="alert">
             {!isCalibrationValidated
-              ? '캘리브레이션이 완료되지 않아 정확도가 낮을 수 있습니다. 다시 캘리브레이션 후 측정해 보세요.'
-              : '원시 데이터가 비어 있어 요약값으로 표시 중입니다. 트레이닝을 다시 실행해 주세요.'}
+              ? t(
+                  'results.alert.calibration',
+                  'Calibration is incomplete, so accuracy may be lower. Please recalibrate and measure again.',
+                )
+              : t(
+                  'results.alert.missingRaw',
+                  'Raw data is missing, showing summary values only. Please rerun the training.',
+                )}
           </div>
         )}
 
@@ -715,15 +741,15 @@ const ResultsPage = () => {
         <section className="metrics-section">
           {/* --- 상세 페이지 이동 버튼 --- */}
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.5rem' }}>
-            <button 
-              className="secondary-button" 
+            <button
+              className="secondary-button"
               onClick={() => handleOpenDetailed()}
               style={{ fontSize: '0.9rem', padding: '8px 16px' }}
             >
-              View Detailed Analysis &rarr;
+              {t('results.button.detailed')}
             </button>
           </div>
-          <h2>Performance Overview</h2>
+          <h2>{t('results.section.overview')}</h2>
           <div className="metrics-grid">
             {/* 1. Targets Hit */}
             <button
@@ -736,8 +762,8 @@ const ResultsPage = () => {
                 <div className="metric-value">
                   {analytics.targetsHit}/{analytics.totalTargets}
                 </div>
-                <div className="metric-label">Targets Hit</div>
-                <div className="metric-desc">전체 타겟 대비 명중 횟수</div>
+                <div className="metric-label">{t('results.metric.targets.label')}</div>
+                <div className="metric-desc">{t('results.metric.targets.desc')}</div>
               </div>
             </button>
 
@@ -752,8 +778,8 @@ const ResultsPage = () => {
                 <div className="metric-value">
                   {analytics.avgReactionTime.toFixed(0)}ms
                 </div>
-                <div className="metric-label">Avg Reaction</div>
-                <div className="metric-desc">타겟 등장 후 클릭까지 평균 시간</div>
+                <div className="metric-label">{t('results.metric.avgReaction.label')}</div>
+                <div className="metric-desc">{t('results.metric.avgReaction.desc')}</div>
               </div>
             </button>
 
@@ -768,8 +794,8 @@ const ResultsPage = () => {
                 <div className="metric-value">
                   {analytics.avgGazeReactionTime.toFixed(0)}ms
                 </div>
-                <div className="metric-label">Gaze Reaction</div>
-                <div className="metric-desc">타겟 등장 후 시선 도달 시간</div>
+                <div className="metric-label">{t('results.metric.gazeReaction.label')}</div>
+                <div className="metric-desc">{t('results.metric.gazeReaction.desc')}</div>
               </div>
             </button>
 
@@ -784,8 +810,8 @@ const ResultsPage = () => {
                 <div className="metric-value">
                   {analytics.gazeAimLatency.toFixed(0)}ms
                 </div>
-                <div className="metric-label">Gaze-Aim Latency</div>
-                <div className="metric-desc">시선 포착 후 클릭까지의 지연 시간</div>
+                <div className="metric-label">{t('results.metric.gazeAimLatency.label')}</div>
+                <div className="metric-desc">{t('results.metric.gazeAimLatency.desc')}</div>
               </div>
             </button>
 
@@ -800,8 +826,8 @@ const ResultsPage = () => {
                 <div className="metric-value" style={{ fontSize: '1.5rem' }}>
                    G: {analytics.gazeErrorAtHit.toFixed(0)}px / M: {analytics.mouseErrorAtHit.toFixed(0)}px
                 </div>
-                <div className="metric-label">Hit Error (Gaze/Mouse)</div>
-                <div className="metric-desc">명중 순간 타겟 중심과의 거리 오차</div>
+                <div className="metric-label">{t('results.metric.hitError.label')}</div>
+                <div className="metric-desc">{t('results.metric.hitError.desc')}</div>
               </div>
             </button>
 
@@ -816,8 +842,8 @@ const ResultsPage = () => {
                 <div className="metric-value">
                   {analytics.synchronization.toFixed(0)}px
                 </div>
-                <div className="metric-label">Synchronization</div>
-                <div className="metric-desc">시선과 마우스 커서 간의 평균 거리</div>
+                <div className="metric-label">{t('results.metric.sync.label')}</div>
+                <div className="metric-desc">{t('results.metric.sync.desc')}</div>
               </div>
             </button>
           </div>
@@ -825,29 +851,29 @@ const ResultsPage = () => {
 
         {/* Visualizations */}
         <section className="viz-section">
-          <h2>Session Visualizations</h2>
+          <h2>{t('results.section.visuals')}</h2>
           <div className="viz-grid">
             {/* Performance Trends Chart (UPDATED: Clickable) */}
-            <div 
-              className="viz-card actionable" 
+            <div
+              className="viz-card actionable"
               onClick={() => handleOpenDetailed('trends')}
               style={{ cursor: 'pointer' }}
             >
-              <h3>Performance Trends (Error & Sync)</h3>
-              <PerformanceLineChart 
-                series={performanceSeries} 
-                duration={sessionData.duration} 
+              <h3>{t('results.visual.trends.title')}</h3>
+              <PerformanceLineChart
+                series={performanceSeries}
+                duration={sessionData.duration}
                 hitTimes={hitTimes}
               />
             </div>
 
             {/* Gaze Heatmap (UPDATED: Clickable) */}
-            <div 
+            <div
               className="viz-card actionable"
               onClick={() => handleOpenDetailed('heatmap')}
               style={{ cursor: 'pointer' }}
             >
-              <h3>Gaze Heatmap</h3>
+              <h3>{t('results.visual.heatmap.title')}</h3>
               <div className="heatmap-wrapper">
                 {heatmapPoints.length ? (
                   <div
@@ -861,7 +887,7 @@ const ResultsPage = () => {
                     </div>
                   </div>
                 ) : (
-                  <div className="chart-empty">No gaze samples collected for this session.</div>
+                  <div className="chart-empty">{t('results.visual.heatmap.empty')}</div>
                 )}
                 
                 {/* UPDATED: Heatmap Legend Added */}
@@ -870,13 +896,13 @@ const ResultsPage = () => {
                     <div style={{ 
                       display: 'flex', 
                       justifyContent: 'space-between', 
-                      fontSize: '0.75rem', 
-                      color: '#666', 
+                      fontSize: '0.75rem',
+                      color: '#666',
                       marginBottom: '4px',
                       fontWeight: 500
                     }}>
-                      <span>Low Focus</span>
-                      <span>High Focus</span>
+                      <span>{t('results.visual.heatmap.legend.low')}</span>
+                      <span>{t('results.visual.heatmap.legend.high')}</span>
                     </div>
                     <div style={{
                       height: '6px',
@@ -889,13 +915,18 @@ const ResultsPage = () => {
 
                 <div className="heatmap-footer">
                   <p className="viz-description">
-                    Visualize where your gaze was focused during the session
+                    {t('results.visual.heatmap.description')}
                   </p>
                   {heatmapPoints.length > 0 && (
                     <div className="heatmap-meta">
-                      <span>{heatmapPoints.length} gaze samples</span>
                       <span>
-                        Rendered at {Math.round(baseScreenWidth)} × {Math.round(baseScreenHeight)}
+                        {t('results.visual.heatmap.samples')
+                          .replace('{count}', heatmapPoints.length.toLocaleString())}
+                      </span>
+                      <span>
+                        {t('results.visual.heatmap.resolution')
+                          .replace('{width}', Math.round(baseScreenWidth).toString())
+                          .replace('{height}', Math.round(baseScreenHeight).toString())}
                       </span>
                     </div>
                   )}
@@ -907,21 +938,21 @@ const ResultsPage = () => {
 
         {/* Raw Data */}
         <section className="data-section">
-          <h2>Session Data</h2>
+          <h2>{t('results.section.data')}</h2>
           <div className="data-actions">
             {autoUploadStatus === 'error' && (
-              <span className="upload-status error">Automatic upload failed. You can retry below.</span>
+              <span className="upload-status error">{t('results.data.uploadError')}</span>
             )}
             <button
               className="download-button"
               onClick={() => handleExport({ upload: false })}
               disabled={isExporting}
             >
-              {isExporting ? 'Preparing…' : 'Download CSV'}
+              {isExporting ? t('results.data.preparing') : t('results.data.download')}
             </button>
             {autoUploadStatus === 'success' ? (
               <span className="upload-status success upload-status-inline">
-                CSV automatically uploaded to Firebase Storage.
+                {t('results.data.uploadedAuto')}
               </span>
             ) : (
               <button
@@ -930,17 +961,17 @@ const ResultsPage = () => {
                 disabled={isExporting}
               >
                 {isExporting
-                  ? 'Uploading…'
+                  ? t('results.data.uploading')
                   : autoUploadStatus === 'error'
-                    ? 'Retry Upload'
-                    : 'Upload to Firebase Storage'}
+                    ? t('results.data.retryUpload')
+                    : t('results.data.upload')}
               </button>
             )}
             <button className="secondary-button" onClick={handleTrainAgain}>
-              Train Again
+              {t('results.action.trainAgain')}
             </button>
             <button className="secondary-button" onClick={handleBackToDashboard}>
-              Back to Dashboard
+              {t('results.action.backDashboard')}
             </button>
 
             <button className = "secondary-button" onClick={() => navigate('/report')}>
@@ -959,12 +990,12 @@ const ResultsPage = () => {
         marginTop: '-50px', 
         padding: '15px', 
         textAlign: 'center',
-        borderTop: '0.5px solid #eee' 
+        borderTop: '0.5px solid #eee'
       }}>
         <p style={{ marginBottom: '15px', color: '#ffffffff' }}>
-          모든 결과를 확인하셨나요? 아래 버튼을 눌러 연구 참여를 종료해 주세요.
+          {t('results.finish.prompt')}
         </p>
-        <button 
+        <button
           onClick={() => navigate('/thank-you')}
           style={{
             padding: '15px 40px',
@@ -978,7 +1009,7 @@ const ResultsPage = () => {
             boxShadow: '0 4px 6px rgba(36, 26, 26, 0.1)'
           }}
         >
-          연구 참여 종료하기
+          {t('results.finish.cta')}
         </button>
       </div>
     </div>

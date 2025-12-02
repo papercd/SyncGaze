@@ -485,6 +485,8 @@ export const translations: Record<string, Record<Language, string>> = {
   'dashboard.table.reaction': { ko: '평균 반응', en: 'Avg Reaction' },
   'dashboard.table.actions': { ko: '작업', en: 'Actions' },
   'dashboard.table.view': { ko: '자세히 보기', en: 'View Details' },
+  'dashboard.table.report.create': { ko: '리포트 생성하기', en: 'Create Report' },
+  'dashboard.table.report.viewExisting': { ko: '리포트 확인하기', en: 'View Report' },
 
   // Calibration page
   'calibration.loader.title': { ko: '시선 추적 초기화 중...', en: 'Loading Eye Tracking...' },

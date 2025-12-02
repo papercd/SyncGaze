@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../state/authContext';
 import { useTrackingSession } from '../state/trackingSessionContext';
 import { generatePerformanceReport, saveReport, getUserReports, PerformanceReport } from '../services/reportService';
+import { predictScore } from '../services/predictionService';
 import './ReportPage.css';
 
 const ReportPage = () => {
@@ -44,6 +45,12 @@ const ReportPage = () => {
     setError(null);
 
     try {
+      let predictedScore = activeSession.predictedScore ?? null;
+      if (predictedScore == null) {
+        const prediction = await predictScore(activeSession);
+        predictedScore = prediction.predictedScore ?? null;
+      }
+
       const report = await generatePerformanceReport({
         userId: user.uid,
         sessionId: activeSession.id,
@@ -53,7 +60,7 @@ const ReportPage = () => {
         accuracy: activeSession.accuracy,
         targetsHit: activeSession.targetsHit,
         totalTargets: activeSession.totalTargets,
-        predictedScore: activeSession.predictedScore ?? null,
+        predictedScore,
         calibrationError: calibrationResult?.validationError,
       });
 

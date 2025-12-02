@@ -149,10 +149,7 @@ const DashboardPage = () => {
             <span className="button-icon">🎮</span>
             {t('dashboard.action.train')}
           </button>
-          <button className="start-training-button" onClick={() => navigate('/tracker-flow')}>
-            <span className="button-icon">🧭</span>
-            {t('dashboard.action.flow')}
-          </button>
+       
           <button className="start-training-button" onClick={() => navigate('/leaderboard')}>
             <span className="button-icon">🏆</span>
             {t('dashboard.action.leaderboard')}

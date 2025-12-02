@@ -6,6 +6,7 @@ import CalibrationPage from './pages/CalibrationPage';
 import TrainingPage from './pages/TrainingPage';
 import ResultsPage from './pages/ResultsPage';
 import DetailedResultsPage from './pages/DetailedResultsPage';
+import ReportPage from './pages/ReportPage';
 
 import TrackerFlowPage from './pages/TrackerFlowPage';
 import SurveyPage from './pages/onboarding/SurveyPage';
@@ -121,6 +122,14 @@ const AppRouter = () => {
           element={(
             <ProtectedRoute>
               <DetailedResultsPage />
+            </ProtectedRoute>
+          )}
+        />
+        <Route
+          path="/report"
+          element={(
+            <ProtectedRoute>
+              <ReportPage />
             </ProtectedRoute>
           )}
         />

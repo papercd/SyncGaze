@@ -942,6 +942,10 @@ const ResultsPage = () => {
             <button className="secondary-button" onClick={handleBackToDashboard}>
               Back to Dashboard
             </button>
+
+            <button className = "secondary-button" onClick={() => navigate('/report')}>
+            🤖 리포트 생성
+            </button>
           </div>
         </section>
       </main>

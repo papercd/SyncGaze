@@ -973,6 +973,10 @@ const ResultsPage = () => {
             <button className="secondary-button" onClick={handleBackToDashboard}>
               {t('results.action.backDashboard')}
             </button>
+
+            <button className = "secondary-button" onClick={() => navigate('/report')}>
+            🤖 리포트 생성
+            </button>
           </div>
         </section>
       </main>

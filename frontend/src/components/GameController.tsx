@@ -7,6 +7,7 @@ import { Target } from './Target';
 import { useMouseLook } from '../hooks/useMouseLook';
 import { useFrame } from '@react-three/fiber';
 import type { Target3D } from '../types';
+import { useControlSettings } from '../state/controlSettingsContext';
 
 interface GameControllerProps {
   isLocked: boolean;
@@ -21,9 +22,9 @@ export interface GameControllerRef {
 
 
 export const GameController = forwardRef<GameControllerRef, GameControllerProps>(({ 
-  isLocked, 
+  isLocked,
   onTargetHit,
-  onPhaseChange 
+  onPhaseChange
 }, ref) => {
   const [targets, setTargets] = useState<Target3D[]>([]);
   const startTimeRef = useRef<number>(0);
@@ -34,8 +35,9 @@ export const GameController = forwardRef<GameControllerRef, GameControllerProps>
   const totalPausedDurationRef = useRef<number>(0);
   const wasLockedRef = useRef<boolean>(false);
 
-  
-  const { getMouseData, clearMouseData } = useMouseLook(0.002, isLocked);
+
+  const { controlSensitivity } = useControlSettings();
+  const { getMouseData, clearMouseData } = useMouseLook(controlSensitivity, isLocked);
 
   // ADD THIS ENTIRE useEffect:
   useEffect(() => {

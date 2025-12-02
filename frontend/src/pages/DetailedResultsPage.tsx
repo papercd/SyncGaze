@@ -44,6 +44,22 @@ type SeriesConfig = {
 };
 
 type HeatmapPoint = { x: number; y: number };
+type TargetSampleSummary = {
+  targetId: string;
+  gazeErr: number | null;
+  mouseErr: number | null;
+  targetHit: boolean;
+  timeToHitMs: number | null;
+  lastTimestamp: number;
+  firstTimestamp: number;
+};
+
+type ReplayFrame = TrainingDataPoint & {
+  displayGazeX: number | null;
+  displayGazeY: number | null;
+  displayMouseX: number | null;
+  displayMouseY: number | null;
+};
 
 // --- Zoom Control Component ---
 const ZoomControls = ({ 
@@ -297,6 +313,12 @@ const DetailedResultsPage = () => {
   const [rollingZoom, setRollingZoom] = useState(1);
   const [velocityZoom, setVelocityZoom] = useState(1);
 
+  const [replayTargetId, setReplayTargetId] = useState<string | null>(null);
+  const [replaySamples, setReplaySamples] = useState<TrainingDataPoint[]>([]);
+  const [replayIndex, setReplayIndex] = useState(0);
+  const [isReplaying, setIsReplaying] = useState(false);
+  const [replaySpeed, setReplaySpeed] = useState(0.2);
+
   // --- NEW: Metric Visibility State ---
   const [visibleMetrics, setVisibleMetrics] = useState<Record<string, boolean>>({
     'gaze-error': true,
@@ -378,29 +400,81 @@ const DetailedResultsPage = () => {
     };
   }, [analytics, coverage, sessionData]);
 
-  const recentSamples = useMemo(() => {
-    if (!sessionData) return [];
-    const sliced = sessionData.rawData.slice(-8).reverse();
-    return sliced.map(sample => {
-      const gazeErr = sample.targetX !== null && sample.targetY !== null && sample.gazeX !== null && sample.gazeY !== null
-        ? Math.hypot(sample.gazeX - sample.targetX, sample.gazeY - sample.targetY)
-        : null;
-      const mouseErr = sample.targetX !== null && sample.targetY !== null && sample.mouseX !== null && sample.mouseY !== null
-        ? Math.hypot(sample.mouseX - sample.targetX, sample.mouseY - sample.targetY)
-        : null;
-      return { ...sample, gazeErr, mouseErr };
-    });
+  const sortedRawData = useMemo(() => {
+    if (!sessionData?.rawData.length) return [] as TrainingDataPoint[];
+    return [...sessionData.rawData].sort((a, b) => a.timestamp - b.timestamp);
   }, [sessionData]);
+
+  const recentTargets = useMemo<TargetSampleSummary[]>(() => {
+    if (!sortedRawData.length) return [];
+
+    const withTargetId = sortedRawData.filter(point => point.targetId !== null);
+    if (!withTargetId.length) return [];
+
+    const summaries = new Map<
+      string,
+      {
+        firstTimestamp: number;
+        lastSample: TrainingDataPoint;
+        hitTimestamp: number | null;
+        preHitSample: TrainingDataPoint | null;
+      }
+    >();
+
+    withTargetId.forEach(point => {
+      const targetId = point.targetId as string;
+      const existing = summaries.get(targetId);
+
+      const firstTimestamp = existing ? existing.firstTimestamp : point.timestamp;
+      let hitTimestamp = existing?.hitTimestamp ?? null;
+      let lastSample = !existing || point.timestamp >= existing.lastSample.timestamp ? point : existing.lastSample;
+      let preHitSample = existing?.preHitSample ?? null;
+
+      if (hitTimestamp === null) {
+        if (point.targetHit) {
+          hitTimestamp = point.timestamp;
+          preHitSample = existing?.lastSample ?? point;
+        } else {
+          preHitSample = point;
+        }
+      }
+
+      summaries.set(targetId, { firstTimestamp, lastSample, hitTimestamp, preHitSample });
+    });
+
+    return Array.from(summaries.entries())
+      .map(([targetId, { firstTimestamp, lastSample, hitTimestamp, preHitSample }]) => {
+        const sampleForError = hitTimestamp !== null ? preHitSample ?? lastSample : lastSample;
+        const gazeErr = sampleForError.targetX !== null && sampleForError.targetY !== null && sampleForError.gazeX !== null && sampleForError.gazeY !== null
+          ? Math.hypot(sampleForError.gazeX - sampleForError.targetX, sampleForError.gazeY - sampleForError.targetY)
+          : null;
+        const mouseErr = sampleForError.targetX !== null && sampleForError.targetY !== null && sampleForError.mouseX !== null && sampleForError.mouseY !== null
+          ? Math.hypot(sampleForError.mouseX - sampleForError.targetX, sampleForError.mouseY - sampleForError.targetY)
+          : null;
+        const timeToHitMs = hitTimestamp !== null ? hitTimestamp - firstTimestamp : null;
+
+        return {
+          targetId,
+          gazeErr,
+          mouseErr,
+          targetHit: hitTimestamp !== null,
+          timeToHitMs,
+          lastTimestamp: lastSample.timestamp,
+          firstTimestamp,
+        };
+      })
+      .sort((a, b) => a.firstTimestamp - b.firstTimestamp);
+  }, [sortedRawData]);
 
   const performanceSeries = useMemo<SeriesConfig[]>(() => {
     if (!sessionData) return [];
-    const timeSeries = generateErrorTimeSeries(sessionData.rawData, sessionData.duration);
+    const timeSeries = generateErrorTimeSeries(sortedRawData, sessionData.duration);
     return [
       { key: 'gaze-error', label: 'Gaze Error', color: '#4ecdc4', gradientId: 'grad-gaze', points: timeSeries.map(p => ({ time: p.time, value: p.gazeError })) },
       { key: 'mouse-error', label: 'Mouse Error', color: '#ffb86c', gradientId: 'grad-mouse', points: timeSeries.map(p => ({ time: p.time, value: p.mouseError })) },
       { key: 'synchronization', label: 'Synchronization', color: '#7a5ff5', gradientId: 'grad-sync', points: timeSeries.map(p => ({ time: p.time, value: p.synchronization })) },
     ];
-  }, [sessionData]);
+  }, [sessionData, sortedRawData]);
 
   // --- NEW: Filter Series Logic ---
   const filteredSeries = useMemo(() => {
@@ -408,18 +482,17 @@ const DetailedResultsPage = () => {
   }, [performanceSeries, visibleMetrics]);
 
   const hitTimes = useMemo(() => {
-    if (!sessionData?.rawData.length) return [];
-    const sorted = [...sessionData.rawData].sort((a, b) => a.timestamp - b.timestamp);
-    const startTime = sorted[0].timestamp;
-    return sorted.filter(d => d.targetHit).map(d => (d.timestamp - startTime) / 1000);
-  }, [sessionData]);
+    if (!sortedRawData.length) return [];
+    const startTime = sortedRawData[0].timestamp;
+    return sortedRawData.filter(d => d.targetHit).map(d => (d.timestamp - startTime) / 1000);
+  }, [sortedRawData]);
 
   const rollingPerformance = useMemo(() => {
-    if (!sessionData?.rawData.length) {
+    if (!sortedRawData.length || !sessionData) {
       return { accuracySeries: [], hpsSeries: [], hitTimes: [] as number[] };
     }
 
-    const sorted = [...sessionData.rawData].sort((a, b) => a.timestamp - b.timestamp);
+    const sorted = sortedRawData;
     const startTime = sorted[0].timestamp;
     const endTime = sorted.at(-1)?.timestamp ?? startTime;
     const durationSeconds = Math.max(sessionData.duration, Math.ceil((endTime - startTime) / 1000));
@@ -689,6 +762,152 @@ const DetailedResultsPage = () => {
     drawHeatmap();
     return () => resizeObserver.disconnect();
   }, [drawHeatmap, heatmapPoints.length]);
+
+  const resolveReplayFrame = useCallback((samples: TrainingDataPoint[], index: number): ReplayFrame | null => {
+    if (!samples.length) return null;
+    const safeIndex = Math.min(index, samples.length - 1);
+    const frame = samples[safeIndex];
+
+    const fallback = frame.targetHit
+      ? [...samples]
+        .slice(0, safeIndex)
+        .reverse()
+        .find(s => s.targetId === frame.targetId && (s.gazeX !== null || s.mouseX !== null))
+      : null;
+
+    return {
+      ...frame,
+      displayGazeX: frame.gazeX ?? fallback?.gazeX ?? null,
+      displayGazeY: frame.gazeY ?? fallback?.gazeY ?? null,
+      displayMouseX: frame.mouseX ?? fallback?.mouseX ?? null,
+      displayMouseY: frame.mouseY ?? fallback?.mouseY ?? null,
+    };
+  }, []);
+
+  const openReplayForTarget = useCallback((targetId: string) => {
+    if (!sortedRawData.length) return;
+    const startIdx = sortedRawData.findIndex(p => p.targetId === targetId);
+    if (startIdx === -1) return;
+
+    const segment: TrainingDataPoint[] = [];
+    for (let i = startIdx; i < sortedRawData.length; i += 1) {
+      const point = sortedRawData[i];
+      if (point.targetId === targetId) {
+        segment.push(point);
+        if (point.targetHit && sortedRawData[i + 1]?.targetId !== targetId) {
+          break;
+        }
+      } else if (segment.length) {
+        break;
+      }
+    }
+
+    if (!segment.length) return;
+
+    setReplayTargetId(targetId);
+    setReplaySamples(segment);
+    setReplayIndex(0);
+    setIsReplaying(true);
+  }, [sortedRawData]);
+
+  useEffect(() => {
+    if (!isReplaying || replaySamples.length < 2) return undefined;
+    const currentIndex = replayIndex;
+    if (currentIndex >= replaySamples.length - 1) {
+      setIsReplaying(false);
+      return undefined;
+    }
+
+    const current = replaySamples[currentIndex];
+    const next = replaySamples[currentIndex + 1];
+    const delay = Math.max(120, (next.timestamp - current.timestamp) / replaySpeed);
+
+    const timeout = window.setTimeout(() => {
+      setReplayIndex(idx => Math.min(idx + 1, replaySamples.length - 1));
+    }, delay);
+
+    return () => window.clearTimeout(timeout);
+  }, [isReplaying, replayIndex, replaySamples, replaySpeed]);
+
+  const closeReplay = useCallback(() => {
+    setIsReplaying(false);
+    setReplayTargetId(null);
+    setReplaySamples([]);
+    setReplayIndex(0);
+  }, []);
+
+  const currentReplayFrame = useMemo(() => resolveReplayFrame(replaySamples, replayIndex), [replaySamples, replayIndex, resolveReplayFrame]);
+
+  const replayBounds = useMemo(() => {
+    if (!replaySamples.length) {
+      return { minX: 0, maxX: 1, minY: 0, maxY: 1 };
+    }
+
+    let minX = Number.POSITIVE_INFINITY;
+    let maxX = Number.NEGATIVE_INFINITY;
+    let minY = Number.POSITIVE_INFINITY;
+    let maxY = Number.NEGATIVE_INFINITY;
+
+    const consider = (value: number | null, isX: boolean) => {
+      if (value === null) return;
+      if (isX) {
+        minX = Math.min(minX, value);
+        maxX = Math.max(maxX, value);
+      } else {
+        minY = Math.min(minY, value);
+        maxY = Math.max(maxY, value);
+      }
+    };
+
+    replaySamples.forEach((sample, idx) => {
+      const frame = resolveReplayFrame(replaySamples, idx);
+      if (!frame) return;
+      consider(frame.targetX, true);
+      consider(frame.targetY, false);
+      consider(frame.displayGazeX, true);
+      consider(frame.displayGazeY, false);
+      consider(frame.displayMouseX, true);
+      consider(frame.displayMouseY, false);
+    });
+
+    if (!Number.isFinite(minX) || !Number.isFinite(maxX) || !Number.isFinite(minY) || !Number.isFinite(maxY)) {
+      return { minX: 0, maxX: 1, minY: 0, maxY: 1 };
+    }
+
+    const padX = (maxX - minX || 1) * 0.05;
+    const padY = (maxY - minY || 1) * 0.05;
+
+    return {
+      minX: minX - padX,
+      maxX: maxX + padX,
+      minY: minY - padY,
+      maxY: maxY + padY,
+    };
+  }, [replaySamples, resolveReplayFrame]);
+
+  const replayStartTime = replaySamples[0]?.timestamp ?? 0;
+  const replayDurationMs = (replaySamples.at(-1)?.timestamp ?? replayStartTime) - replayStartTime;
+  const replayElapsedMs = currentReplayFrame ? currentReplayFrame.timestamp - replayStartTime : 0;
+  const replayProgressPct = replayDurationMs > 0 ? Math.min(100, Math.max(0, (replayElapsedMs / replayDurationMs) * 100)) : 0;
+
+  const scrubToProgress = (percent: number) => {
+    if (!replaySamples.length || replayDurationMs <= 0) return;
+    const clamped = Math.min(100, Math.max(0, percent));
+    const targetTime = replayStartTime + (clamped / 100) * replayDurationMs;
+    const nextIndex = replaySamples.findIndex(p => p.timestamp >= targetTime);
+    if (nextIndex === -1) {
+      setReplayIndex(replaySamples.length - 1);
+    } else {
+      setReplayIndex(nextIndex);
+    }
+  };
+
+  const projectReplayPoint = useCallback((value: number | null, isX: boolean, size: number) => {
+    const min = isX ? replayBounds.minX : replayBounds.minY;
+    const max = isX ? replayBounds.maxX : replayBounds.maxY;
+    if (value === null || max === min) return null;
+    return ((value - min) / (max - min)) * size;
+  }, [replayBounds]);
 
   const handleBack = () => navigate('/results');
 
@@ -1071,39 +1290,185 @@ const DetailedResultsPage = () => {
         </div>
       </section>
 
-      {/* Recent Samples 섹션 */}
+      {/* Session Targets 섹션 */}
       <section className="detail-section">
         <div className="section-header">
-          <h2>Recent Samples</h2>
-          <p className="muted">최근 8개의 수집 포인트를 기준으로 오차를 보여줍니다.</p>
+          <h2>Recent Targets</h2>
+          <p className="muted">세션동안 등장한 타겟의 오차와 반응 시간을 확인하세요. 한 번에 8개씩 표시되며 스크롤로 다음 타겟까지 탐색할 수 있습니다. 타겟 ID를 누르면 해당 타겟 등장부터 사라질 때까지의 슬로우모션 리플레이가 재생됩니다.</p>
         </div>
-        <div className="samples-table">
-          <table>
-            <thead>
-              <tr>
-                <th scope="col">Target</th>
-                <th scope="col">Gaze error</th>
-                <th scope="col">Mouse error</th>
-                <th scope="col">Hit</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentSamples.map((sample, idx) => (
-                <tr key={`${sample.timestamp}-${idx}`}>
-                  <td className="align-left">{sample.targetId ?? '—'}</td>
-                  <td>{sample.gazeErr !== null ? `${sample.gazeErr.toFixed(1)} px` : 'N/A'}</td>
-                  <td>{sample.mouseErr !== null ? `${sample.mouseErr.toFixed(1)} px` : 'N/A'}</td>
-                  <td>
-                    <span className={sample.targetHit ? 'pill pill-green' : 'pill'}>
-                      {sample.targetHit ? 'Hit' : 'Miss'}
-                    </span>
-                  </td>
+        <div className="samples-table scrollable">
+          <div className="samples-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col" className="align-left">Target</th>
+                  <th scope="col">Gaze error</th>
+                  <th scope="col">Mouse error</th>
+                  <th scope="col">Time to hit</th>
+                  <th scope="col">Hit</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {recentTargets.map((sample, idx) => (
+                  <tr key={`${sample.targetId}-${idx}`}>
+                    <td className="align-left">
+                      <button type="button" className="target-link" onClick={() => openReplayForTarget(sample.targetId)}>
+                        {sample.targetId ?? '—'}
+                      </button>
+                    </td>
+                    <td>{sample.gazeErr !== null ? `${sample.gazeErr.toFixed(1)} px` : 'N/A'}</td>
+                    <td>{sample.mouseErr !== null ? `${sample.mouseErr.toFixed(1)} px` : 'N/A'}</td>
+                    <td>{sample.timeToHitMs !== null ? `${(sample.timeToHitMs / 1000).toFixed(2)} s` : '—'}</td>
+                    <td>
+                      <span className={sample.targetHit ? 'pill pill-green' : 'pill'}>
+                        {sample.targetHit ? 'Hit' : 'Miss'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
+
+      {replayTargetId && (
+        <div className="replay-overlay" role="dialog" aria-modal="true">
+          <div className="replay-modal detail-card">
+            <div className="replay-header">
+              <div>
+                <p className="card-label">Target Replay</p>
+                <h3 className="replay-title">#{replayTargetId}</h3>
+                <p className="muted">
+                  등장부터 사라질 때까지를 {currentReplayFrame?.targetHit ? '명중 프레임 포함' : '마지막 프레임까지'} 느린 속도로 재생합니다. 배속을 선택하거나, 재생바를 움직여 원하는 구간을 바로 확인할 수 있습니다.
+                </p>
+              </div>
+              <button type="button" className="detail-button ghost" onClick={closeReplay}>Close</button>
+            </div>
+
+            <div className="replay-body">
+              <div className="replay-viewport">
+                <svg viewBox="0 0 420 260" className="replay-canvas" role="presentation">
+                  <rect x={0} y={0} width={420} height={260} rx={12} ry={12} fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.08)" />
+                  {[0.25, 0.5, 0.75].map((ratio, idx) => (
+                    <line
+                      key={`v-${idx}`}
+                      x1={420 * ratio}
+                      x2={420 * ratio}
+                      y1={0}
+                      y2={260}
+                      stroke="rgba(255,255,255,0.07)"
+                      strokeDasharray="4 4"
+                    />
+                  ))}
+                  {[0.25, 0.5, 0.75].map((ratio, idx) => (
+                    <line
+                      key={`h-${idx}`}
+                      x1={0}
+                      x2={420}
+                      y1={260 * ratio}
+                      y2={260 * ratio}
+                      stroke="rgba(255,255,255,0.07)"
+                      strokeDasharray="4 4"
+                    />
+                  ))}
+
+                  {currentReplayFrame && (
+                    <>
+                      {currentReplayFrame.targetX !== null && currentReplayFrame.targetY !== null && (
+                        <circle
+                          className="replay-target"
+                          cx={projectReplayPoint(currentReplayFrame.targetX, true, 420) ?? 210}
+                          cy={projectReplayPoint(currentReplayFrame.targetY, false, 260) ?? 130}
+                          r={12}
+                        />
+                      )}
+                      {currentReplayFrame.displayMouseX !== null && currentReplayFrame.displayMouseY !== null && (
+                        <circle
+                          className="replay-mouse"
+                          cx={projectReplayPoint(currentReplayFrame.displayMouseX, true, 420) ?? 210}
+                          cy={projectReplayPoint(currentReplayFrame.displayMouseY, false, 260) ?? 130}
+                          r={7}
+                        />
+                      )}
+                      {currentReplayFrame.displayGazeX !== null && currentReplayFrame.displayGazeY !== null && (
+                        <circle
+                          className="replay-gaze"
+                          cx={projectReplayPoint(currentReplayFrame.displayGazeX, true, 420) ?? 210}
+                          cy={projectReplayPoint(currentReplayFrame.displayGazeY, false, 260) ?? 130}
+                          r={7}
+                        />
+                      )}
+                    </>
+                  )}
+                </svg>
+              </div>
+              <div className="replay-meta">
+                <div className="replay-legend" aria-label="점 설명">
+                  <span><span className="legend-dot target" /> Target</span>
+                  <span><span className="legend-dot mouse" /> Mouse</span>
+                  <span><span className="legend-dot gaze" /> Gaze</span>
+                </div>
+                <div className="stat-row">
+                  <span>Time window</span>
+                  <strong>{(replayDurationMs / 1000).toFixed(2)} s</strong>
+                </div>
+                <div className="stat-row">
+                  <span>Current time</span>
+                  <strong>{(replayElapsedMs / 1000).toFixed(2)} s</strong>
+                </div>
+                <div className="stat-row">
+                  <span>Status</span>
+                  <strong>{currentReplayFrame?.targetHit ? 'Hit' : 'Tracking'}</strong>
+                </div>
+                <div className="replay-progress" aria-label="replay progress">
+                  <div style={{ width: `${replayProgressPct}%` }} />
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    step={0.1}
+                    value={replayProgressPct}
+                    onChange={e => scrubToProgress(Number(e.target.value))}
+                    aria-label="재생 위치 조절"
+                  />
+                </div>
+                <div className="replay-controls">
+                  <label className="replay-speed" htmlFor="replay-speed-select">
+                    Speed
+                    <select
+                      id="replay-speed-select"
+                      value={replaySpeed}
+                      onChange={e => setReplaySpeed(Number(e.target.value))}
+                    >
+                      {[0.1, 0.2, 0.3, 0.5, 1].map(speed => (
+                        <option key={speed} value={speed}>{`${speed.toFixed(1)}×`}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <button
+                    type="button"
+                    className="detail-button small"
+                    onClick={() => setIsReplaying(prev => !prev)}
+                  >
+                    {isReplaying ? 'Pause' : 'Play'}
+                  </button>
+                  <button
+                    type="button"
+                    className="detail-button small ghost"
+                    onClick={() => {
+                      setReplayIndex(0);
+                      setIsReplaying(true);
+                    }}
+                  >
+                    Restart
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

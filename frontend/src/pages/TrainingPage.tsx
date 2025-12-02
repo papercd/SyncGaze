@@ -17,6 +17,7 @@ import { useWebgazer } from '../hooks/tracking/useWebgazer';
 import { serializeSessionToCsv } from '../utils/sessionExport';
 import { calculatePerformanceAnalytics } from '../utils/analytics';
 import { useTranslation } from '../state/languageContext';
+import { useControlSettings } from '../state/controlSettingsContext';
 
 const TrainingPage = () => {
   const navigate = useNavigate();
@@ -32,6 +33,7 @@ const TrainingPage = () => {
   const { user } = useAuth();
   const { stopSession } = useWebgazer();
   const { t } = useTranslation();
+  const { controlSensitivity } = useControlSettings();
   
   const [timeRemaining, setTimeRemaining] = useState(60);
   const [isTraining, setIsTraining] = useState(false);
@@ -107,6 +109,7 @@ const TrainingPage = () => {
       avgReactionTime: metrics.avgReactionTime,
       gazeAccuracy: metrics.gazeAccuracy,
       mouseAccuracy: metrics.mouseAccuracy,
+      controlSensitivity,
       screenSize: {
         width: window.innerWidth,
         height: window.innerHeight
@@ -142,7 +145,7 @@ const TrainingPage = () => {
       dataPoints: convertedData.length,
       accuracy: metrics.accuracy.toFixed(2) + '%',
     });
-  }, [addSession, setActiveSessionId, calibrationResult, surveyResponses, consentAccepted, user]);
+  }, [addSession, setActiveSessionId, calibrationResult, surveyResponses, consentAccepted, user, controlSensitivity]);
 
   const handleViewResults = useCallback(() => {
     // ✅ Don't stop WebGazer here - ResultsPage will handle it on mount

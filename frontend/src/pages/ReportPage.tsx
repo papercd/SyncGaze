@@ -1,0 +1,259 @@
+// frontend/src/pages/ReportPage.tsx
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../state/authContext';
+import { useTrackingSession } from '../state/trackingSessionContext';
+import { generatePerformanceReport, saveReport, getUserReports, PerformanceReport } from '../services/reportService';
+import './ReportPage.css';
+
+const ReportPage = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { activeSession, calibrationResult } = useTrackingSession();
+
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [currentReport, setCurrentReport] = useState<PerformanceReport | null>(null);
+  const [savedReports, setSavedReports] = useState<PerformanceReport[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
+
+  // Load saved reports on mount
+  useEffect(() => {
+    if (user?.uid) {
+      loadSavedReports();
+    }
+  }, [user?.uid]);
+
+  const loadSavedReports = async () => {
+    if (!user?.uid) return;
+    try {
+      const reports = await getUserReports(user.uid);
+      setSavedReports(reports);
+    } catch (err) {
+      console.error('Failed to load saved reports:', err);
+    }
+  };
+
+  const handleGenerateReport = async () => {
+    if (!activeSession || !user?.uid) {
+      setError('활성 세션 또는 사용자 정보가 없습니다.');
+      return;
+    }
+
+    setIsGenerating(true);
+    setError(null);
+
+    try {
+      const report = await generatePerformanceReport({
+        userId: user.uid,
+        sessionId: activeSession.id,
+        reactionTime: activeSession.avgReactionTime,
+        overlapScore: activeSession.gazeAccuracy,
+        trackingAccuracy: activeSession.mouseAccuracy,
+        accuracy: activeSession.accuracy,
+        targetsHit: activeSession.targetsHit,
+        totalTargets: activeSession.totalTargets,
+        calibrationError: calibrationResult?.validationError,
+      });
+
+      setCurrentReport(report);
+      
+      // Save to Firebase
+      await saveReport(user.uid, report);
+      
+      // Reload saved reports
+      await loadSavedReports();
+    } catch (err) {
+      console.error('Report generation failed:', err);
+      setError('리포트 생성에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleViewSavedReport = (reportId: string) => {
+    const report = savedReports.find(r => r.id === reportId);
+    if (report) {
+      setCurrentReport(report);
+      setSelectedReportId(reportId);
+    }
+  };
+
+  const renderReportContent = (report: PerformanceReport) => {
+    return (
+      <div className="report-content">
+        <div className="report-header">
+          <h2>성능 분석 리포트</h2>
+          <div className="report-meta">
+            <span>생성일: {new Date(report.generatedAt).toLocaleString('ko-KR')}</span>
+            <span>세션 ID: {report.sessionId}</span>
+          </div>
+        </div>
+
+        <div 
+          className="report-markdown"
+          dangerouslySetInnerHTML={{ __html: renderMarkdown(report.content) }}
+        />
+
+        <div className="report-data-summary">
+          <h3>측정 데이터</h3>
+          <div className="data-grid">
+            <div className="data-item">
+              <span className="data-label">반응 속도</span>
+              <span className="data-value">{report.metrics.reactionTime.toFixed(0)}ms</span>
+              <span className="data-percentile">(상위 {report.metrics.reactionTimePercentile}%)</span>
+            </div>
+            <div className="data-item">
+              <span className="data-label">시선-에임 일치도</span>
+              <span className="data-value">{report.metrics.overlapScore.toFixed(1)}%</span>
+              <span className="data-percentile">(상위 {report.metrics.overlapScorePercentile}%)</span>
+            </div>
+            <div className="data-item">
+              <span className="data-label">트래킹 정확도</span>
+              <span className="data-value">{report.metrics.trackingAccuracy.toFixed(1)}%</span>
+            </div>
+            <div className="data-item">
+              <span className="data-label">종합 정확도</span>
+              <span className="data-value">{report.metrics.accuracy.toFixed(1)}%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Simple markdown to HTML converter
+  const renderMarkdown = (markdown: string): string => {
+    return markdown
+      .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+      .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+      .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/^- (.*$)/gim, '<li>$1</li>')
+      .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+      .replace(/\n\n/g, '</p><p>')
+      .replace(/^(.+)$/gm, '<p>$1</p>')
+      .replace(/<p><\/p>/g, '')
+      .replace(/<p><h/g, '<h')
+      .replace(/<\/h[1-6]><\/p>/g, (match) => match.replace('<p>', '').replace('</p>', ''))
+      .replace(/<p><ul>/g, '<ul>')
+      .replace(/<\/ul><\/p>/g, '</ul>');
+  };
+
+  return (
+    <div className="report-page">
+      <div className="report-container">
+        <button className="back-button" onClick={() => navigate('/results')}>
+          ← 결과 페이지로 돌아가기
+        </button>
+
+        <div className="report-layout">
+          {/* Sidebar with saved reports */}
+          <aside className="report-sidebar">
+            <h3>저장된 리포트</h3>
+            <div className="report-list">
+              {savedReports.length === 0 ? (
+                <p className="no-reports">저장된 리포트가 없습니다.</p>
+              ) : (
+                savedReports.map(report => (
+                  <div
+                    key={report.id}
+                    className={`report-item ${selectedReportId === report.id ? 'active' : ''}`}
+                    onClick={() => handleViewSavedReport(report.id)}
+                  >
+                    <div className="report-item-date">
+                      {new Date(report.generatedAt).toLocaleDateString('ko-KR')}
+                    </div>
+                    <div className="report-item-preview">
+                      세션: {report.sessionId.slice(0, 8)}...
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </aside>
+
+          {/* Main content */}
+          <main className="report-main">
+            {!currentReport ? (
+              <div className="report-generate">
+                <h1>AI 성능 분석 리포트</h1>
+                <p className="report-description">
+                  전직 FPS 프로게이머 출신 코치의 시각으로 당신의 플레이를 분석하고,
+                  맞춤형 훈련 방법을 제안합니다.
+                </p>
+
+                {!activeSession && (
+                  <div className="warning-box">
+                    <p>⚠️ 활성 세션이 없습니다. 먼저 트레이닝을 완료해주세요.</p>
+                  </div>
+                )}
+
+                {activeSession && (
+                  <div className="session-summary">
+                    <h3>현재 세션 데이터</h3>
+                    <div className="summary-grid">
+                      <div className="summary-item">
+                        <span>반응 속도</span>
+                        <strong>{activeSession.avgReactionTime.toFixed(0)}ms</strong>
+                      </div>
+                      <div className="summary-item">
+                        <span>시선 정확도</span>
+                        <strong>{activeSession.gazeAccuracy.toFixed(1)}%</strong>
+                      </div>
+                      <div className="summary-item">
+                        <span>마우스 정확도</span>
+                        <strong>{activeSession.mouseAccuracy.toFixed(1)}%</strong>
+                      </div>
+                      <div className="summary-item">
+                        <span>적중률</span>
+                        <strong>{activeSession.accuracy.toFixed(1)}%</strong>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {error && (
+                  <div className="error-box">
+                    <p>{error}</p>
+                  </div>
+                )}
+
+                <button
+                  className="generate-button"
+                  onClick={handleGenerateReport}
+                  disabled={isGenerating || !activeSession}
+                >
+                  {isGenerating ? (
+                    <>
+                      <span className="spinner"></span>
+                      리포트 생성 중...
+                    </>
+                  ) : (
+                    '리포트 생성하기'
+                  )}
+                </button>
+              </div>
+            ) : (
+              <>
+                {renderReportContent(currentReport)}
+                <button
+                  className="new-report-button"
+                  onClick={() => {
+                    setCurrentReport(null);
+                    setSelectedReportId(null);
+                  }}
+                >
+                  새 리포트 생성
+                </button>
+              </>
+            )}
+          </main>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ReportPage;

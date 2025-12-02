@@ -80,6 +80,11 @@
   box-shadow: none;
 }
 
+.detail-button.small {
+  padding: 0.45rem 0.9rem;
+  font-size: 0.95rem;
+}
+
 .detail-section {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -186,6 +191,16 @@
   margin-top: 0.75rem;
 }
 
+.samples-table.scrollable {
+  overflow: visible;
+}
+
+.samples-scroll {
+  max-height: 520px;
+  overflow-y: auto;
+  border-radius: 12px;
+}
+
 .samples-table table {
   width: 100%;
   border-collapse: collapse;
@@ -225,6 +240,20 @@
   text-align: left;
 }
 
+.target-link {
+  background: none;
+  border: none;
+  color: #7ec7ff;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.target-link:hover {
+  color: #b6dbff;
+}
+
 .detail-empty {
   display: flex;
   flex-direction: column;
@@ -234,6 +263,177 @@
   gap: 1rem;
   color: #c5cae9;
 }
+
+.replay-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 6, 18, 0.7);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  z-index: 20;
+}
+
+.replay-modal {
+  max-width: 960px;
+  width: min(960px, 100%);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+}
+
+.replay-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.replay-title {
+  margin: 0.2rem 0;
+  font-size: 1.8rem;
+}
+
+.replay-body {
+  display: grid;
+  grid-template-columns: minmax(320px, 2fr) minmax(240px, 1fr);
+  gap: 1.25rem;
+  align-items: center;
+}
+
+.replay-viewport {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 0.75rem;
+}
+
+.replay-canvas {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.replay-target {
+  fill: rgba(255, 99, 132, 0.8);
+  stroke: rgba(255, 255, 255, 0.6);
+  stroke-width: 2;
+}
+
+.replay-gaze {
+  fill: #4ecdc4;
+  stroke: rgba(255, 255, 255, 0.7);
+  stroke-width: 1.5;
+}
+
+.replay-mouse {
+  fill: #ffb86c;
+  stroke: rgba(255, 255, 255, 0.7);
+  stroke-width: 1.5;
+}
+
+.replay-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+}
+
+.replay-legend {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  color: #d8ddf3;
+  font-weight: 600;
+}
+
+.legend-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+}
+
+.legend-dot.target { background: rgba(255, 99, 132, 0.8); }
+.legend-dot.mouse { background: #ffb86c; }
+.legend-dot.gaze { background: #4ecdc4; }
+
+.replay-progress {
+  width: 100%;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  position: relative;
+}
+
+.replay-progress > div {
+  height: 100%;
+  background: linear-gradient(90deg, #6dd5ed, #2193b0);
+  transition: width 120ms linear;
+}
+
+.replay-progress input[type="range"] {
+  position: absolute;
+  inset: -8px 0 -8px 0;
+  width: 100%;
+  background: transparent;
+  -webkit-appearance: none;
+}
+
+.replay-progress input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #6dd5ed;
+  border: 2px solid #1c3b4d;
+  cursor: pointer;
+}
+
+.replay-progress input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #6dd5ed;
+  border: 2px solid #1c3b4d;
+  cursor: pointer;
+}
+
+.replay-controls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.replay-speed {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #d8ddf3;
+  font-weight: 600;
+}
+
+.replay-speed select {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #f7f7ff;
+  border-radius: 8px;
+  padding: 0.35rem 0.5rem;
+}
+
 
 @media (max-width: 900px) {
   .detailed-results-page {

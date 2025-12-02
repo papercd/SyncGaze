@@ -6,6 +6,7 @@ import CalibrationPage from './pages/CalibrationPage';
 import TrainingPage from './pages/TrainingPage';
 import ResultsPage from './pages/ResultsPage';
 import DetailedResultsPage from './pages/DetailedResultsPage';
+import ReportPage from './pages/ReportPage';
 
 import TrackerFlowPage from './pages/TrackerFlowPage';
 import SurveyPage from './pages/onboarding/SurveyPage';
@@ -13,6 +14,7 @@ import ResearchConsentPage from './pages/onboarding/ResearchConsentPage';
 import LeaderboardPage from './pages/LeaderboardPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage.tsx';
+import SettingsPage from './pages/SettingsPage';
 import { ReactElement, useEffect } from 'react';
 import { useAuth } from './state/authContext';
 import SessionRemoteHydrator from './components/SessionRemoteHydrator';
@@ -128,6 +130,14 @@ const AppRouter = () => {
           )}
         />
         <Route
+          path="/report"
+          element={(
+            <ProtectedRoute>
+              <ReportPage />
+            </ProtectedRoute>
+          )}
+        />
+        <Route
           path="/onboarding/survey"
           element={(
             <ProtectedRoute>
@@ -140,6 +150,15 @@ const AppRouter = () => {
           element={(
             <ProtectedRoute>
               <ResearchConsentPage />
+            </ProtectedRoute>
+          )}
+        />
+
+        <Route
+          path="/settings"
+          element={(
+            <ProtectedRoute>
+              <SettingsPage />
             </ProtectedRoute>
           )}
         />

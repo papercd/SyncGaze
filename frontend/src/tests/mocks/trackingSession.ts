@@ -65,6 +65,7 @@ export const buildTrainingSession = (
   avgReactionTime: 250,
   gazeAccuracy: 75,
   mouseAccuracy: 90,
+  controlSensitivity: 0.002,
   screenSize: { width: 1920, height: 1080 },
   csvData: 'timestamp,gazeX',
   rawData: [],

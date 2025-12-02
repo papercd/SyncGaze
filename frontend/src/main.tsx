@@ -5,13 +5,16 @@ import App from './App';
 import './index.css';
 import { TrackingSessionProvider } from './state/trackingSessionContext';
 import { WebgazerProvider } from './hooks/tracking/useWebgazer';
+import { ControlSettingsProvider } from './state/controlSettingsContext';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <TrackingSessionProvider>
-      <WebgazerProvider>
-        <App />
-      </WebgazerProvider>
+      <ControlSettingsProvider>
+        <WebgazerProvider>
+          <App />
+        </WebgazerProvider>
+      </ControlSettingsProvider>
     </TrackingSessionProvider>
   </React.StrictMode>,
 );

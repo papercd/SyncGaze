@@ -21,6 +21,8 @@ if (!admin.apps.length) {
 
 const firestore = admin.firestore();
 const MODEL_ENDPOINT = process.env.PERFORMANCE_MODEL_ENDPOINT || null;
+// If using PCA-based unsupervised scoring, set USE_PCA_SCORING=true to enable local scoring.
+const USE_PCA_SCORING = process.env.USE_PCA_SCORING === 'true';
 
 const app = express();
 
@@ -150,6 +152,8 @@ const buildFeatureVector = (data) => {
     mainGame: data?.mainGame ?? null,
     aimTrainerUsage: data?.aimTrainerUsage ?? null,
     calibrationStatus: data?.calibrationStatus ?? null,
+    // Derived
+    targetsPerSec: pickNum(session.targetsHit && session.duration ? session.targetsHit / session.duration : null, null),
   };
 };
 
@@ -164,10 +168,57 @@ const fallbackScorePrediction = (features) => {
   return Math.max(0, Math.round(base + accBoost));
 };
 
+// Precomputed PCA stats from analysis/session_features_local.csv (PC1)
+const PCA_STATS = {
+  features: [
+    'accuracy',
+    'mouseAccuracy',
+    'gazeAccuracy',
+    'avgReactionTime_ms',
+    'gazeAimLatency_ms',
+    'targetsHit',
+    'totalTargets',
+    'timePerTarget_s',
+  ],
+  imputer_median: [84.44, 49.51, 2.44, 1015.45, null, 44.0, 54.0, 1.1111111111111112],
+  scaler_mean: [81.91744186046512, 49.97488372093022, 5.649302325581396, 993.4102325581397, 45.58139534883721, 54.2093023255814, 1.1560125060648254],
+  scaler_scale: [16.55625338094527, 7.019733438288002, 9.381659097421263, 184.31740009835127, 15.899733152857358, 11.105326900175521, 0.24372260588449912],
+  pca_loadings: [-0.37955949671397415, 0.012333309266957665, 0.20643296176826806, 0.4309705821837465, -0.4592495807418883, -0.4538405050676167, 0.45885824180558626],
+  pc1_mean: 0.0,
+  pc1_std: 2.121696912734458,
+};
+
+const pcaScorePrediction = (features) => {
+  const f = PCA_STATS.features;
+  const med = PCA_STATS.imputer_median;
+  const mean = PCA_STATS.scaler_mean;
+  const scale = PCA_STATS.scaler_scale;
+  const load = PCA_STATS.pca_loadings;
+
+  const values = [];
+  for (let i = 0; i < f.length; i++) {
+    const key = f[i];
+    const raw = Number(features[key]);
+    const filled = Number.isFinite(raw) ? raw : med[i];
+    const centered = (filled - mean[i]) / (scale[i] || 1);
+    values.push(centered);
+  }
+
+  let pc1 = 0;
+  for (let i = 0; i < load.length; i++) {
+    pc1 += load[i] * values[i];
+  }
+
+  const z = (pc1 - (PCA_STATS.pc1_mean || 0)) / (PCA_STATS.pc1_std || 1);
+  const score = Math.max(0, Math.min(100, 50 + z * 10));
+  return score;
+};
+
 /**
  * Firestore 트리거: 세션 저장 시 ML 예측을 수행해 predictedScore를 세션/리더보드에 병합.
  * - PERFORMANCE_MODEL_ENDPOINT 환경변수가 설정된 경우: 해당 HTTP 엔드포인트로 POST하여 예측값 사용
- * - 없거나 실패 시: 간단한 휴리스틱으로 추정
+ * - USE_PCA_SCORING=true 인 경우: 로컬 PCA 기반 점수
+ * - 둘 다 없거나 실패 시: 간단한 휴리스틱으로 추정
  */
 export const predictSessionPerformance = functions.firestore
   .document('users/{uid}/sessions/{sessionId}')
@@ -201,6 +252,10 @@ export const predictSessionPerformance = functions.firestore
       } catch (err) {
         console.error('Model endpoint failed, using fallback:', err);
       }
+    }
+
+    if (predictedScore === null && USE_PCA_SCORING) {
+      predictedScore = pcaScorePrediction(features);
     }
 
     if (predictedScore === null) {

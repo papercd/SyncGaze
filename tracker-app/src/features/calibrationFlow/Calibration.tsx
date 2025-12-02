@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { CALIBRATION_DOTS } from '../constants';
-import { LiveGaze } from '../types';
+import { CALIBRATION_DOTS } from './constants';
+import { useGazeTracker } from './GazeTrackerContext';
+import { LiveGaze } from './types';
+import './CalibrationFlow.css';
 
 interface StageInstructionProps {
   stage: number;
@@ -36,13 +38,8 @@ const StageInstruction = ({ stage, onStart }: StageInstructionProps) => {
   );
 };
 
-interface CalibrationProps {
-  onComplete: () => void;
-  liveGaze: LiveGaze;
-  onCalStage3Complete: (successRate: number) => void;
-}
-
-const Calibration = ({ onComplete, liveGaze, onCalStage3Complete }: CalibrationProps) => {
+const Calibration = () => {
+  const { handleCalibrationComplete, liveGaze, handleCalStage3Complete } = useGazeTracker();
   const [step, setStep] = useState(2);
   const [dotIndex, setDotIndex] = useState(0);
   const [clickCount, setClickCount] = useState(0);
@@ -50,7 +47,7 @@ const Calibration = ({ onComplete, liveGaze, onCalStage3Complete }: CalibrationP
   const [progress, setProgress] = useState(0);
   const [isGazeOnTarget, setIsGazeOnTarget] = useState(false);
   const animationFrameId = useRef<number | null>(null);
-  const liveGazeRef = useRef(liveGaze);
+  const liveGazeRef = useRef<LiveGaze>(liveGaze);
   const dotRef = useRef<HTMLDivElement>(null);
   const stage3FrameCount = useRef(0);
   const stage3SuccessFrameCount = useRef(0);
@@ -100,11 +97,6 @@ const Calibration = ({ onComplete, liveGaze, onCalStage3Complete }: CalibrationP
         }
       }
       setIsGazeOnTarget(isOnTarget);
-      if (isOnTarget) {
-        console.log('✅ Gaze ON target!'); // Add this
-        //stage3SuccessFrameCount.current += 1;
-        // ...
-      }
 
       if (isOnTarget) {
         stage3SuccessFrameCount.current += 1;
@@ -120,12 +112,10 @@ const Calibration = ({ onComplete, liveGaze, onCalStage3Complete }: CalibrationP
       if (currentProgress < 1) {
         animationFrameId.current = requestAnimationFrame(animate);
       } else {
-        if (step === 3) {
-          const successRate = stage3FrameCount.current > 0
-            ? stage3SuccessFrameCount.current / stage3FrameCount.current
-            : 0;
-          onCalStage3Complete(successRate);
-        }
+        const successRate = stage3FrameCount.current > 0
+          ? stage3SuccessFrameCount.current / stage3FrameCount.current
+          : 0;
+        handleCalStage3Complete(successRate);
         setStep(prev => prev + 1);
         setIsInstructionVisible(true);
       }
@@ -137,13 +127,13 @@ const Calibration = ({ onComplete, liveGaze, onCalStage3Complete }: CalibrationP
         cancelAnimationFrame(animationFrameId.current);
       }
     };
-  }, [step, isInstructionVisible, onCalStage3Complete]);
+  }, [step, isInstructionVisible, handleCalStage3Complete]);
 
   useEffect(() => {
     if (step > 3) {
-      onComplete();
+      handleCalibrationComplete();
     }
-  }, [step, onComplete]);
+  }, [step, handleCalibrationComplete]);
 
   const handleDotClick = () => {
     const CLICKS_PER_DOT = 3;

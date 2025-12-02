@@ -27,5 +27,22 @@ export const CALIBRATION_DOTS = [
   { x: '35%', y: '35%' },  // 13. [수정됨] Safe Inner Top-Left
 ];
 
+export const RECALIBRATION_THRESHOLD = 1000000;
+
 // 과제(측정) 점 개수
 export const TOTAL_TASKS = 9;
+
+// 3x3 검증 격자 (퍼센트 단위)
+export const VALIDATION_POINTS = [
+  { x: 0.2, y: 0.2 },
+  { x: 0.5, y: 0.2 },
+  { x: 0.8, y: 0.2 },
+  { x: 0.2, y: 0.5 },
+  { x: 0.5, y: 0.5 },
+  { x: 0.8, y: 0.5 },
+  { x: 0.2, y: 0.8 },
+  { x: 0.5, y: 0.8 },
+  { x: 0.8, y: 0.8 },
+];
+
+export const VALIDATION_DURATION_MS = 5000;

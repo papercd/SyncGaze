@@ -16,6 +16,7 @@ import { CS2Physics } from '../utils/cs2Physics';
 import { useTrackingData, TrackingDataRecord } from '../hooks/useTrackingData';
 import { LiveGaze } from '../types/calibration';
 import { useWebgazer } from '../hooks/tracking/useWebgazer';
+import ControlSettingsPanel from './ControlSettingsPanel';
 
 interface TrainingSceneProps {
   onComplete?: (score: number, targetsHit: number, rawData: TrackingDataRecord[]) => void;
@@ -392,25 +393,36 @@ export const TrainingScene: React.FC<TrainingSceneProps> = ({ onComplete }) => {
     <div ref={canvasRef} className="w-screen h-screen fixed inset-0">
       
       {!isLocked && (
-      <div 
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center cursor-pointer"
-        onClick={requestPointerLock}  // Add this
-      >
-        <div className="bg-black/80 px-8 py-6 rounded-lg border-2 border-white/30">
-          <h2 className="text-3xl font-bold text-white mb-4 text-center">Paused</h2>
-          <p className="text-white text-lg text-center">
-            Click anywhere to resume
-          </p>
-          <p className="text-gray-400 text-sm text-center mt-2">
-            Timer: {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
-          </p>
+        <div className="training-pause-overlay" role="dialog" aria-label="Training paused">
+          <div className="training-pause-dialog">
+            <h2>Paused</h2>
+            <p className="pause-subtitle">
+              Press resume to continue or adjust your control sensitivity while the timer is paused.
+            </p>
+
+            <div className="pause-actions">
+              <button type="button" className="pause-primary" onClick={requestPointerLock}>
+                Resume training
+              </button>
+              <div className="pause-time">
+                Timer: {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
+              </div>
+            </div>
+
+            <ControlSettingsPanel compact showReset />
+
+            <p className="pause-hint">Press Esc at any time to pause training.</p>
+          </div>
         </div>
-      </div>
-    )}
+      )}
   
+      <div className="absolute top-4 left-4 z-30">
+        <div className="text-sm text-gray-300">Press Esc to pause and adjust settings.</div>
+      </div>
+
       <div className="absolute top-4 right-4 text-white z-30">
         <div className="text-2xl font-bold">Score: {score}</div>
-        
+
         <div className="text-sm text-gray-300">Data: {dataCount} points</div>
       </div>
 

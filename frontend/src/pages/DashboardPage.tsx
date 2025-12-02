@@ -146,11 +146,19 @@ const DashboardPage = () => {
         <section className="action-section">
           <button className="start-training-button" onClick={handleStartTraining}>
             <span className="button-icon">🎮</span>
-            Start New Training Session
+            Start training
           </button>
           <button className="start-training-button" onClick={() => navigate('/tracker-flow')}>
             <span className="button-icon">🧭</span>
-            View tracker flow
+            Tracker flow
+          </button>
+          <button className="start-training-button" onClick={() => navigate('/leaderboard')}>
+            <span className="button-icon">🏆</span>
+            Leaderboard
+          </button>
+          <button className="start-training-button" onClick={() => navigate('/settings')}>
+            <span className="button-icon">⚙️</span>
+            Settings
           </button>
         </section>
 

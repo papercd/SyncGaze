@@ -86,7 +86,7 @@ const DashboardPage = () => {
           <button
             type="button"
             className="dashboard-logo"
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/')}
           >
             SyncGaze
           </button>

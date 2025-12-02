@@ -97,6 +97,9 @@ interface FirestoreSessionPayload {
   exportDownloadUrl?: string | null;
   storedAt?: unknown;
   uid?: string;
+  analytics?: PerformanceAnalytics | null;
+  leaderboardOptIn?: boolean;
+  leaderboardLabel?: string | null;
 }
 
 const stripUndefined = <T extends Record<string, unknown>>(obj: T): T => {
@@ -111,6 +114,9 @@ export interface StoredSessionRecord {
   consentAccepted?: boolean;
   exportPath?: string | null;
   exportDownloadUrl?: string | null;
+  analytics?: PerformanceAnalytics | null;
+  leaderboardOptIn?: boolean;
+  leaderboardLabel?: string | null;
 }
 
 interface SaveSessionOptions {
@@ -158,6 +164,9 @@ export const fetchSessionsForUser = async (uid: string): Promise<StoredSessionRe
       consentAccepted: record.consentAccepted ?? false,
       exportPath: record.exportPath ?? null,
       exportDownloadUrl: record.exportDownloadUrl ?? null,
+      analytics: record.analytics ?? null,
+      leaderboardOptIn: record.leaderboardOptIn ?? false,
+      leaderboardLabel: record.leaderboardLabel ?? null,
     }));
 
 };
@@ -184,6 +193,9 @@ export const saveSessionForUser = async (
     exportDownloadUrl: (uploadResult?.downloadUrl as string | undefined) ?? null,
     storedAt: serverTimestamp(),
     uid,
+    analytics: analytics ?? null,
+    leaderboardOptIn: Boolean(leaderboardOptIn),
+    leaderboardLabel: leaderboardLabel ?? null,
   });
 
   const userSessionRef = doc(db, 'users', uid, 'sessions', session.id);

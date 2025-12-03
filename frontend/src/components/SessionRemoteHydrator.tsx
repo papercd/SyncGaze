@@ -17,17 +17,23 @@ const SessionRemoteHydrator = () => {
     calibrationResult,
     setSurveyHydrated,
     surveyHydrated,
+    resetState,
   } = useTrackingSession();
 
   const isFetchingRef = useRef(false);
   const hydratedUidRef = useRef<string | null>(null);
+  const lastUidRef = useRef<string | null>(null);
 
   useEffect(() => {
     const uid = user?.uid ?? null;
 
     if (!uid) {
+      if (lastUidRef.current) {
+        resetState();
+      }
       hydratedUidRef.current = null;
-       if (surveyHydrated) {
+      lastUidRef.current = null;
+      if (surveyHydrated) {
         setSurveyHydrated(false);
       }
       return;
@@ -37,6 +43,7 @@ const SessionRemoteHydrator = () => {
       return;
     }
 
+    lastUidRef.current = uid;
     isFetchingRef.current = true;
 
     const hydrate = async () => {
@@ -89,6 +96,7 @@ const SessionRemoteHydrator = () => {
     saveCalibrationResult,
     setSurveyHydrated,
     surveyHydrated,
+    resetState,
   ]);
 
   return null;

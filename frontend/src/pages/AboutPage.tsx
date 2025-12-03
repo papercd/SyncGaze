@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import ProfileCard from '../components/Profilecard';
+import ProfileCard from '../components/ProfileCard';
 import './AboutPage.css';
 
 interface TeamMember {
@@ -19,34 +19,34 @@ const teamMembers: TeamMember[] = [
 {
     name: 'Nokyom Kang',
     title: 'Backend Developer',
-    handle: 'member2',
+    handle: 'papercd',
     avatarUrl: '/avatars/Nokyom.jpg', //'https://via.placeholder.com/400x600',
     status: 'Data Analysis Expert',
-    bio: 'Specializing in data analytics and backend infrastructure.',
+    bio: 'Aspiring developer who loves game related content',
     email: 'member2@example.com',
-    github: 'https://github.com/member2',
+    github: 'https://github.com/papercd',
     },
     {
     name: 'Juhwan Lee',
     title: 'Lead Developer',
-    handle: 'yourhandle',
+    handle: 'JuhwanLee99',
     avatarUrl: '/avatars/Juwhan.jpg', //'https://via.placeholder.com/400x600',
     status: 'Building SyncGaze',
     bio: 'Passionate about eye tracking and game performance analysis.',
     email: 'yourname@example.com',
-    github: 'https://github.com/yourhandle',
+    github: 'https://github.com/JuhwanLee99',
   },
 
 
   {
     name: 'Woojoung Lee',
     title: 'Backend Developer',
-    handle: 'member2',
-    avatarUrl: 'https://via.placeholder.com/400x600',
+    handle: 'wjyi0615',
+    avatarUrl: '/avatars/Woojoung.jpg',
     status: 'Data Analysis Expert',
     bio: 'Specializing in data analytics and backend infrastructure.',
     email: 'member2@example.com',
-    github: 'https://github.com/member2',
+    github: 'https://github.com/wjyi0615',
   },
   // Add more team members here
 ];
@@ -82,7 +82,7 @@ const AboutPage = () => {
               handle={member.handle}
               status={member.status}
               contactText="Contact"
-              showUserInfo={true}
+              showUserInfo={false}
               enableTilt={true}
               enableMobileTilt={false}
               onContactClick={() => handleContactClick(member)}

@@ -65,6 +65,9 @@ const LandingPage = () => {
             }}>
               {t('landing.cta.learnMore')}
             </button>
+            <button className="secondary-button" onClick={() => navigate('/about')}>
+              {t('landing.cta.aboutUs')}
+            </button>
           </div>
         </div>
       </header>

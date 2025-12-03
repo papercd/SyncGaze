@@ -1,0 +1,190 @@
+.about-page {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+    color: #ffffff;
+    padding: 2rem;
+  }
+  
+  .about-header {
+    max-width: 1200px;
+    margin: 0 auto 4rem;
+  }
+  
+  .back-link {
+    display: inline-block;
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: none;
+    font-size: 0.95rem;
+    margin-bottom: 2rem;
+    transition: color 0.2s ease;
+  }
+  
+  .back-link:hover {
+    color: rgba(255, 255, 255, 1);
+  }
+  
+  .about-title-section {
+    text-align: center;
+    margin-top: 2rem;
+  }
+  
+  .about-title-section h1 {
+    font-size: 3.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, #71C4FF 0%, #a78bfa 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  .about-subtitle {
+    font-size: 1.25rem;
+    color: rgba(255, 255, 255, 0.7);
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  
+  .team-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    gap: 4rem 3rem;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem 0;
+  }
+  
+  .team-member {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+  }
+  
+  .member-bio {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    width: 100%;
+    max-width: 400px;
+    backdrop-filter: blur(10px);
+  }
+  
+  .member-bio p {
+    color: rgba(255, 255, 255, 0.8);
+    line-height: 1.6;
+    margin-bottom: 1rem;
+    font-size: 0.95rem;
+  }
+  
+  .member-links {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  
+  .social-link {
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: none;
+    font-size: 0.9rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 0.5rem;
+    transition: all 0.2s ease;
+    background: rgba(255, 255, 255, 0.05);
+  }
+  
+  .social-link:hover {
+    color: rgba(255, 255, 255, 1);
+    border-color: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+  }
+  
+  .about-footer {
+    max-width: 800px;
+    margin: 6rem auto 2rem;
+    text-align: center;
+  }
+  
+  .about-project {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 1.5rem;
+    padding: 3rem;
+    backdrop-filter: blur(10px);
+  }
+  
+  .about-project h2 {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, #71C4FF 0%, #a78bfa 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  .about-project p {
+    color: rgba(255, 255, 255, 0.8);
+    line-height: 1.8;
+    font-size: 1.1rem;
+  }
+  
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .about-page {
+      padding: 1.5rem;
+    }
+  
+    .about-title-section h1 {
+      font-size: 2.5rem;
+    }
+  
+    .about-subtitle {
+      font-size: 1.1rem;
+    }
+  
+    .team-grid {
+      grid-template-columns: 1fr;
+      gap: 3rem;
+    }
+  
+    .about-project {
+      padding: 2rem;
+    }
+  
+    .about-project h2 {
+      font-size: 1.5rem;
+    }
+  
+    .about-project p {
+      font-size: 1rem;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .about-page {
+      padding: 1rem;
+    }
+  
+    .about-title-section h1 {
+      font-size: 2rem;
+    }
+  
+    .about-subtitle {
+      font-size: 1rem;
+    }
+  
+    .team-grid {
+      gap: 2rem;
+    }
+  
+    .member-bio {
+      padding: 1rem;
+    }
+  
+    .about-project {
+      padding: 1.5rem;
+    }
+  }

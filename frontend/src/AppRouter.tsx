@@ -6,6 +6,7 @@ import CalibrationPage from './pages/CalibrationPage';
 import TrainingPage from './pages/TrainingPage';
 import ResultsPage from './pages/ResultsPage';
 import DetailedResultsPage from './pages/DetailedResultsPage';
+import AboutPage from './pages/AboutPage.tsx';
 import ReportPage from './pages/ReportPage';
 
 import TrackerFlowPage from './pages/TrackerFlowPage';
@@ -191,6 +192,16 @@ const AppRouter = () => {
             </ProtectedRoute>
           )}
         />
+        <Route
+          path="/about"
+          element={(
+            <ProtectedRoute>
+              <AboutPage />
+            </ProtectedRoute>
+          )}
+        />
+        
+
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

@@ -1,6 +1,6 @@
 .language-toggle {
   position: fixed;
-  top: 16px;
+  bottom: 16px;
   right: 16px;
   display: inline-flex;
   align-items: center;
@@ -33,7 +33,7 @@
 
 @media (max-width: 640px) {
   .language-toggle {
-    top: 12px;
+    bottom: 12px;
     right: 12px;
     padding: 6px 10px;
     font-size: 0.85rem;

@@ -9,8 +9,8 @@ interface EligibilityChecklistProps {
 }
 
 const defaultLabels: Record<EligibilityField, string> = {
-  ageCheck: '만 18세 이상이며 연구 목적을 이해하고 자발적으로 참여합니다.',
-  webcamCheck: '연구에 사용할 수 있는 작동하는 PC/노트북 웹캠이 있습니다.',
+  ageCheck: '서비스 이용을 위한 기본 PC/네트워크 환경이 준비되었습니다.',
+  webcamCheck: '시선 추적에 사용할 수 있는 웹캠 또는 카메라가 준비되었습니다.',
 };
 
 const EligibilityChecklist = ({ values, onToggle, labelOverrides }: EligibilityChecklistProps) => {

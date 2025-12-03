@@ -27,7 +27,9 @@ const SessionRemoteHydrator = () => {
 
     if (!uid) {
       hydratedUidRef.current = null;
-      setSurveyHydrated(false);
+       if (surveyHydrated) {
+        setSurveyHydrated(false);
+      }
       return;
     }
 

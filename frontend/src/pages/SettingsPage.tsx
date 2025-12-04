@@ -10,13 +10,11 @@ const SettingsPage = () => {
       <header className="settings-header">
         <div className="settings-header__content">
           <div>
-            <p className="settings-kicker">Customize</p>
+        
             <h1>Training Settings</h1>
             <p className="settings-subtitle">Tune your controls to feel comfortable before jumping back in.</p>
           </div>
-          <button className="settings-back" onClick={() => navigate(-1)}>
-            ← Back
-          </button>
+         
         </div>
       </header>
 

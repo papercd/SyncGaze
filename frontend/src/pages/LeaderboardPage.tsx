@@ -232,7 +232,6 @@ const LeaderboardPage = () => {
     <div className="leaderboard-page">
       <header className="leaderboard-header">
         <div>
-          <p className="eyebrow">{t('leaderboard.title.eyebrow')}</p>
           <h1>{t('leaderboard.title.main')}</h1>
           <p className="subtext">
             {t('leaderboard.subtitle.count', 'Top {count} sessions fetched from the Firebase leaderboard API.').replace(
@@ -240,16 +239,9 @@ const LeaderboardPage = () => {
               visibleCount.toString(),
             )}
           </p>
-          <p className="subtext">
-            {t('leaderboard.subtitle.metric', 'Selected metric: {metric}').replace('{metric}', activeMetricLabel)}
-          </p>
-        </div>
-        <div className="leaderboard-actions">
-          <button className="leaderboard-button ghost" onClick={() => navigate('/dashboard')}>
-            {t('leaderboard.action.dashboard', 'Dashboard')}
-          </button>
          
         </div>
+      
       </header>
 
       <div className="filter-stack">

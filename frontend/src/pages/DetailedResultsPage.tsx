@@ -938,13 +938,13 @@ const DetailedResultsPage = () => {
         <div>
           <p className="breadcrumb">Results / Detailed</p>
           <h1>Performance Breakdown</h1>
-          <p className="subhead">Session ID #{sessionData.id} · {new Date(sessionData.date).toLocaleString()}</p>
+          <p className="subhead"> {new Date(sessionData.date).toLocaleString()}</p>
         </div>
         <div className="header-actions">
           {calibration && calibration.validationError !== null && (
-            <div className="pill">Calibration error: {calibration.validationError.toFixed(1)} px</div>
+            <div className="pill">Session calibration error: {calibration.validationError.toFixed(1)} px</div>
           )}
-          <button type="button" className="detail-button ghost" onClick={handleBack}>Back to results</button>
+          <button type="button" className="detail-button ghost" onClick={handleBack}>Back to overview</button>
         </div>
       </header>
 

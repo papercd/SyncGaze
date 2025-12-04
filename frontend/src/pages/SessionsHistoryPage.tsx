@@ -241,43 +241,12 @@ const SessionsHistoryPage = () => {
       <header className="sessions-header">
         <div className="header-content">
           <h1>{t('sessions.title', 'Training Sessions')}</h1>
-          <p className="header-subtitle">
-            {t('sessions.subtitle', 'View your training history and performance trends')}
-          </p>
+         
         </div>
       </header>
 
-      {/* Quick Stats */}
-      <section className="sessions-stats">
-        <div className="stat-card">
-          <div className="stat-icon">📊</div>
-          <div className="stat-info">
-            <h3>{stats.totalSessions}</h3>
-            <p>{t('sessions.stats.total', 'Total Sessions')}</p>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon">🎯</div>
-          <div className="stat-info">
-            <h3>{stats.avgAccuracy}%</h3>
-            <p>{t('sessions.stats.avgAccuracy', 'Average Accuracy')}</p>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon">⚡</div>
-          <div className="stat-info">
-            <h3>{stats.avgReactionTime}ms</h3>
-            <p>{t('sessions.stats.avgReaction', 'Avg Reaction Time')}</p>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon">🏆</div>
-          <div className="stat-info">
-            <h3>{stats.bestScore}</h3>
-            <p>{t('sessions.stats.bestScore', 'Best Score')}</p>
-          </div>
-        </div>
-      </section>
+
+  
 
       {/* Trend Chart */}
       <section className="trend-section">
@@ -308,11 +277,10 @@ const SessionsHistoryPage = () => {
           )}
         </div>
       </section>
-
-      {/* Sessions Table */}
-      <section className="sessions-table-section">
+        {/* Sessions Table */}
+        <section className="sessions-table-section">
         <div className="section-header">
-          <h2>{t('sessions.table.title', 'Recent Sessions')}</h2>
+          <h2>{t('sessions.table.title', 'Session History')}</h2>
           <div className="table-meta">
             <span className="meta-text">
               {t('sessions.table.showing', 'Showing {count} sessions').replace(
@@ -422,6 +390,7 @@ const SessionsHistoryPage = () => {
           </div>
         )}
       </section>
+     
     </div>
   );
 };

@@ -1,6 +1,7 @@
 // frontend/src/pages/ResultsPage.tsx
 // UPDATED: Stops WebGazer when mounting results page, Improved Heatmap Colors & Legend
 
+import { SplinePointer,Hourglass,ScanEye,RulerDimensionLine,Link,MousePointerClick } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import './ResultsPage.css';
@@ -705,8 +706,9 @@ const ResultsPage = () => {
     <div className="results-page">
       {/* Header */}
       <header className="results-header">
+        <h1>{t('results.title')}</h1>
         <div className="header-content">
-          <h1>{t('results.title')}</h1>
+          
           <div className="header-meta">
             <span>{localizedDate}</span>
             <span>•</span>
@@ -739,8 +741,9 @@ const ResultsPage = () => {
 
         {/* Key Metrics */}
         <section className="metrics-section">
-          {/* --- 상세 페이지 이동 버튼 --- */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.5rem' }}>
+          {/* --- Header with button --- */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h2 style={{ margin: 0 }}>{t('results.section.overview')}</h2>
             <button
               className="secondary-button"
               onClick={() => handleOpenDetailed()}
@@ -749,7 +752,7 @@ const ResultsPage = () => {
               {t('results.button.detailed')}
             </button>
           </div>
-          <h2>{t('results.section.overview')}</h2>
+          
           <div className="metrics-grid">
             {/* 1. Targets Hit */}
             <button
@@ -757,7 +760,11 @@ const ResultsPage = () => {
               className="metric-card actionable highlight"
               onClick={() => handleOpenDetailed('targets')}
             >
-              <div className="metric-icon">🎯</div>
+              <div className="metric-icon">
+                <SplinePointer size={32} strokeWidth={2.5}/>   
+              </div>
+
+
               <div className="metric-content">
                 <div className="metric-value">
                   {analytics.targetsHit}/{analytics.totalTargets}
@@ -773,7 +780,9 @@ const ResultsPage = () => {
               className="metric-card actionable"
               onClick={() => handleOpenDetailed('reaction')}
             >
-              <div className="metric-icon">⚡</div>
+              <div className="metric-icon">
+                <Hourglass size={32} strokeWidth={2.5}/>   
+              </div>
               <div className="metric-content">
                 <div className="metric-value">
                   {analytics.avgReactionTime.toFixed(0)}ms
@@ -789,7 +798,9 @@ const ResultsPage = () => {
               className="metric-card actionable"
               onClick={() => handleOpenDetailed('gaze')}
             >
-              <div className="metric-icon">👁️</div>
+              <div className="metric-icon">
+                <ScanEye size={32} strokeWidth={2.5}/>   
+              </div>
               <div className="metric-content">
                 <div className="metric-value">
                   {analytics.avgGazeReactionTime.toFixed(0)}ms
@@ -805,7 +816,9 @@ const ResultsPage = () => {
               className="metric-card actionable"
               onClick={() => handleOpenDetailed('reaction')}
             >
-              <div className="metric-icon">⏱️</div>
+              <div className="metric-icon">
+                <MousePointerClick size={32} strokeWidth={2.5}/>   
+              </div>
               <div className="metric-content">
                 <div className="metric-value">
                   {analytics.gazeAimLatency.toFixed(0)}ms
@@ -821,7 +834,9 @@ const ResultsPage = () => {
               className="metric-card actionable"
               onClick={() => handleOpenDetailed('accuracy')}
             >
-              <div className="metric-icon">📏</div>
+              <div className="metric-icon">
+                <RulerDimensionLine size={32} strokeWidth={2.5}/>   
+              </div>
               <div className="metric-content">
                 <div className="metric-value" style={{ fontSize: '1.5rem' }}>
                    G: {analytics.gazeErrorAtHit.toFixed(0)}px / M: {analytics.mouseErrorAtHit.toFixed(0)}px
@@ -837,7 +852,9 @@ const ResultsPage = () => {
               className="metric-card actionable"
               onClick={() => handleOpenDetailed('mouse')}
             >
-              <div className="metric-icon">🔗</div>
+              <div className="metric-icon">
+                <Link size={32} strokeWidth={2.5}/>   
+              </div>
               <div className="metric-content">
                 <div className="metric-value">
                   {analytics.synchronization.toFixed(0)}px
@@ -986,32 +1003,7 @@ const ResultsPage = () => {
         </div>
       )}
       {/* --- 연구 감사 인사용 페이지 이동 영역--- */}
-      <div className="finish-action-area" style={{ 
-        marginTop: '-50px', 
-        padding: '15px', 
-        textAlign: 'center',
-        borderTop: '0.5px solid #eee'
-      }}>
-        <p style={{ marginBottom: '15px', color: '#ffffffff' }}>
-          {t('results.finish.prompt')}
-        </p>
-        <button
-          onClick={() => navigate('/thank-you')}
-          style={{
-            padding: '15px 40px',
-            fontSize: '1rem',
-            fontWeight: 'bold',
-            backgroundColor: '#760215ff', // 혹은 기존 테마의 primary color
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            boxShadow: '0 4px 6px rgba(36, 26, 26, 0.1)'
-          }}
-        >
-          {t('results.finish.cta')}
-        </button>
-      </div>
+      
     </div>
   );
 };

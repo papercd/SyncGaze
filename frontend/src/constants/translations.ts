@@ -564,8 +564,8 @@ export const translations: Record<string, Record<Language, string>> = {
   'leaderboard.title.eyebrow': { ko: '리더보드', en: 'Leaderboard' },
   'leaderboard.title.main': { ko: '최신 트레이닝 순위', en: 'Latest Training Rankings' },
   'leaderboard.subtitle.count': {
-    ko: '파이어베이스 리더보드 API에서 불러온 상위 {count}개 세션입니다.',
-    en: 'Top {count} sessions fetched from the Firebase leaderboard API.',
+    ko: '저희 유저들의 상위 {count}개 세션입니다.',
+    en: 'Top {count} performant sessions fetched from our users.',
   },
   'leaderboard.subtitle.metric': { ko: '선택 지표: {metric}', en: 'Selected metric: {metric}' },
   'leaderboard.action.dashboard': { ko: '대시보드', en: 'Dashboard' },

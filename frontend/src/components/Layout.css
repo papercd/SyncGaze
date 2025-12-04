@@ -1,0 +1,26 @@
+/* Layout.css */
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+}
+
+.layout-content {
+  flex: 1;
+  margin-left: 260px;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .layout-content {
+    margin-left: 80px;
+  }
+}
+
+@media (max-width: 480px) {
+  .layout-content {
+    margin-left: 0;
+  }
+}

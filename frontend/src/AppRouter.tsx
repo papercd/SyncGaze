@@ -94,9 +94,9 @@ const AppRouter = () => {
           path="/auth"
           element={(
             <PublicOnlyRoute>
-              <Layout>
+              
                 <AuthPage />
-              </Layout>
+              
             </PublicOnlyRoute>
           )}
         />

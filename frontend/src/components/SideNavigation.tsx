@@ -17,7 +17,6 @@ const SideNavigation = () => {
 
   const navItems: NavItem[] = [
     { path: '/dashboard', icon: Home, label: 'Dashboard', protected: true },
-    { path: '/tracker-flow', icon: Target, label: 'Tracker Flow', protected: true },
     { path: '/calibration', icon: Wrench, label: 'Calibration', protected: true },
     { path: '/results', icon: BarChart3, label: 'Results', protected: true },
     { path: '/leaderboard', icon: Trophy, label: 'Leaderboard', protected: true },

@@ -1,10 +1,11 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../state/authContext';
+import { Home, Target, Wrench, BarChart3, Trophy, Settings } from 'lucide-react';
 import './SideNavigation.css';
 
 interface NavItem {
   path: string;
-  icon: string;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
   label: string;
   protected?: boolean;
 }
@@ -15,12 +16,12 @@ const SideNavigation = () => {
   const { user } = useAuth();
 
   const navItems: NavItem[] = [
-    { path: '/dashboard', icon: '🏠', label: 'Dashboard', protected: true },
-    { path: '/tracker-flow', icon: '🎯', label: 'Tracker Flow', protected: true },
-    { path: '/calibration', icon: '⚙️', label: 'Calibration', protected: true },
-    { path: '/results', icon: '📊', label: 'Results', protected: true },
-    { path: '/leaderboard', icon: '🏆', label: 'Leaderboard', protected: true },
-    { path: '/settings', icon: '⚡', label: 'Settings', protected: true },
+    { path: '/dashboard', icon: Home, label: 'Dashboard', protected: true },
+    { path: '/tracker-flow', icon: Target, label: 'Tracker Flow', protected: true },
+    { path: '/calibration', icon: Wrench, label: 'Calibration', protected: true },
+    { path: '/results', icon: BarChart3, label: 'Results', protected: true },
+    { path: '/leaderboard', icon: Trophy, label: 'Leaderboard', protected: true },
+    { path: '/settings', icon: Settings, label: 'Settings', protected: true },
   ];
 
   const filteredNavItems = navItems.filter(
@@ -29,26 +30,24 @@ const SideNavigation = () => {
 
   return (
     <nav className="side-navigation">
-      <div className="side-nav-header">
-        <button 
-          onClick={() => navigate('/')}
-          className="side-nav-logo"
-        >
-          SyncGaze
-        </button>
-      </div>
+
 
       <div className="side-nav-items">
-        {filteredNavItems.map((item) => (
-          <button
-            key={item.path}
-            onClick={() => navigate(item.path)}
-            className={`side-nav-item ${location.pathname === item.path ? 'active' : ''}`}
-          >
-            <span className="nav-icon">{item.icon}</span>
-            <span className="nav-label">{item.label}</span>
-          </button>
-        ))}
+        {filteredNavItems.map((item) => {
+          const IconComponent = item.icon;
+          return (
+            <button
+              key={item.path}
+              onClick={() => navigate(item.path)}
+              className={`side-nav-item ${location.pathname === item.path ? 'active' : ''}`}
+            >
+              <span className="nav-icon">
+                <IconComponent size={20} />
+              </span>
+              <span className="nav-label">{item.label}</span>
+            </button>
+          );
+        })}
       </div>
 
       <div className="side-nav-footer">

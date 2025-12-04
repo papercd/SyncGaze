@@ -6,7 +6,7 @@ import { useTrackingSession, TrainingSessionSummary } from '../state/trackingSes
 import { useAuth } from '../state/authContext';
 import { useTranslation } from '../state/languageContext';
 import { getUserReports } from '../services/reportService';
-import {Crosshair,Trophy,Settings,Hourglass,MousePointerClick,ChartColumn,Flag} from 'lucide-react';
+import {Crosshair,Trophy,Settings,Hourglass,MousePointerClick,RotateCcw,Flag} from 'lucide-react';
 
 const DashboardPage = () => {
   const navigate = useNavigate();
@@ -115,24 +115,7 @@ const DashboardPage = () => {
   return (
     <div className="dashboard-page">
       {/* Header */}
-      <header className="dashboard-header">
-        <div className="header-content">
-          <button
-            type="button"
-            className="dashboard-logo"
-            onClick={() => navigate('/')}
-          >
-            SyncGaze
-          </button>
-          <div className="header-actions">
-            <div className="calibration-status">{calibrationMessage}</div>
-            <span className="user-email">{user?.displayName || user?.email || t('dashboard.header.account')}</span>
-            <button className="logout-button" onClick={handleLogout}>
-              {t('dashboard.button.logout')}
-            </button>
-          </div>
-        </div>
-      </header>
+    
 
       {/* Main Content */}
       <main className="dashboard-main">
@@ -146,7 +129,7 @@ const DashboardPage = () => {
         <section className="stats-grid">
           <div className="stat-card">
             <div className ="stat-icon">
-              <ChartColumn size={32} strokeWidth={2.5}/>   
+              <RotateCcw size={32} strokeWidth={2.5}/>   
             </div>
             
 

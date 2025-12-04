@@ -2,8 +2,8 @@
 .side-navigation {
   position: fixed;
   left: 0;
-  top: 0;
-  height: 100vh;
+  top: 70px; /* Start below the top header */
+  height: calc(100vh - 70px); /* Subtract header height */
   width: 260px;
   background: rgba(15, 12, 41, 0.95);
   backdrop-filter: blur(10px);
@@ -14,10 +14,7 @@
   transition: transform 0.3s ease;
 }
 
-.side-nav-header {
-  padding: 2rem 1.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
+
 
 .side-nav-logo {
   background: transparent;

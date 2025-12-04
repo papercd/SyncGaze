@@ -145,6 +145,7 @@ const CalibrationPage = () => {
                   </div>
                 </div>
                 <div className="instruction-item">
+                
                   <span className="instruction-icon">👁️</span>
                   <div>
                     <h3>{t('calibration.prep.points.title')}</h3>

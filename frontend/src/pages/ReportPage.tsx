@@ -17,6 +17,8 @@ const ReportPage = () => {
   const [savedReports, setSavedReports] = useState<PerformanceReport[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
+  const [predictedScore, setPredictedScore] = useState<number | null>(null);
+  const [isPredicting, setIsPredicting] = useState(false);
 
   // Load saved reports on mount
   useEffect(() => {
@@ -24,6 +26,47 @@ const ReportPage = () => {
       loadSavedReports();
     }
   }, [user?.uid]);
+
+  // When the active session changes, try to pre-fetch a predicted score if missing
+  useEffect(() => {
+    let cancelled = false;
+
+    const runPrediction = async () => {
+      if (!activeSession) {
+        setPredictedScore(null);
+        return;
+      }
+
+      // If session already has a score, just reflect it locally
+      if (activeSession.predictedScore != null) {
+        setPredictedScore(activeSession.predictedScore);
+        return;
+      }
+
+      setIsPredicting(true);
+      try {
+        const result = await predictScore(activeSession);
+        if (!cancelled) {
+          setPredictedScore(result.predictedScore ?? null);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.warn('Failed to prefetch predicted score:', err);
+          setPredictedScore(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsPredicting(false);
+        }
+      }
+    };
+
+    runPrediction();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeSession]);
 
   const loadSavedReports = async () => {
     if (!user?.uid) return;
@@ -45,10 +88,11 @@ const ReportPage = () => {
     setError(null);
 
     try {
-      let predictedScore = activeSession.predictedScore ?? null;
-      if (predictedScore == null) {
+      let resolvedPredictedScore = predictedScore ?? activeSession.predictedScore ?? null;
+      if (resolvedPredictedScore == null) {
         const prediction = await predictScore(activeSession);
-        predictedScore = prediction.predictedScore ?? null;
+        resolvedPredictedScore = prediction.predictedScore ?? null;
+        setPredictedScore(resolvedPredictedScore);
       }
 
       const report = await generatePerformanceReport({
@@ -60,7 +104,7 @@ const ReportPage = () => {
         accuracy: activeSession.accuracy,
         targetsHit: activeSession.targetsHit,
         totalTargets: activeSession.totalTargets,
-        predictedScore,
+        predictedScore: resolvedPredictedScore,
         calibrationError: calibrationResult?.validationError,
       });
 
@@ -213,9 +257,11 @@ const ReportPage = () => {
                       <div className="summary-item">
                         <span>예측 점수</span>
                         <strong>
-                          {activeSession.predictedScore != null
-                            ? activeSession.predictedScore.toFixed(1)
-                            : 'N/A'}
+                          {predictedScore != null
+                            ? predictedScore.toFixed(1)
+                            : isPredicting
+                              ? '계산 중...'
+                              : 'N/A'}
                         </strong>
                       </div>
                       <div className="summary-item">

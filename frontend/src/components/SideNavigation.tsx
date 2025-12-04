@@ -18,7 +18,7 @@ const SideNavigation = () => {
   const navItems: NavItem[] = [
     { path: '/dashboard', icon: Home, label: 'Dashboard', protected: true },
     { path: '/calibration', icon: Wrench, label: 'Calibration', protected: true },
-    { path: '/results', icon: BarChart3, label: 'Results', protected: true },
+    { path: '/sessions', icon: BarChart3, label: 'Your sessions', protected: true },
     { path: '/leaderboard', icon: Trophy, label: 'Leaderboard', protected: true },
     { path: '/settings', icon: Settings, label: 'Settings', protected: true },
   ];

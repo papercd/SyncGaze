@@ -82,6 +82,40 @@ const CalibrationPage = () => {
     saveCalibrationResult,
   ]);
 
+  // Add this useEffect in CalibrationPage.tsx, after your other useEffects
+
+  useEffect(() => {
+    // Reposition the WebGazer video container after it's created
+    const repositionCamera = () => {
+      const videoContainer = document.getElementById('webgazerVideoContainer');
+      if (videoContainer) {
+        // Position below header (70px) and to the right of sidebar (260px)
+        videoContainer.style.top = '70px';    // 70px header + 12px margin
+        videoContainer.style.left = '260px';  // 260px sidebar + 12px margin
+        videoContainer.style.zIndex = '100';
+        return true;
+      }
+      return false;
+    };
+
+    // Try repositioning immediately
+    if (repositionCamera()) return;
+
+    // If container doesn't exist yet, watch for it
+    const observer = new MutationObserver(() => {
+      if (repositionCamera()) {
+        observer.disconnect();
+      }
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+
+    return () => observer.disconnect();
+  }, [gameState]); // Re-run when gameState changes
+
   const handleConfirmExit = () => {
     stopSession();
     navigate('/dashboard');

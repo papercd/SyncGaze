@@ -936,7 +936,7 @@ const DetailedResultsPage = () => {
     <div className="detailed-results-page">
       <header className="detailed-header">
         <div>
-          <p className="breadcrumb">Results / Detailed</p>
+          
           <h1>Performance Breakdown</h1>
           <p className="subhead"> {new Date(sessionData.date).toLocaleString()}</p>
         </div>

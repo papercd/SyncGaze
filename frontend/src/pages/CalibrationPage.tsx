@@ -1,6 +1,7 @@
 // src/pages/CalibrationPage.tsx
 import { useEffect, useRef, useState, type FC } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Camera,Waypoints,LampCeiling,UserCheck } from 'lucide-react';
 import './CalibrationPage.css';
 import { useTrackingSession } from '../state/trackingSessionContext';
 import {
@@ -172,29 +173,38 @@ const CalibrationPage = () => {
               <h1>{t('calibration.prep.title')}</h1>
               <div className="instructions-content">
                 <div className="instruction-item">
-                  <span className="instruction-icon">📷</span>
+                  <span className ="instruction-icon">
+                    <Camera size={40} strokeWidth={2.5}/>   
+                  </span>
                   <div>
                     <h3>{t('calibration.prep.camera.title')}</h3>
                     <p>{t('calibration.prep.camera.desc')}</p>
                   </div>
                 </div>
                 <div className="instruction-item">
-                
-                  <span className="instruction-icon">👁️</span>
+                  <span className ="instruction-icon">
+                    <Waypoints size={40} strokeWidth={2.5}/>   
+                  </span>
+                  
                   <div>
                     <h3>{t('calibration.prep.points.title')}</h3>
                     <p>{t('calibration.prep.points.desc')}</p>
                   </div>
                 </div>
                 <div className="instruction-item">
-                  <span className="instruction-icon">💡</span>
+                  <span className ="instruction-icon">
+                    <LampCeiling size={40} strokeWidth={2.5}/>   
+                  </span>
+                  
                   <div>
                     <h3>{t('calibration.prep.light.title')}</h3>
                     <p>{t('calibration.prep.light.desc')}</p>
                   </div>
                 </div>
                 <div className="instruction-item">
-                  <span className="instruction-icon">🎯</span>
+                  <span className ="instruction-icon">
+                    <UserCheck size={40} strokeWidth={2.5}/>   
+                  </span>
                   <div>
                     <h3>{t('calibration.prep.posture.title')}</h3>
                     <p>{t('calibration.prep.posture.desc')}</p>

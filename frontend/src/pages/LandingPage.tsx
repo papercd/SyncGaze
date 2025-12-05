@@ -5,23 +5,15 @@ import './LandingPage.css';
 import DarkVeilBackground from '../components/DarkVeil';
 import Crosshair from '../components/ScreenCrosshair';
 import LanguageToggle from '../components/LanguageToggle';
+import Navbar from '../components/TopNavBar';
 import { useAuth } from '../state/authContext';
 import { useTranslation } from '../state/languageContext';
 
 const LandingPage = () => {
   const navigate = useNavigate();
   const ctaSectionRef = useRef<HTMLElement>(null);
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const { t } = useTranslation();
-
-  const handleNavClick = async () => {
-    if (user) {
-      await signOut();
-      navigate('/');
-      return;
-    }
-    navigate('/auth');
-  };
 
   const handlePrimaryCta = () => {
     if (user) {
@@ -50,12 +42,7 @@ const LandingPage = () => {
       <div className="landing-content">
         {/* Hero Section */}
         <header className="hero">
-          <nav className="navbar">
-            <div className="logo">SyncGaze</div>
-            <button className="nav-button" onClick={handleNavClick}>
-              {user ? t('landing.nav.signOut') : t('landing.nav.signIn')}
-            </button>
-          </nav>
+          <Navbar showAuthButton={true} />
 
           <div className="hero-content">
             <h1>{t('landing.hero.title')}</h1>
@@ -70,8 +57,8 @@ const LandingPage = () => {
                 {t('landing.cta.learnMore')}
               </button>
               <button className="secondary-button" onClick={() => navigate('/about')}>
-              {t('landing.cta.aboutUs')}
-            </button>
+                {t('landing.cta.aboutUs')}
+              </button>
             </div>
           </div>
         </header>
@@ -138,23 +125,9 @@ const LandingPage = () => {
           <h2>{t('landing.cta.section.title')}</h2>
           <p>{t('landing.cta.section.desc')}</p>
           <button className="primary-button large" onClick={handlePrimaryCta}>
-            {user ? t('landing.cta.section.primary.dashboard') : t('landing.cta.section.primary.auth')}
+            {user ? t('landing.cta.primary.dashboard') : t('landing.cta.primary.auth')}
           </button>
         </section>
-
-        {/* Footer */}
-        <footer className="footer">
-          <p>{t('landing.footer.copyright')}</p>
-          <a
-            href="https://github.com/papercd/syncgaze"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="github-link"
-            style={{ marginLeft: '1rem', color: 'inherit', textDecoration: 'none', opacity: 0.8 }}
-          >
-            {t('landing.footer.github')}
-          </a>
-        </footer>
       </div>
     </div>
   );

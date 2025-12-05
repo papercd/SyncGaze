@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom';
 import ProfileCard from '../components/ProfileCard';
+import Navbar from '../components/TopNavBar';
 import './AboutPage.css';
 
 interface TeamMember {
@@ -16,28 +16,26 @@ interface TeamMember {
 
 // TODO: Replace with actual team member data
 const teamMembers: TeamMember[] = [
-{
+  {
     name: 'Nokyom Kang',
     title: 'Backend Developer',
     handle: 'papercd',
-    avatarUrl: '/avatars/Nokyom.jpg', //'https://via.placeholder.com/400x600',
+    avatarUrl: '/avatars/Nokyom.jpg',
     status: 'Data Analysis Expert',
     bio: 'Aspiring developer who loves game related content',
     email: 'member2@example.com',
     github: 'https://github.com/papercd',
-    },
-    {
+  },
+  {
     name: 'Juhwan Lee',
     title: 'Lead Developer',
     handle: 'JuhwanLee99',
-    avatarUrl: '/avatars/Juwhan.jpg', //'https://via.placeholder.com/400x600',
+    avatarUrl: '/avatars/Juwhan.jpg',
     status: 'Building SyncGaze',
     bio: 'Passionate about eye tracking and game performance analysis.',
     email: 'yourname@example.com',
     github: 'https://github.com/JuhwanLee99',
   },
-
-
   {
     name: 'Woojoung Lee',
     title: 'Backend Developer',
@@ -48,7 +46,6 @@ const teamMembers: TeamMember[] = [
     email: 'member2@example.com',
     github: 'https://github.com/wjyi0615',
   },
-  // Add more team members here
 ];
 
 const AboutPage = () => {
@@ -60,10 +57,10 @@ const AboutPage = () => {
 
   return (
     <div className="about-page">
+      
+      <Navbar showAuthButton={true} />
       <div className="about-header">
-        <Link to="/" className="back-link">
-          ← Back to Home
-        </Link>
+        
         <div className="about-title-section">
           <h1>Meet the Team</h1>
           <p className="about-subtitle">

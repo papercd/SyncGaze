@@ -199,7 +199,7 @@
 /* CRITICAL: Explicit table display properties */
 .table-wrapper table {
   width: 100%;
-  min-width: 800px;
+  min-width: 900px;
   border-collapse: collapse;
   display: table !important;
 }
@@ -336,13 +336,30 @@
   border: 1px solid rgba(255, 99, 132, 0.4);
 }
 
+/* Table Actions Cell */
+.table-actions {
+  display: table-cell !important;
+  padding: 0.85rem 1rem !important;
+  vertical-align: middle;
+  text-align: left;
+}
+
+.table-actions-group {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
+}
+
+/* Action Buttons */
 .view-button {
   padding: 0.45rem 0.9rem;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border: none;
   color: #fff;
   border-radius: 10px;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -353,6 +370,30 @@
 .view-button:hover {
   transform: translateY(-2px);
   box-shadow: 0 10px 26px rgba(102, 126, 234, 0.35);
+}
+
+.report-button {
+  padding: 0.45rem 0.9rem;
+  background: rgba(118, 75, 162, 0.15);
+  border: 1px solid rgba(118, 75, 162, 0.4);
+  color: #fff;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.report-button:hover:enabled {
+  background: rgba(118, 75, 162, 0.3);
+  border-color: #a880e6;
+  transform: translateY(-2px);
+}
+
+.report-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* Empty State */
@@ -427,6 +468,7 @@
 
   .table-wrapper table {
     font-size: 0.85rem;
+    min-width: 750px;
   }
 
   .table-wrapper thead th,
@@ -434,9 +476,16 @@
     padding: 0.75rem 0.5rem;
   }
 
-  .view-button {
+  .table-actions-group {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .view-button,
+  .report-button {
     padding: 0.35rem 0.7rem;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
+    width: 100%;
   }
 }
 
@@ -462,5 +511,8 @@
   .table-wrapper {
     border-radius: 8px;
   }
-}
 
+  .table-wrapper table {
+    min-width: 650px;
+  }
+}

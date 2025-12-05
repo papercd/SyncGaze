@@ -242,7 +242,7 @@ const CalibrationPage = () => {
         return (
           <div className="calibration-screen">
             <div className="calibrating-container">
-              <h2>{t('calibration.progress.title')}</h2>
+              
               <CalibrationComponent
                 onComplete={handleCalibrationComplete}
                 liveGaze={liveGaze}

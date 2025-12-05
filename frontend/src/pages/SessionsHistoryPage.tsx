@@ -1,8 +1,10 @@
 // src/pages/SessionsHistoryPage.tsx
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTrackingSession } from '../state/trackingSessionContext';
+import { useAuth } from '../state/authContext';
 import { useTranslation } from '../state/languageContext';
+import { getUserReports } from '../services/reportService';
 import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -36,10 +38,39 @@ const SessionsHistoryPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { recentSessions, setActiveSessionId } = useTrackingSession();
+  const { user } = useAuth();
 
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [trendPeriod, setTrendPeriod] = useState<TrendPeriod>('7days');
+  const [sessionReportMap, setSessionReportMap] = useState<Record<string, string>>({});
+  const [isLoadingReports, setIsLoadingReports] = useState(false);
+
+  // Load reports on mount
+  useEffect(() => {
+    const loadReports = async () => {
+      if (!user?.uid) {
+        setSessionReportMap({});
+        return;
+      }
+
+      setIsLoadingReports(true);
+      try {
+        const reports = await getUserReports(user.uid);
+        const reportMap = reports.reduce<Record<string, string>>((acc, report) => {
+          acc[report.sessionId] = report.id;
+          return acc;
+        }, {});
+        setSessionReportMap(reportMap);
+      } catch (error) {
+        console.error('Failed to load reports', error);
+      } finally {
+        setIsLoadingReports(false);
+      }
+    };
+
+    loadReports();
+  }, [user?.uid]);
 
   // Filter sessions to last 20
   const displaySessions = useMemo(() => {
@@ -217,6 +248,11 @@ const SessionsHistoryPage = () => {
     navigate('/results', { state: { sessionId } });
   };
 
+  const handleReportAction = (sessionId: string) => {
+    setActiveSessionId(sessionId);
+    navigate('/report', { state: { sessionId } });
+  };
+
   const formatDate = (date: string) => {
     const dateObj = new Date(date);
     return dateObj.toLocaleDateString(undefined, {
@@ -353,7 +389,7 @@ const SessionsHistoryPage = () => {
                       </span>
                     </button>
                   </th>
-                  <th>{t('sessions.table.action', 'Action')}</th>
+                  <th>{t('sessions.table.actions', 'Actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -375,13 +411,24 @@ const SessionsHistoryPage = () => {
                       {session.targetsHit} / {session.totalTargets}
                     </td>
                     <td>{session.avgReactionTime.toFixed(0)}ms</td>
-                    <td>
-                      <button
-                        className="view-button"
-                        onClick={() => handleViewSession(session.id)}
-                      >
-                        {t('sessions.table.view', 'View')}
-                      </button>
+                    <td className="table-actions">
+                      <div className="table-actions-group">
+                        <button
+                          className="view-button"
+                          onClick={() => handleViewSession(session.id)}
+                        >
+                          {t('sessions.table.view', 'View')}
+                        </button>
+                        <button
+                          className="report-button"
+                          onClick={() => handleReportAction(session.id)}
+                          disabled={isLoadingReports}
+                        >
+                          {sessionReportMap[session.id]
+                            ? t('sessions.table.report.viewExisting', 'View Report')
+                            : t('sessions.table.report.create', 'Create Report')}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

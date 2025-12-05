@@ -987,9 +987,7 @@ const ResultsPage = () => {
             <button className="secondary-button" onClick={handleTrainAgain}>
               {t('results.action.trainAgain')}
             </button>
-            <button className="secondary-button" onClick={handleBackToDashboard}>
-              {t('results.action.backDashboard')}
-            </button>
+            
 
             <button className = "secondary-button" onClick={() => navigate('/report')}>
             🤖 리포트 생성

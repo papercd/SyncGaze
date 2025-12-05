@@ -346,6 +346,7 @@ export const translations: Record<string, Record<Language, string>> = {
   'landing.cta.primary.auth': { ko: '시작하기', en: 'Get Started' },
   'landing.cta.primary.dashboard': { ko: '대시보드로 이동', en: 'Go to Dashboard' },
   'landing.cta.learnMore': { ko: '더 알아보기', en: 'Learn More' },
+  'landing.cta.aboutUs': { ko: '팀 소개', en: 'About Us' },
   'landing.section.features.title': { ko: '왜 SyncGaze인가요?', en: 'Why Choose SyncGaze?' },
   'landing.feature.eyeTracking.title': { ko: '시선 추적 기술', en: 'Eye Tracking Technology' },
   'landing.feature.eyeTracking.desc': {

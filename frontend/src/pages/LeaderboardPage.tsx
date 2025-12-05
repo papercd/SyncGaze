@@ -332,7 +332,9 @@ const LeaderboardPage = () => {
                     )}
                   </h2>
                 </div>
-                <div className="table-meta">
+                {/** 
+                 * 
+                 * <div className="table-meta">
                   <p className="meta-text sort-hint">{t('leaderboard.table.hint', 'Click a column header to sort the leaderboard.')}</p>
                   <span className="meta-text">
                     {t('leaderboard.table.meta', '{metric} leaderboard • {sort}')
@@ -340,6 +342,8 @@ const LeaderboardPage = () => {
                       .replace('{sort}', sortDescription)}
                   </span>
                 </div>
+                */}
+                
               </div>
               <div className="table-wrapper">
                 <table>

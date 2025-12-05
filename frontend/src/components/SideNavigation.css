@@ -14,8 +14,6 @@
   transition: transform 0.3s ease;
 }
 
-
-
 .side-nav-logo {
   background: transparent;
   border: none;
@@ -43,6 +41,11 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+}
+
+.nav-items-spacer {
+  flex: 1;
+  min-height: 1rem;
 }
 
 .side-nav-items::-webkit-scrollbar {

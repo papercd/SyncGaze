@@ -1,6 +1,7 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../state/authContext';
 import { Home, Target, Wrench, BarChart3, Trophy, Settings } from 'lucide-react';
+import LanguageToggle from './LanguageToggle';
 import './SideNavigation.css';
 
 interface NavItem {
@@ -29,8 +30,6 @@ const SideNavigation = () => {
 
   return (
     <nav className="side-navigation">
-
-
       <div className="side-nav-items">
         {filteredNavItems.map((item) => {
           const IconComponent = item.icon;
@@ -47,6 +46,10 @@ const SideNavigation = () => {
             </button>
           );
         })}
+        
+        {/* Language Toggle at bottom of nav items */}
+        <div className="nav-items-spacer"></div>
+        <LanguageToggle variant="sidebar" />
       </div>
 
       <div className="side-nav-footer">

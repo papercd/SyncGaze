@@ -1,7 +1,7 @@
 // frontend/src/pages/ResultsPage.tsx
 // UPDATED: Stops WebGazer when mounting results page, Improved Heatmap Colors & Legend
 
-import { SplinePointer,Hourglass,ScanEye,RulerDimensionLine,Link,MousePointerClick } from 'lucide-react';
+import { SplinePointer,Sparkles,Hourglass,ScanEye,RulerDimensionLine,Link,MousePointerClick } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import './ResultsPage.css';
@@ -989,8 +989,13 @@ const ResultsPage = () => {
             </button>
             
 
-            <button className = "secondary-button" onClick={() => navigate('/report')}>
-            🤖 리포트 생성
+            <button 
+              className="secondary-button" 
+              onClick={() => navigate('/report')}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+            >
+              <Sparkles size={20} />
+              리포트 생성하기
             </button>
           </div>
         </section>

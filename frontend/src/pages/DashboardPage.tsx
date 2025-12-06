@@ -1,18 +1,47 @@
 // src/pages/DashboardPage.tsx
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './DashboardPage.css';
 import { useTrackingSession, TrainingSessionSummary } from '../state/trackingSessionContext';
 import { useAuth } from '../state/authContext';
 import { useTranslation } from '../state/languageContext';
+import { getUserReports } from '../services/reportService';
+import {Crosshair,Trophy,Settings,Hourglass,MousePointerClick,RotateCcw,Flag} from 'lucide-react';
 
 const DashboardPage = () => {
   const navigate = useNavigate();
   const { recentSessions, setActiveSessionId, calibrationResult, resetState, isAnonymousSession } = useTrackingSession();
   const { user, signOut: signOutUser } = useAuth();
   const { t } = useTranslation();
+  const [sessionReportMap, setSessionReportMap] = useState<Record<string, string>>({});
+  const [isLoadingReports, setIsLoadingReports] = useState(false);
   const hasRealSession = recentSessions.some(session => !session.id.startsWith('mock-'));
   const isNewUser = isAnonymousSession || !hasRealSession;
+
+  useEffect(() => {
+    const loadReports = async () => {
+      if (!user?.uid) {
+        setSessionReportMap({});
+        return;
+      }
+
+      setIsLoadingReports(true);
+      try {
+        const reports = await getUserReports(user.uid);
+        const reportMap = reports.reduce<Record<string, string>>((acc, report) => {
+          acc[report.sessionId] = report.id;
+          return acc;
+        }, {});
+        setSessionReportMap(reportMap);
+      } catch (error) {
+        console.error('Failed to load reports', error);
+      } finally {
+        setIsLoadingReports(false);
+      }
+    };
+
+    loadReports();
+  }, [user?.uid]);
 
   const handleLogout = async () => {
     try {
@@ -31,6 +60,11 @@ const DashboardPage = () => {
   const handleViewResults = (sessionId: string) => {
     setActiveSessionId(sessionId);
     navigate('/results', { state: { sessionId } });
+  };
+
+  const handleReportAction = (sessionId: string) => {
+    setActiveSessionId(sessionId);
+    navigate('/report', { state: { sessionId } });
   };
 
   const stats = useMemo(() => {
@@ -81,24 +115,7 @@ const DashboardPage = () => {
   return (
     <div className="dashboard-page">
       {/* Header */}
-      <header className="dashboard-header">
-        <div className="header-content">
-          <button
-            type="button"
-            className="dashboard-logo"
-            onClick={() => navigate('/dashboard')}
-          >
-            SyncGaze
-          </button>
-          <div className="header-actions">
-            <div className="calibration-status">{calibrationMessage}</div>
-            <span className="user-email">{user?.displayName || user?.email || t('dashboard.header.account')}</span>
-            <button className="logout-button" onClick={handleLogout}>
-              {t('dashboard.button.logout')}
-            </button>
-          </div>
-        </div>
-      </header>
+    
 
       {/* Main Content */}
       <main className="dashboard-main">
@@ -111,7 +128,11 @@ const DashboardPage = () => {
         {/* Quick Stats */}
         <section className="stats-grid">
           <div className="stat-card">
-            <div className="stat-icon">📊</div>
+            <div className ="stat-icon">
+              <RotateCcw size={32} strokeWidth={2.5}/>   
+            </div>
+            
+
             <div className="stat-info">
               <h3>{stats.totalSessions}</h3>
               <p>{t('dashboard.stats.total')}</p>
@@ -119,7 +140,9 @@ const DashboardPage = () => {
           </div>
 
           <div className="stat-card">
-            <div className="stat-icon">🎯</div>
+            <div className ="stat-icon">
+              <MousePointerClick size={32} strokeWidth={2.5}/>   
+            </div>
             <div className="stat-info">
               <h3>{stats.avgAccuracy}%</h3>
               <p>{t('dashboard.stats.avgAccuracy')}</p>
@@ -127,7 +150,9 @@ const DashboardPage = () => {
           </div>
 
           <div className="stat-card">
-            <div className="stat-icon">⚡</div>
+              <div className ="stat-icon">
+                <Hourglass size={32} strokeWidth={2.5}/>   
+              </div>
             <div className="stat-info">
               <h3>{stats.avgReactionTime}ms</h3>
               <p>{t('dashboard.stats.avgReaction')}</p>
@@ -135,7 +160,9 @@ const DashboardPage = () => {
           </div>
 
           <div className="stat-card">
-            <div className="stat-icon">🏆</div>
+              <div className ="stat-icon">
+                <Flag size={32} strokeWidth={2.5}/>   
+              </div>
             <div className="stat-info">
               <h3>{stats.bestAccuracy}%</h3>
               <p>{t('dashboard.stats.bestAccuracy')}</p>
@@ -146,19 +173,22 @@ const DashboardPage = () => {
         {/* Action Buttons */}
         <section className="action-section">
           <button className="start-training-button" onClick={handleStartTraining}>
-            <span className="button-icon">🎮</span>
+              <div className ="button-icon">
+                <Crosshair size={24} strokeWidth={2.5}/>   
+              </div>
             {t('dashboard.action.train')}
           </button>
-          <button className="start-training-button" onClick={() => navigate('/tracker-flow')}>
-            <span className="button-icon">🧭</span>
-            {t('dashboard.action.flow')}
-          </button>
+       
           <button className="start-training-button" onClick={() => navigate('/leaderboard')}>
-            <span className="button-icon">🏆</span>
+            <div className ="button-icon">
+              <Trophy size={24} strokeWidth={2.5}/>   
+            </div>
             {t('dashboard.action.leaderboard')}
           </button>
           <button className="start-training-button" onClick={() => navigate('/settings')}>
-            <span className="button-icon">⚙️</span>
+              <div className ="button-icon">
+                <Settings size={24} strokeWidth={2.5}/>   
+              </div>
             Settings
           </button>
         </section>
@@ -203,9 +233,20 @@ const DashboardPage = () => {
                       </td>
                       <td>{session.avgReactionTime.toFixed(2)}ms</td>
                       <td className="table-actions">
-                        <button className="view-button" onClick={() => handleViewResults(session.id)}>
-                          {t('dashboard.table.view')}
-                        </button>
+                        <div className="table-actions-group">
+                          <button className="view-button" onClick={() => handleViewResults(session.id)}>
+                            {t('dashboard.table.view')}
+                          </button>
+                          <button
+                            className="report-button"
+                            onClick={() => handleReportAction(session.id)}
+                            disabled={isLoadingReports}
+                          >
+                            {sessionReportMap[session.id]
+                              ? t('dashboard.table.report.viewExisting')
+                              : t('dashboard.table.report.create')}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}

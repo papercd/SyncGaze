@@ -2,7 +2,7 @@
 // CORRECTED: Only stops WebGazer when explicitly navigating to Dashboard
 // ResultsPage handles stopping WebGazer, so we don't interfere with the normal flow
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TrainingScene } from '../components/TrainingScene';
 import { TrackingDataRecord } from '../hooks/useTrackingData';
@@ -34,17 +34,27 @@ const TrainingPage = () => {
   const { stopSession } = useWebgazer();
   const { t } = useTranslation();
   const { controlSensitivity } = useControlSettings();
-  
+
   const [timeRemaining, setTimeRemaining] = useState(60);
   const [isTraining, setIsTraining] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
   const [finalScore, setFinalScore] = useState(0);
+  const [showExitPrompt, setShowExitPrompt] = useState(false);
   const trainingStartTime = useRef<number>(0);
 
   // ❌ REMOVED: No automatic cleanup on unmount
   // This was causing WebGazer to stop when transitioning from CalibrationPage
   // WebGazer should stay running during: CalibrationPage → TrainingPage → ResultsPage
   // Only stop when explicitly navigating to Dashboard
+
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setShowExitPrompt(true);
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [navigate, stopSession]);
 
   const handleStartTraining = useCallback(() => {
     trainingStartTime.current = Date.now();
@@ -165,11 +175,35 @@ const TrainingPage = () => {
     navigate('/dashboard');
   }, [stopSession, navigate]);
 
+  const renderExitPrompt = () => {
+    if (!showExitPrompt) return null;
+
+    return (
+      <div className="exit-overlay" role="dialog" aria-modal="true">
+        <div className="exit-modal">
+          <h3>{t('session.exit.title')}</h3>
+          <p>{t('session.exit.desc')}</p>
+          <div className="exit-actions">
+            <button className="secondary-button" onClick={() => setShowExitPrompt(false)}>
+              {t('session.exit.continue')}
+            </button>
+            <button className="danger-button" onClick={handleBackToDashboard}>
+              {t('session.exit.dashboard')}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="training-page">
       {/* Training Scene - renders when training is active */}
       {isTraining && (
-        <TrainingScene onComplete={handleTrainingComplete} />
+        <TrainingScene
+          onComplete={handleTrainingComplete}
+          onExitDashboard={handleBackToDashboard}
+        />
       )}
       
       {/* Pre-Training Instructions */}
@@ -251,6 +285,7 @@ const TrainingPage = () => {
           </div>
         </div>
       )}
+      {renderExitPrompt()}
     </div>
   );
 };

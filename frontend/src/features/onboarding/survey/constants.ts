@@ -21,8 +21,9 @@ export const defaultSurveyResponses: SurveyResponses = {
   mainGameOther: '',
   aimTrainerUsage: '',
   inGameRank: '',
-  playTime: '< 100시간',
+  playTime: '주 3-7시간',
   selfAssessment: 4,
+  trainingGoal: '',
 };
 
 export const surveyGameOptions: SurveyGameOption[] = [
@@ -42,6 +43,7 @@ export const surveyGameOptions: SurveyGameOption[] = [
   { category: '기타 FPS', value: 'battlefield', label: '배틀필드 (Battlefield) 시리즈' },
   { category: '기타 FPS', value: 'halo-infinite', label: 'Halo Infinite (헤일로 인피니트)' },
   { category: '기타 FPS', value: 'destiny-2', label: 'Destiny 2 (데스티니 가디언즈)' },
+  { category: '기타 FPS', value: 'practice-only', label: '아직 주력 FPS가 없어요 (연습만 해볼게요)' },
   {
     category: '기타 FPS',
     value: OTHER_GAME_VALUE,
@@ -51,4 +53,4 @@ export const surveyGameOptions: SurveyGameOption[] = [
   { category: '기타 FPS', value: NONE_GAME_VALUE, label: '해당 없음 (선택 시 탈락)', exclusive: true },
 ];
 
-export const playTimeOptions = ['< 100시간', '100-500시간', '500-1000시간', '1000-2000시간', '2000+ 시간'];
+export const playTimeOptions = ['주 1-3시간', '주 3-7시간', '주 7-14시간', '주 14-21시간', '주 21시간 이상'];

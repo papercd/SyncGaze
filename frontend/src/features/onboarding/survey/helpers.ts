@@ -8,16 +8,19 @@ export const validateSurveyResponses = (
   t: Translator,
 ): string | null => {
   if (!data.ageCheck || !data.webcamCheck) {
-    return t('survey.validation.age', '만 18세 이상이며 웹캠이 있어야 참여 가능합니다.');
+    return t(
+      'survey.validation.readiness',
+      '시선 추적을 위해 웹캠과 플레이 환경 준비 여부를 모두 확인해주세요.',
+    );
   }
   if (data.gamesPlayed.length === 0 || data.gamesPlayed.includes(NONE_GAME_VALUE)) {
     return t(
       'survey.validation.notEligible',
-      '연구 대상(FPS 게임 경험자)이 아닙니다. 참여하실 수 없습니다.',
+      '주력 혹은 관심 있는 FPS를 최소 1개 선택해주세요.',
     );
   }
   if (!data.mainGame) {
-    return t('survey.validation.mainGameMissing', '주력 게임을 선택해주세요.');
+    return t('survey.validation.mainGameMissing', '현재 집중하고 싶은 게임을 선택해주세요.');
   }
   if (data.mainGame !== OTHER_GAME_VALUE && !data.gamesPlayed.includes(data.mainGame)) {
     return t(
@@ -29,10 +32,13 @@ export const validateSurveyResponses = (
     return t('survey.validation.otherRequired', '주력 게임을 직접 입력해주세요.');
   }
   if (!data.aimTrainerUsage) {
-    return t('survey.validation.aimTrainer', 'Aim Trainer 사용 여부를 선택해주세요.');
+    return t('survey.validation.aimTrainer', '평소 연습 도구 사용 여부를 선택해주세요.');
   }
-  if (!data.inGameRank.trim()) {
-    return t('survey.validation.rank', '현재 인게임 랭크를 입력해주세요.');
+  if (data.mainGame !== 'practice-only' && !data.inGameRank.trim()) {
+    return t('survey.validation.rank', '현재 인게임 랭크 또는 점수를 입력해주세요.');
+  }
+  if (!data.trainingGoal.trim()) {
+    return t('survey.validation.goal', '이번 시즌에 달성하고 싶은 목표를 적어주세요.');
   }
   return null;
 };

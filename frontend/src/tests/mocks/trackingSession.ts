@@ -18,6 +18,7 @@ export const createTrackingSessionValue = (
   lastSession: null,
   activeSessionId: null,
   isAnonymousSession: false,
+  surveyHydrated: true,
   setSurveyResponses: vi.fn(),
   setConsentAccepted: vi.fn(),
   saveCalibrationResult: vi.fn(),
@@ -26,6 +27,7 @@ export const createTrackingSessionValue = (
   clearRecentSessions: vi.fn(),
   activeSession: null,
   setAnonymousSession: vi.fn(),
+  setSurveyHydrated: vi.fn(),
   ...overrides,
 });
 
@@ -39,6 +41,7 @@ export const buildSurveyResponses = (overrides: Partial<SurveyResponses> = {}): 
   inGameRank: 'Immortal',
   playTime: '< 100시간',
   selfAssessment: 5,
+  trainingGoal: '랭크 올리기',
   ...overrides,
 });
 

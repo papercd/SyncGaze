@@ -65,8 +65,8 @@
 
 /* Main Content */
 .dashboard-main {
-  max-width: 1400px;
-  margin: 0 auto;
+  max-width: 100%;
+  margin: 0;
   padding: 3rem 2rem;
 }
 
@@ -255,6 +255,14 @@
   text-align: center;
 }
 
+.table-actions-group {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
 .accuracy-badge {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 0.3rem 0.8rem;
@@ -278,6 +286,27 @@
 .view-button:hover {
   background: rgba(102, 126, 234, 0.2);
   border-color: #667eea;
+}
+
+.report-button {
+  padding: 0.5rem 1rem;
+  background: rgba(118, 75, 162, 0.15);
+  border: 1px solid rgba(118, 75, 162, 0.4);
+  color: #fff;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.report-button:hover:enabled {
+  background: rgba(118, 75, 162, 0.3);
+  border-color: #a880e6;
+}
+
+.report-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* Responsive Design */

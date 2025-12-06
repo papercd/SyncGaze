@@ -6,8 +6,8 @@ import CalibrationPage from './pages/CalibrationPage';
 import TrainingPage from './pages/TrainingPage';
 import ResultsPage from './pages/ResultsPage';
 import DetailedResultsPage from './pages/DetailedResultsPage';
+import AboutPage from './pages/AboutPage.tsx';
 import ReportPage from './pages/ReportPage';
-
 import TrackerFlowPage from './pages/TrackerFlowPage';
 import SurveyPage from './pages/onboarding/SurveyPage';
 import ResearchConsentPage from './pages/onboarding/ResearchConsentPage';
@@ -15,10 +15,14 @@ import LeaderboardPage from './pages/LeaderboardPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage.tsx';
 import SettingsPage from './pages/SettingsPage';
+import ThankYouPage from './pages/onboarding/ThankYouPage';
+import SessionsHistoryPage from './pages/SessionsHistoryPage.tsx';
 import { ReactElement, useEffect } from 'react';
 import { useAuth } from './state/authContext';
 import SessionRemoteHydrator from './components/SessionRemoteHydrator';
 import { useTranslation } from './state/languageContext';
+import Layout from './components/Layout';
+import { useTrackingSession } from './state/trackingSessionContext';
 
 //연구 감사인사용 페이지
 import ThankYouPage from './pages/onboarding/ThankYouPage';
@@ -46,6 +50,7 @@ const ScrollToTop = () => {
 const ProtectedRoute = ({ children }: { children: ReactElement }) => {
   const location = useLocation();
   const { user, loading } = useAuth();
+  const { surveyResponses, surveyHydrated, isAnonymousSession } = useTrackingSession();
 
   if (loading) {
     return <RouteLoader />;
@@ -53,6 +58,20 @@ const ProtectedRoute = ({ children }: { children: ReactElement }) => {
 
   if (!user) {
     return <Navigate to="/auth" replace state={{ from: location }} />;
+  }
+
+  if (!isAnonymousSession && !surveyResponses && !surveyHydrated) {
+    return <RouteLoader />;
+  }
+
+  if (
+    !isAnonymousSession &&
+    surveyHydrated &&
+    !surveyResponses &&
+    !location.pathname.startsWith('/onboarding/survey') &&
+    !location.pathname.startsWith('/settings')
+  ) {
+    return <Navigate to="/onboarding/survey" replace state={{ from: location.pathname }} />;
   }
 
   return children;
@@ -77,34 +96,11 @@ const PublicOnlyRoute = ({ children }: { children: ReactElement }) => {
 const AppRouter = () => {
   return (
     <BrowserRouter>
-     <SessionRemoteHydrator />
-     <ScrollToTop />
+      <SessionRemoteHydrator />
+      <ScrollToTop />
       <Routes>
+        {/* Pages WITHOUT Layout (LandingPage and TrainingPage) */}
         <Route path="/" element={<LandingPage />} />
-        <Route
-          path="/auth"
-          element={(
-            <PublicOnlyRoute>
-              <AuthPage />
-            </PublicOnlyRoute>
-          )}
-        />
-        <Route
-          path="/dashboard"
-          element={(
-            <ProtectedRoute>
-              <DashboardPage />
-            </ProtectedRoute>
-          )}
-        />
-        <Route
-          path="/calibration"
-          element={(
-            <ProtectedRoute>
-              <CalibrationPage />
-            </ProtectedRoute>
-          )}
-        />
         <Route
           path="/training"
           element={(
@@ -113,19 +109,62 @@ const AppRouter = () => {
             </ProtectedRoute>
           )}
         />
+
+        {/* Pages WITH Layout */}
         <Route
-          path="/results"
+          path="/auth"
+          element={(
+            <PublicOnlyRoute>
+              
+                <AuthPage />
+              
+            </PublicOnlyRoute>
+          )}
+        />
+        <Route
+          path="/dashboard"
           element={(
             <ProtectedRoute>
-              <ResultsPage />
+              <Layout>
+                <DashboardPage />
+              </Layout>
             </ProtectedRoute>
           )}
         />
         <Route
+          path="/calibration"
+          element={(
+            <ProtectedRoute>
+              <Layout>
+                <CalibrationPage />
+              </Layout>
+            </ProtectedRoute>
+          )}
+        />
+        <Route
+          path="/results"
+          element={(
+            <ProtectedRoute>
+              <Layout>
+                <ResultsPage />
+              </Layout>
+            </ProtectedRoute>
+          )}
+        />
+        <Route path="/sessions" element={
+          <ProtectedRoute>
+            <Layout>
+              <SessionsHistoryPage />
+            </Layout>
+          </ProtectedRoute>
+        } />
+        <Route
           path="/results/detailed"
           element={(
             <ProtectedRoute>
-              <DetailedResultsPage />
+              <Layout>
+                <DetailedResultsPage />
+              </Layout>
             </ProtectedRoute>
           )}
         />
@@ -133,7 +172,9 @@ const AppRouter = () => {
           path="/report"
           element={(
             <ProtectedRoute>
-              <ReportPage />
+              <Layout>
+                <ReportPage />
+              </Layout>
             </ProtectedRoute>
           )}
         />
@@ -141,7 +182,9 @@ const AppRouter = () => {
           path="/onboarding/survey"
           element={(
             <ProtectedRoute>
-              <SurveyPage />
+              <Layout>
+                <SurveyPage />
+              </Layout>
             </ProtectedRoute>
           )}
         />
@@ -149,37 +192,55 @@ const AppRouter = () => {
           path="/onboarding/consent"
           element={(
             <ProtectedRoute>
-              <ResearchConsentPage />
+              <Layout>
+                <ResearchConsentPage />
+              </Layout>
             </ProtectedRoute>
           )}
         />
-
         <Route
           path="/settings"
           element={(
             <ProtectedRoute>
-              <SettingsPage />
+              <Layout>
+                <SettingsPage />
+              </Layout>
             </ProtectedRoute>
           )}
         />
-
-        <Route path="/privacy" element={<PrivacyPolicyPage />} />
-        <Route path="/terms" element={<TermsOfServicePage />} />
-
+        <Route 
+          path="/privacy" 
+          element={(
+            <Layout>
+              <PrivacyPolicyPage />
+            </Layout>
+          )} 
+        />
+        <Route 
+          path="/terms" 
+          element={(
+            <Layout>
+              <TermsOfServicePage />
+            </Layout>
+          )} 
+        />
         <Route
           path="/thank-you"
           element={(
             <ProtectedRoute>
-              <ThankYouPage />
+              <Layout>
+                <ThankYouPage />
+              </Layout>
             </ProtectedRoute>
           )}
         />
-
         <Route
           path="/tracker-flow"
           element={(
             <ProtectedRoute>
-              <TrackerFlowPage />
+              <Layout>
+                <TrackerFlowPage />
+              </Layout>
             </ProtectedRoute>
           )}
         />
@@ -187,10 +248,22 @@ const AppRouter = () => {
           path="/leaderboard"
           element={(
             <ProtectedRoute>
-              <LeaderboardPage />
+              <Layout>
+                <LeaderboardPage />
+              </Layout>
             </ProtectedRoute>
           )}
         />
+        <Route
+          path="/about"
+          element={(
+            <ProtectedRoute>
+              <AboutPage />
+            </ProtectedRoute>
+          )}
+        />
+        
+
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

@@ -314,6 +314,9 @@ const DetailedResultsPage = () => {
   const [velocityZoom, setVelocityZoom] = useState(1);
 
   const [replayTargetId, setReplayTargetId] = useState<string | null>(null);
+  const [replayTargetIndex, setReplayTargetIndex] = useState<number | null>(null);
+
+
   const [replaySamples, setReplaySamples] = useState<TrainingDataPoint[]>([]);
   const [replayIndex, setReplayIndex] = useState(0);
   const [isReplaying, setIsReplaying] = useState(false);
@@ -784,7 +787,7 @@ const DetailedResultsPage = () => {
     };
   }, []);
 
-  const openReplayForTarget = useCallback((targetId: string) => {
+  const openReplayForTarget = useCallback((targetId: string, targetIndex: number) => {
     if (!sortedRawData.length) return;
     const startIdx = sortedRawData.findIndex(p => p.targetId === targetId);
     if (startIdx === -1) return;
@@ -805,6 +808,7 @@ const DetailedResultsPage = () => {
     if (!segment.length) return;
 
     setReplayTargetId(targetId);
+    setReplayTargetIndex(targetIndex); // 순서 저장
     setReplaySamples(segment);
     setReplayIndex(0);
     setIsReplaying(true);
@@ -832,6 +836,7 @@ const DetailedResultsPage = () => {
   const closeReplay = useCallback(() => {
     setIsReplaying(false);
     setReplayTargetId(null);
+    setReplayTargetIndex(null); // 추가
     setReplaySamples([]);
     setReplayIndex(0);
   }, []);
@@ -931,15 +936,15 @@ const DetailedResultsPage = () => {
     <div className="detailed-results-page">
       <header className="detailed-header">
         <div>
-          <p className="breadcrumb">Results / Detailed</p>
+          
           <h1>Performance Breakdown</h1>
-          <p className="subhead">Session ID #{sessionData.id} · {new Date(sessionData.date).toLocaleString()}</p>
+          <p className="subhead"> {new Date(sessionData.date).toLocaleString()}</p>
         </div>
         <div className="header-actions">
           {calibration && calibration.validationError !== null && (
-            <div className="pill">Calibration error: {calibration.validationError.toFixed(1)} px</div>
+            <div className="pill">Session calibration error: {calibration.validationError.toFixed(1)} px</div>
           )}
-          <button type="button" className="detail-button ghost" onClick={handleBack}>Back to results</button>
+          <button type="button" className="detail-button ghost" onClick={handleBack}>Back to overview</button>
         </div>
       </header>
 
@@ -1312,8 +1317,8 @@ const DetailedResultsPage = () => {
                 {recentTargets.map((sample, idx) => (
                   <tr key={`${sample.targetId}-${idx}`}>
                     <td className="align-left">
-                      <button type="button" className="target-link" onClick={() => openReplayForTarget(sample.targetId)}>
-                        {sample.targetId ?? '—'}
+                      <button type="button" className="target-link" onClick={() => openReplayForTarget(sample.targetId, idx + 1)}>
+                        Target #{idx + 1}
                       </button>
                     </td>
                     <td>{sample.gazeErr !== null ? `${sample.gazeErr.toFixed(1)} px` : 'N/A'}</td>
@@ -1338,7 +1343,7 @@ const DetailedResultsPage = () => {
             <div className="replay-header">
               <div>
                 <p className="card-label">Target Replay</p>
-                <h3 className="replay-title">#{replayTargetId}</h3>
+                <h3 className="replay-title">Target #{replayTargetIndex}</h3>
                 <p className="muted">
                   등장부터 사라질 때까지를 {currentReplayFrame?.targetHit ? '명중 프레임 포함' : '마지막 프레임까지'} 느린 속도로 재생합니다. 배속을 선택하거나, 재생바를 움직여 원하는 구간을 바로 확인할 수 있습니다.
                 </p>

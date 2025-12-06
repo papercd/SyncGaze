@@ -6,97 +6,110 @@ export const translations: Record<string, Record<Language, string>> = {
   'language.english': { ko: '영어', en: 'English' },
   'language.switch': { ko: 'English', en: '한국어' },
 
+  // Shared session prompts
+  'session.exit.title': { ko: '대시보드로 돌아가시겠어요?', en: 'Return to dashboard?' },
+  'session.exit.desc': {
+    ko: '현재 진행 중인 세션이 종료되고 대시보드로 이동합니다.',
+    en: 'The current session will end and you will return to the dashboard.',
+  },
+  'session.exit.dashboard': { ko: '대시보드로 돌아가기', en: 'Go to Dashboard' },
+  'session.exit.continue': { ko: '계속 진행하기', en: 'Keep going' },
+
   // Survey page
   'survey.header.title': {
-    ko: '연구 참여 스크리닝 설문',
-    en: 'Research Participation Screening Survey',
+    ko: '처음 이용을 위한 실력 프로필',
+    en: 'Your starting skill profile',
   },
   'survey.header.description': {
-    ko: '기본 자격을 확인하고 tracker-flow 컨텍스트에 설문 결과를 동기화합니다.',
-    en: 'Confirm eligibility and sync survey results into the tracker-flow context.',
+    ko: '맞춤형 대시보드와 추천을 위해 현재 플레이 수준을 알려주세요. 이후 설정에서 언제든 업데이트할 수 있습니다.',
+    en: 'Tell us about your current play level so we can tailor the dashboard. You can update this anytime from Settings.',
   },
-  'survey.header.progress': { ko: '진행 현황 보기', en: 'View progress' },
-  'survey.section.participant': { ko: '참여자 정보', en: 'Participant Information' },
+  'survey.header.progress': { ko: '건너뛰기', en: 'Skip for now' },
+  'survey.section.participant': { ko: '플레이어 프로필', en: 'Player profile' },
   'survey.section.participant.desc': {
-    ko: 'FPS 게임 경험과 장비 보유 여부를 확인합니다.',
-    en: 'Check FPS experience and required equipment.',
+    ko: '현재 장비와 플레이 스타일을 간단히 입력하면 더 적합한 가이드와 목표를 제시해 드립니다.',
+    en: 'Share your setup and play style so we can tailor guidance and goals for you.',
   },
   'survey.status.ready': { ko: '제출 준비 완료', en: 'Ready to submit' },
   'survey.status.pending': { ko: '입력 필요', en: 'Additional input needed' },
-  'survey.legend.eligibility': { ko: '기본 자격', en: 'Basic Eligibility' },
+  'survey.legend.eligibility': { ko: '시작 준비도', en: 'Setup readiness' },
   'survey.eligibility.age': {
-    ko: 'Q1. 귀하는 만 18세 이상이며, 본 연구의 목적을 이해하고 자발적으로 참여하는 데 동의하십니까?',
-    en: 'Q1. Are you at least 18 years old and do you voluntarily agree to participate with a full understanding of the study purpose?',
+    ko: '기본 PC/네트워크 환경이 준비되어 있습니다.',
+    en: 'My PC and network are ready for tracking sessions.',
   },
   'survey.eligibility.webcam': {
-    ko: 'Q2. 본 연구에 참여하기 위한 PC/노트북에 작동하는 웹캠이 설치되어 있습니까?',
-    en: 'Q2. Does your PC/laptop have a working webcam for this study?',
+    ko: '시선 추적용으로 사용할 수 있는 웹캠/카메라가 있습니다.',
+    en: 'I have a webcam/camera available for eye tracking.',
   },
-  'survey.legend.gameplay': { ko: '게임 경험', en: 'Gameplay Experience' },
+  'survey.legend.gameplay': { ko: '게임 경험', en: 'Gameplay preferences' },
   'survey.q3.title': {
-    ko: 'Q3. 지난 6개월간 다음 FPS 게임 중 하나 이상을 주 5시간 이상 정기적으로 플레이했습니까?',
-    en: 'Q3. In the last 6 months, have you regularly played at least one of these FPS titles for 5+ hours per week?',
+    ko: '어떤 FPS를 주로 플레이하시나요? (중복 선택 가능)',
+    en: 'Which FPS titles are you playing right now? (Select all that apply)',
   },
-  'survey.q3.hint': { ko: '주요 장르별 분류, 중복 선택 가능', en: 'Grouped by genre; multiple selections allowed' },
+  'survey.q3.hint': { ko: '주로 즐기거나 연습해 보고 싶은 타이틀을 선택하세요.', en: 'Pick the titles you enjoy or plan to practice.' },
   'survey.q3.note': {
-    ko: '* "위 목록에 없음" 선택 시 주력 FPS를 직접 기입해주세요.',
-    en: '* If you choose "Not listed above," please enter your primary FPS manually.',
+    ko: '* "위 목록에 없음"을 선택하면 직접 입력할 수 있어요.',
+    en: '* Choose "Not listed" to type in your own title.',
   },
-  'survey.legend.mainGame': { ko: '주력 게임', en: 'Main Game' },
+  'survey.legend.mainGame': { ko: '집중 게임', en: 'Focus title' },
   'survey.q4.title': {
-    ko: 'Q4. (질문 3에서 선택한 게임 중) 귀하의 "주력 게임"(가장 자신 있거나 시간을 많이 투자한 게임)은 무엇입니까?',
-    en: 'Q4. Of the games selected in question 3, which is your "main game" (most confident or most played)?',
+    ko: '방금 고른 게임 중 지금 가장 집중하고 싶은 게임은 무엇인가요?',
+    en: 'Which of the selected games do you want to focus on right now?',
   },
   'survey.q4.dropdownLabel': {
-    ko: '드롭다운 메뉴: 질문 3에서 선택한 모든 게임',
-    en: 'Dropdown: All games selected in question 3',
+    ko: '드롭다운: 방금 선택한 게임 목록',
+    en: 'Dropdown: Games you just selected',
   },
-  'survey.q4.placeholder': { ko: '주력 게임을 선택하세요', en: 'Select your main game' },
+  'survey.q4.placeholder': { ko: '집중할 게임을 고르세요', en: 'Choose the game to focus on' },
   'survey.q4.manualEntry': { ko: '직접 입력', en: 'Manual entry' },
   'survey.q4.otherLabel': {
-    ko: '위 목록에 없음: 플레이하는 주력 FPS를 입력해주세요.',
-    en: 'Not listed above: enter the FPS you primarily play.',
+    ko: '위 목록에 없음: 집중할 게임을 직접 입력하세요.',
+    en: 'Not listed: type the game you want to focus on.',
   },
   'survey.q4.otherPlaceholder': {
     ko: '예: Escape from Tarkov Arena',
     en: 'e.g., Escape from Tarkov Arena',
   },
   'survey.q5.title': {
-    ko: "Q5. 지난 6개월간 Aim Trainer(예: KovaaK's, Aim Lab)를 정기적으로 사용했습니까?",
-    en: "Q5. In the past 6 months, have you regularly used an Aim Trainer (e.g., KovaaK's, Aim Lab)?",
+    ko: '에임 트레이너나 연습 모드를 얼마나 활용하고 있나요?',
+    en: 'How often do you use aim trainers or practice modes?',
   },
   'survey.q5.yes': { ko: '예', en: 'Yes' },
   'survey.q5.no': { ko: '아니오', en: 'No' },
   'survey.q5.hint': {
-    ko: 'Aim Trainer 사용 여부는 스킬 분석의 중요한 변수가 될 수 있습니다.',
-    en: 'Aim Trainer usage can be an important variable for skill analysis.',
+    ko: '연습 도구 사용 여부에 따라 추천 루틴을 다르게 제안합니다.',
+    en: 'We’ll adjust recommendations based on how you practice.',
   },
-  'survey.legend.rank': { ko: '객관적 실력 지표', en: 'Objective skill metrics' },
+  'survey.legend.rank': { ko: '현재 수준', en: 'Current level' },
   'survey.q6.label': {
-    ko: 'Q6. ({mainGame}) 현재 인게임 랭크는 무엇입니까?',
-    en: 'Q6. ({mainGame}) What is your current in-game rank?',
+    ko: '({mainGame})에서 현재 티어/점수는 무엇인가요?',
+    en: 'What is your current rank/score in {mainGame}?',
   },
   'survey.q6.placeholder': {
-    ko: '현재 랭크를 정확히 입력하세요',
-    en: 'Enter your exact current rank',
+    ko: '예: 실버 2, 플래티넘, 1800 MMR',
+    en: 'e.g., Silver 2, Platinum, 1800 MMR',
   },
   'survey.q6.wait': {
-    ko: 'Q6. (질문 4에서 주력 게임을 선택하세요)',
-    en: 'Q6. (Select your main game in question 4 first)',
+    ko: '집중할 게임을 먼저 선택해주세요.',
+    en: 'Pick the focus title first.',
   },
   'survey.legend.experience': {
-    ko: '경험치와 자기 평가',
-    en: 'Experience and self-assessment',
+    ko: '시간 & 목표',
+    en: 'Time & goals',
   },
   'survey.q7.label': {
-    ko: 'Q7. (질문 4에서 선택한) 귀하의 총 플레이 시간은 대략 어느 정도입니까? (Riot/Steam 계정에서 확인 가능)',
-    en: 'Q7. Based on the main game from question 4, approximately how many total hours have you played? (Check Riot/Steam account for reference)',
+    ko: '주당 얼마나 자주 플레이하나요?',
+    en: 'How many hours do you play per week?',
   },
   'survey.q8.label': {
-    ko: 'Q8. 다른 플레이어들과 비교하여, 귀하 스스로의 전반적인 FPS 게임 실력을 어떻게 평가하십니까?',
-    en: 'Q8. Compared to other players, how would you rate your overall FPS skill?',
+    ko: '현재 에임/인게임 실력에 대한 자기 평가는 어느 정도인가요?',
+    en: 'How would you rate your current aim and in-game skills?',
   },
   'survey.q8.selected': { ko: '선택', en: 'Selected' },
+  'survey.q9.goal': {
+    ko: '이번 시즌에 꼭 달성하고 싶은 목표나 개선 포인트를 알려주세요.',
+    en: 'What goal or improvement do you want to achieve this season?',
+  },
   'survey.storage.error': {
     ko: '설문 응답을 클라우드에 저장하지 못했습니다. 네트워크 연결을 확인한 뒤 재시도해주세요.',
     en: 'Failed to save survey responses to the cloud. Please check your connection and try again.',
@@ -125,21 +138,21 @@ export const translations: Record<string, Record<Language, string>> = {
   'survey.cloud.retry': { ko: '클라우드에 다시 저장', en: 'Save to cloud again' },
   'survey.cloud.close': { ko: '닫기', en: 'Close' },
   'survey.back': { ko: '돌아가기', en: 'Go back' },
-  'survey.submitting': { ko: '제출 중...', en: 'Submitting...' },
-  'survey.submit': { ko: '설문 제출 및 다음 단계로', en: 'Submit survey and continue' },
+  'survey.submitting': { ko: '저장 중...', en: 'Saving...' },
+  'survey.submit': { ko: '저장하고 계속하기', en: 'Save and continue' },
 
   // Survey validation
-  'survey.validation.age': {
-    ko: '만 18세 이상이며 웹캠이 있어야 참여 가능합니다.',
-    en: 'Participation requires being 18+ with a working webcam.',
+  'survey.validation.readiness': {
+    ko: '시선 추적을 위해 웹캠과 플레이 환경 준비 여부를 모두 확인해주세요.',
+    en: 'Confirm your webcam and play environment are ready for eye tracking.',
   },
   'survey.validation.notEligible': {
-    ko: '연구 대상(FPS 게임 경험자)이 아닙니다. 참여하실 수 없습니다.',
-    en: 'Not eligible (FPS gameplay experience required). Participation unavailable.',
+    ko: '주력 혹은 관심 있는 FPS를 최소 1개 선택해주세요.',
+    en: 'Select at least one FPS you play or want to practice.',
   },
   'survey.validation.mainGameMissing': {
-    ko: '주력 게임을 선택해주세요.',
-    en: 'Please select your main game.',
+    ko: '현재 집중하고 싶은 게임을 선택해주세요.',
+    en: 'Choose the game you want to focus on.',
   },
   'survey.validation.mainGameMismatch': {
     ko: '선택한 주력 게임이 게임 경험 목록에 없습니다.',
@@ -150,12 +163,16 @@ export const translations: Record<string, Record<Language, string>> = {
     en: 'Enter your primary FPS title.',
   },
   'survey.validation.aimTrainer': {
-    ko: 'Aim Trainer 사용 여부를 선택해주세요.',
-    en: 'Select whether you use an Aim Trainer.',
+    ko: '평소 연습 도구 사용 여부를 선택해주세요.',
+    en: 'Tell us whether you use practice tools.',
   },
   'survey.validation.rank': {
-    ko: '현재 인게임 랭크를 입력해주세요.',
-    en: 'Please enter your current in-game rank.',
+    ko: '현재 인게임 랭크 또는 점수를 입력해주세요.',
+    en: 'Enter your current in-game rank or score.',
+  },
+  'survey.validation.goal': {
+    ko: '이번 시즌에 달성하고 싶은 목표를 적어주세요.',
+    en: 'Share the goal you want to reach this season.',
   },
   'survey.rankExamples.default': {
     ko: '(예: 가능한 한 정확한 티어/랭크 표기를 입력)',
@@ -184,6 +201,30 @@ export const translations: Record<string, Record<Language, string>> = {
     en: 'Hardcore / Extraction',
   },
   'survey.selector.category.기타 FPS': { ko: '기타 FPS', en: 'Other FPS' },
+
+  // Settings
+  'settings.survey.title': { ko: '실력 프로필', en: 'Skill snapshot' },
+  'settings.survey.desc': {
+    ko: '온보딩 설문 응답을 업데이트하면 추천 목표와 리포트가 더 정확해집니다.',
+    en: 'Keep your onboarding survey up to date so recommendations and reports stay accurate.',
+  },
+  'settings.survey.cta': { ko: '설문 다시 작성', en: 'Update survey' },
+  'settings.survey.empty': {
+    ko: '첫 로그인 시 작성한 설문이 여기에 표시됩니다. 설문을 작성해 맞춤 추천을 받아보세요.',
+    en: 'Your saved survey responses will appear here. Complete it to receive tailored tips.',
+  },
+  'settings.survey.manualGame': { ko: '사용자 입력', en: 'Custom input' },
+  'settings.survey.readiness.title': { ko: '준비 상태', en: 'Readiness' },
+  'settings.survey.readiness.ready': { ko: '세팅 준비 완료', en: 'Ready to train' },
+  'settings.survey.readiness.missing': { ko: '세팅 확인 필요', en: 'Needs setup check' },
+  'settings.survey.focus': { ko: '집중 게임', en: 'Focus game' },
+  'settings.survey.rank': { ko: '현재 티어/점수', en: 'Current rank/score' },
+  'settings.survey.playTime': { ko: '주간 플레이 시간', en: 'Weekly play time' },
+  'settings.survey.practice': { ko: '연습 도구', en: 'Practice tools' },
+  'settings.survey.practice.yes': { ko: '연습 도구 사용 중', en: 'Using practice tools' },
+  'settings.survey.practice.no': { ko: '연습 도구는 사용하지 않음', en: 'Not using practice tools' },
+  'settings.survey.selfAssessment': { ko: '자가 평가', en: 'Self rating' },
+  'settings.survey.goal': { ko: '시즌 목표', en: 'Season goal' },
 
   // Tracker flow
   'trackerFlow.title': { ko: '연구 진행 현황', en: 'Study Progress' },
@@ -337,6 +378,7 @@ export const translations: Record<string, Record<Language, string>> = {
   'landing.cta.primary.auth': { ko: '시작하기', en: 'Get Started' },
   'landing.cta.primary.dashboard': { ko: '대시보드로 이동', en: 'Go to Dashboard' },
   'landing.cta.learnMore': { ko: '더 알아보기', en: 'Learn More' },
+  'landing.cta.aboutUs': { ko: '팀 소개', en: 'About Us' },
   'landing.section.features.title': { ko: '왜 SyncGaze인가요?', en: 'Why Choose SyncGaze?' },
   'landing.feature.eyeTracking.title': { ko: '시선 추적 기술', en: 'Eye Tracking Technology' },
   'landing.feature.eyeTracking.desc': {
@@ -485,10 +527,16 @@ export const translations: Record<string, Record<Language, string>> = {
   'dashboard.table.reaction': { ko: '평균 반응', en: 'Avg Reaction' },
   'dashboard.table.actions': { ko: '작업', en: 'Actions' },
   'dashboard.table.view': { ko: '자세히 보기', en: 'View Details' },
+  'dashboard.table.report.create': { ko: '리포트 생성하기', en: 'Create Report' },
+  'dashboard.table.report.viewExisting': { ko: '리포트 확인하기', en: 'View Report' },
 
   // Calibration page
   'calibration.loader.title': { ko: '시선 추적 초기화 중...', en: 'Loading Eye Tracking...' },
   'calibration.loader.desc': { ko: '보정 시스템을 초기화하는 동안 잠시만 기다려주세요.', en: 'Please wait while we initialize the calibration system' },
+  'calibration.escapeHint': {
+    ko: 'ESC 키를 누르면 세션 종료 확인 창이 열립니다.',
+    en: 'Press Esc to open the exit confirmation.',
+  },
   'calibration.prep.eyebrow': { ko: '캘리브레이션 준비', en: 'Calibration Prep' },
   'calibration.prep.title': { ko: '시선 추적 환경 안내', en: 'Eye-tracking environment guide' },
   'calibration.prep.camera.title': { ko: '카메라 권한', en: 'Camera access' },
@@ -549,8 +597,8 @@ export const translations: Record<string, Record<Language, string>> = {
   'leaderboard.title.eyebrow': { ko: '리더보드', en: 'Leaderboard' },
   'leaderboard.title.main': { ko: '최신 트레이닝 순위', en: 'Latest Training Rankings' },
   'leaderboard.subtitle.count': {
-    ko: '파이어베이스 리더보드 API에서 불러온 상위 {count}개 세션입니다.',
-    en: 'Top {count} sessions fetched from the Firebase leaderboard API.',
+    ko: '저희 유저들의 상위 {count}개 세션입니다.',
+    en: 'Top {count} performant sessions fetched from our users.',
   },
   'leaderboard.subtitle.metric': { ko: '선택 지표: {metric}', en: 'Selected metric: {metric}' },
   'leaderboard.action.dashboard': { ko: '대시보드', en: 'Dashboard' },

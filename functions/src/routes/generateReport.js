@@ -1,5 +1,4 @@
 // functions/src/routes/generateReport.js
-import * as functions from "firebase-functions";  // ADD THIS IMPORT
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -11,8 +10,8 @@ export const generateReportRoute = async (req, res) => {
       return res.status(400).json({ error: 'Prompt is required' });
     }
 
-    // Read from environment or Firebase config
-    const apiKey = process.env.ANTHROPIC_API_KEY || functions.config().anthropic?.api_key;  // MODIFY THIS LINE
+    // Read from Firebase secret or local .env
+    const apiKey = process.env.ANTHROPIC_API_KEY;
     
     if (!apiKey) {
       console.error('ANTHROPIC_API_KEY not found in environment variables');

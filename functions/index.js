@@ -1,5 +1,6 @@
 // functions/index.js
-import * as functions from "firebase-functions";
+import * as functions from "firebase-functions/v1";
+import { onRequest } from "firebase-functions/v2/https";
 import admin from "firebase-admin";
 import express from "express";
 import cors from "cors";
@@ -45,7 +46,7 @@ app.use((err, req, res, next) => { // eslint-disable-line @typescript-eslint/no-
 });
 
 // Firebase Cloud Function으로 내보내기
-export const api = functions.https.onRequest(app);
+export const api = onRequest(app);
 
 const DEFAULT_ALIAS_PREFIX = 'user';
 

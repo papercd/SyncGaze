@@ -264,6 +264,72 @@
   color: #c5cae9;
 }
 
+.viz-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 6, 18, 0.7);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  z-index: 30;
+}
+
+.viz-modal {
+  width: min(1100px, 95vw);
+  max-height: 90vh;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+}
+
+.viz-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.viz-modal__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.zoom-readout {
+  padding: 4px 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  font-weight: 600;
+  color: #e9ecff;
+  font-size: 0.9rem;
+}
+
+.viz-modal__body {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(5, 7, 18, 0.65);
+  overflow: auto;
+}
+
+.viz-modal__hint {
+  margin: 0 0 0.5rem;
+  color: #9da5c5;
+  font-size: 0.9rem;
+}
+
+.viz-modal__content {
+  width: 100%;
+  min-height: 340px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .replay-overlay {
   position: fixed;
   inset: 0;

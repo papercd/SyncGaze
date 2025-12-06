@@ -1,3 +1,4 @@
+import type { WheelEvent } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import './DetailedResultsPage.css';
@@ -60,48 +61,6 @@ type ReplayFrame = TrainingDataPoint & {
   displayMouseX: number | null;
   displayMouseY: number | null;
 };
-
-// --- Zoom Control Component ---
-const ZoomControls = ({ 
-  scale, 
-  onZoomIn, 
-  onZoomOut, 
-  onReset 
-}: { 
-  scale: number; 
-  onZoomIn: () => void; 
-  onZoomOut: () => void; 
-  onReset: () => void; 
-}) => (
-  <div className="zoom-controls" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-    <button 
-      className="detail-button small" 
-      onClick={onZoomOut} 
-      disabled={scale <= 1}
-      style={{ padding: '4px 12px', minWidth: '32px' }}
-    >
-      -
-    </button>
-    <span style={{ fontSize: '0.9rem', minWidth: '40px', textAlign: 'center', fontWeight: 500 }}>
-      {Math.round(scale * 100)}%
-    </span>
-    <button 
-      className="detail-button small" 
-      onClick={onZoomIn} 
-      disabled={scale >= 4}
-      style={{ padding: '4px 12px', minWidth: '32px' }}
-    >
-      +
-    </button>
-    <button 
-      className="detail-button small ghost" 
-      onClick={onReset}
-      style={{ padding: '4px 12px', marginLeft: '4px' }}
-    >
-      Reset
-    </button>
-  </div>
-);
 
 // --- PerformanceLineChart Component (UPDATED with filtering) ---
 const PerformanceLineChart = ({
@@ -308,11 +267,6 @@ const DetailedResultsPage = () => {
   const [sessionData, setSessionData] = useState<TrainingSessionSummary | null>(activeSession);
   const [calibration, setCalibration] = useState<CalibrationResult | null>(calibrationResult);
 
-  const [chartZoom, setChartZoom] = useState(1);
-  const [heatmapZoom, setHeatmapZoom] = useState(1);
-  const [rollingZoom, setRollingZoom] = useState(1);
-  const [velocityZoom, setVelocityZoom] = useState(1);
-
   const [replayTargetId, setReplayTargetId] = useState<string | null>(null);
   const [replayTargetIndex, setReplayTargetIndex] = useState<number | null>(null);
 
@@ -329,6 +283,9 @@ const DetailedResultsPage = () => {
     'synchronization': true,
     'hit-moment': true,
   });
+
+  const [activeModal, setActiveModal] = useState<'trends' | 'rolling' | 'velocity' | 'heatmap' | null>(null);
+  const [modalZoom, setModalZoom] = useState(1);
 
   const [rollingVisibility, setRollingVisibility] = useState<Record<string, boolean>>({
     'rolling-accuracy': true,
@@ -358,6 +315,33 @@ const DetailedResultsPage = () => {
 
   const heatmapCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const heatmapContainerRef = useRef<HTMLDivElement | null>(null);
+  const modalHeatmapCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const modalHeatmapContainerRef = useRef<HTMLDivElement | null>(null);
+
+  const openModal = (type: 'trends' | 'rolling' | 'velocity' | 'heatmap') => {
+    setActiveModal(type);
+    setModalZoom(1);
+  };
+
+  const closeModal = () => setActiveModal(null);
+
+  const handleModalWheel = useCallback((event: WheelEvent) => {
+    event.preventDefault();
+    const direction = event.deltaY > 0 ? -0.2 : 0.2;
+    setModalZoom(prev => Math.max(0.8, Math.min(3, +(prev + direction).toFixed(2))));
+  }, []);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        closeModal();
+      }
+    };
+    if (activeModal) {
+      window.addEventListener('keydown', onKeyDown);
+    }
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [activeModal]);
 
   useEffect(() => {
     if (activeSession) {
@@ -697,9 +681,9 @@ const DetailedResultsPage = () => {
     return { heatmapPoints, baseScreenWidth, baseScreenHeight };
   }, [sessionData]);
 
-  const drawHeatmap = useCallback(() => {
-    const canvas = heatmapCanvasRef.current;
-    const container = heatmapContainerRef.current;
+  const drawHeatmap = useCallback((canvasEl?: HTMLCanvasElement | null, containerEl?: HTMLDivElement | null) => {
+    const canvas = canvasEl ?? heatmapCanvasRef.current;
+    const container = containerEl ?? heatmapContainerRef.current;
     if (!canvas || !container) return;
 
     const rect = container.getBoundingClientRect();
@@ -765,6 +749,22 @@ const DetailedResultsPage = () => {
     drawHeatmap();
     return () => resizeObserver.disconnect();
   }, [drawHeatmap, heatmapPoints.length]);
+
+  useEffect(() => {
+    if (activeModal !== 'heatmap') return;
+    const container = modalHeatmapContainerRef.current;
+    if (!container) return;
+    const resizeObserver = new ResizeObserver(() => drawHeatmap(modalHeatmapCanvasRef.current, container));
+    resizeObserver.observe(container);
+    drawHeatmap(modalHeatmapCanvasRef.current, container);
+    return () => resizeObserver.disconnect();
+  }, [activeModal, drawHeatmap, heatmapPoints.length]);
+
+  useEffect(() => {
+    if (activeModal === 'heatmap') {
+      drawHeatmap(modalHeatmapCanvasRef.current, modalHeatmapContainerRef.current);
+    }
+  }, [activeModal, modalZoom, drawHeatmap]);
 
   const resolveReplayFrame = useCallback((samples: TrainingDataPoint[], index: number): ReplayFrame | null => {
     if (!samples.length) return null;
@@ -932,6 +932,111 @@ const DetailedResultsPage = () => {
     ? (analytics.targetsHit / analytics.totalTargets) * 100 
     : 0;
 
+  const renderModalContent = () => {
+    if (!activeModal) return null;
+
+    const titles: Record<'trends' | 'rolling' | 'velocity' | 'heatmap', string> = {
+      trends: 'Performance Trends',
+      rolling: 'Rolling Performance',
+      velocity: 'Velocity & Reaction',
+      heatmap: 'Gaze Heatmap',
+    };
+
+    const modalBody = (() => {
+      if (activeModal === 'trends') {
+        return (
+          <PerformanceLineChart
+            series={filteredSeries}
+            duration={sessionData.duration}
+            hitTimes={hitTimes}
+            zoomLevel={modalZoom}
+            showHitMarkers={visibleMetrics['hit-moment']}
+          />
+        );
+      }
+      if (activeModal === 'rolling') {
+        return (
+          <PerformanceLineChart
+            series={filteredRollingSeries}
+            duration={sessionData.duration}
+            hitTimes={rollingVisibility['rolling-hits'] ? rollingPerformance.hitTimes : []}
+            zoomLevel={modalZoom}
+            showHitMarkers={rollingVisibility['rolling-hits']}
+            yAxisLabel={`Last ${rollingWindowSeconds}s window`}
+          />
+        );
+      }
+      if (activeModal === 'velocity') {
+        return (
+          <PerformanceLineChart
+            series={filteredVelocitySeries}
+            duration={sessionData.duration}
+            hitTimes={velocityVisibility['velocity-hits'] ? velocityReaction.hitTimes : []}
+            zoomLevel={modalZoom}
+            showHitMarkers={velocityVisibility['velocity-hits']}
+            yAxisLabel="Speed (px/s) · Reaction (ms)"
+          />
+        );
+      }
+      return (
+        <div className="heatmap-wrapper" style={{ border: '1px solid #333', borderRadius: '12px', overflow: 'hidden', backgroundColor: '#1a1d24' }}>
+          <div style={{ width: '100%', overflow: 'auto', maxHeight: '70vh', backgroundColor: '#1a1d24' }}>
+            <div
+              className="heatmap-container"
+              ref={modalHeatmapContainerRef}
+              style={{
+                position: 'relative',
+                width: `${modalZoom * 100}%`,
+                height: 'auto',
+                aspectRatio: `${baseScreenWidth} / ${baseScreenHeight}`,
+                transition: 'width 0.1s ease-out',
+              }}
+            >
+              <canvas
+                ref={modalHeatmapCanvasRef}
+                className="heatmap-canvas"
+                style={{ width: '100%', height: '100%', display: 'block' }}
+                aria-label="Gaze heatmap enlarged"
+              />
+              <div className="heatmap-overlay" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+                <div className="heatmap-grid"></div>
+              </div>
+            </div>
+          </div>
+          {heatmapPoints.length > 0 && (
+            <div className="heatmap-legend" style={{ marginTop: '12px', padding: '0 8px 8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#666', marginBottom: '4px', fontWeight: 500 }}>
+                <span>Low Focus</span>
+                <span>High Focus</span>
+              </div>
+              <div style={{ height: '6px', width: '100%', background: 'linear-gradient(to right, hsla(240, 100%, 50%, 0.5), hsla(180, 100%, 50%, 0.6), hsla(120, 100%, 50%, 0.7), hsla(60, 100%, 50%, 0.8), hsla(0, 100%, 50%, 0.9))', borderRadius: '4px' }} />
+            </div>
+          )}
+        </div>
+      );
+    })();
+
+    return (
+      <div className="viz-modal-overlay" role="dialog" aria-modal="true" onClick={closeModal}>
+        <div className="viz-modal detail-card" onClick={e => e.stopPropagation()}>
+          <div className="viz-modal__header">
+            <h3>{titles[activeModal]}</h3>
+            <div className="viz-modal__actions">
+              <span className="zoom-readout">{Math.round(modalZoom * 100)}%</span>
+              <button className="detail-button small ghost" type="button" onClick={closeModal}>
+                닫기
+              </button>
+            </div>
+          </div>
+          <div className="viz-modal__body" onWheel={handleModalWheel}>
+            <p className="viz-modal__hint">마우스 스크롤로 확대/축소할 수 있어요.</p>
+            <div className="viz-modal__content">{modalBody}</div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="detailed-results-page">
       <header className="detailed-header">
@@ -989,21 +1094,17 @@ const DetailedResultsPage = () => {
                   </button>
                 ))}
               </div>
-
-              <ZoomControls 
-                scale={chartZoom}
-                onZoomIn={() => setChartZoom(prev => Math.min(prev + 0.5, 4))}
-                onZoomOut={() => setChartZoom(prev => Math.max(prev - 0.5, 1))}
-                onReset={() => setChartZoom(1)}
-              />
+              <button className="detail-button small ghost" type="button" onClick={() => openModal('trends')}>
+                팝업으로 보기
+              </button>
             </div>
             
-            <div style={{ marginTop: '16px' }}>
+            <div style={{ marginTop: '16px', cursor: 'zoom-in' }} onClick={() => openModal('trends')}>
               <PerformanceLineChart
                 series={filteredSeries}
                 duration={sessionData.duration}
                 hitTimes={hitTimes}
-                zoomLevel={chartZoom}
+                zoomLevel={1}
                 showHitMarkers={visibleMetrics['hit-moment']}
               />
             </div>
@@ -1034,19 +1135,16 @@ const DetailedResultsPage = () => {
                   </button>
                 ))}
               </div>
-              <ZoomControls
-                scale={rollingZoom}
-                onZoomIn={() => setRollingZoom(prev => Math.min(prev + 0.5, 4))}
-                onZoomOut={() => setRollingZoom(prev => Math.max(prev - 0.5, 1))}
-                onReset={() => setRollingZoom(1)}
-              />
+              <button className="detail-button small ghost" type="button" onClick={() => openModal('rolling')}>
+                팝업으로 보기
+              </button>
             </div>
-            <div style={{ marginTop: '16px' }}>
+            <div style={{ marginTop: '16px', cursor: 'zoom-in' }} onClick={() => openModal('rolling')}>
               <PerformanceLineChart
                 series={filteredRollingSeries}
                 duration={sessionData.duration}
                 hitTimes={rollingVisibility['rolling-hits'] ? rollingPerformance.hitTimes : []}
-                zoomLevel={rollingZoom}
+                zoomLevel={1}
                 showHitMarkers={rollingVisibility['rolling-hits']}
                 yAxisLabel={`Last ${rollingWindowSeconds}s window`}
               />
@@ -1078,19 +1176,16 @@ const DetailedResultsPage = () => {
                   </button>
                 ))}
               </div>
-              <ZoomControls
-                scale={velocityZoom}
-                onZoomIn={() => setVelocityZoom(prev => Math.min(prev + 0.5, 4))}
-                onZoomOut={() => setVelocityZoom(prev => Math.max(prev - 0.5, 1))}
-                onReset={() => setVelocityZoom(1)}
-              />
+              <button className="detail-button small ghost" type="button" onClick={() => openModal('velocity')}>
+                팝업으로 보기
+              </button>
             </div>
-            <div style={{ marginTop: '16px' }}>
+            <div style={{ marginTop: '16px', cursor: 'zoom-in' }} onClick={() => openModal('velocity')}>
               <PerformanceLineChart
                 series={filteredVelocitySeries}
                 duration={sessionData.duration}
                 hitTimes={velocityVisibility['velocity-hits'] ? velocityReaction.hitTimes : []}
-                zoomLevel={velocityZoom}
+                zoomLevel={1}
                 showHitMarkers={velocityVisibility['velocity-hits']}
                 yAxisLabel="Speed (px/s) · Reaction (ms)"
               />
@@ -1101,21 +1196,18 @@ const DetailedResultsPage = () => {
           <div className={`viz-card detail-card bordered ${focusMetric === 'heatmap' ? 'focused' : ''}`} style={{ padding: '20px' }}>
              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
               <h3>Gaze Heatmap</h3>
-              <ZoomControls 
-                scale={heatmapZoom}
-                onZoomIn={() => setHeatmapZoom(prev => Math.min(prev + 0.25, 2.5))}
-                onZoomOut={() => setHeatmapZoom(prev => Math.max(prev - 0.25, 1))}
-                onReset={() => setHeatmapZoom(1)}
-              />
+              <button className="detail-button small ghost" type="button" onClick={() => openModal('heatmap')}>
+                팝업으로 보기
+              </button>
             </div>
-            <div className="heatmap-wrapper" style={{ marginTop: '16px', border: '1px solid #333', borderRadius: '8px', overflow: 'hidden' }}>
+            <div className="heatmap-wrapper" style={{ marginTop: '16px', border: '1px solid #333', borderRadius: '8px', overflow: 'hidden', cursor: 'zoom-in' }} onClick={() => openModal('heatmap')}>
               <div style={{ width: '100%', overflow: 'auto', maxHeight: '400px', backgroundColor: '#1a1d24' }}>
                 <div 
                   className="heatmap-container"
                   ref={heatmapContainerRef}
                   style={{ 
                     position: 'relative', 
-                    width: `${heatmapZoom * 100}%`,
+                    width: '100%',
                     height: 'auto',
                     aspectRatio: `${baseScreenWidth} / ${baseScreenHeight}`, 
                     transition: 'width 0.2s ease-out'
@@ -1336,6 +1428,8 @@ const DetailedResultsPage = () => {
           </div>
         </div>
       </section>
+
+      {renderModalContent()}
 
       {replayTargetId && (
         <div className="replay-overlay" role="dialog" aria-modal="true">

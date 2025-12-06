@@ -148,6 +148,15 @@ export const saveSurveyAndConsent = async ({
 
 export const TrackingSessionContext = createContext<TrackingSessionContextValue | undefined>(undefined);
 
+const applySurveyDefaults = (value: SurveyResponses | null | undefined) => {
+  if (!value) return null;
+  return {
+    ...value,
+    trainingGoal: value.trainingGoal ?? '',
+    mainGameOther: value.mainGameOther ?? '',
+  };
+};
+
 export const TrackingSessionProvider = ({ children }: { children: ReactNode }) => {
   const [state, setState] = useState<TrackingSessionState>(() => {
     if (typeof window === 'undefined') {
@@ -161,9 +170,7 @@ export const TrackingSessionProvider = ({ children }: { children: ReactNode }) =
         return {
           ...createDefaultState(),
           ...parsed,
-          surveyResponses: parsed.surveyResponses
-            ? { trainingGoal: '', mainGameOther: '', ...parsed.surveyResponses }
-            : null,
+          surveyResponses: applySurveyDefaults(parsed.surveyResponses),
           isAnonymousSession: parsed.isAnonymousSession ?? false,
           surveyHydrated: parsed.surveyHydrated ?? false,
         };
@@ -185,7 +192,7 @@ export const TrackingSessionProvider = ({ children }: { children: ReactNode }) =
   const setSurveyResponses = (responses: SurveyResponses | null) => {
     setState(prev => ({
       ...prev,
-      surveyResponses: responses ? { trainingGoal: '', mainGameOther: '', ...responses } : null,
+      surveyResponses: applySurveyDefaults(responses),
     }));
   };
 

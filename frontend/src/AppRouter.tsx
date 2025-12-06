@@ -22,6 +22,10 @@ import { useAuth } from './state/authContext';
 import SessionRemoteHydrator from './components/SessionRemoteHydrator';
 import { useTranslation } from './state/languageContext';
 import Layout from './components/Layout';
+import { useTrackingSession } from './state/trackingSessionContext';
+
+//연구 감사인사용 페이지
+import ThankYouPage from './pages/onboarding/ThankYouPage';
 
 const RouteLoader = () => {
   const { t } = useTranslation();
@@ -46,6 +50,7 @@ const ScrollToTop = () => {
 const ProtectedRoute = ({ children }: { children: ReactElement }) => {
   const location = useLocation();
   const { user, loading } = useAuth();
+  const { surveyResponses, surveyHydrated, isAnonymousSession } = useTrackingSession();
 
   if (loading) {
     return <RouteLoader />;
@@ -53,6 +58,20 @@ const ProtectedRoute = ({ children }: { children: ReactElement }) => {
 
   if (!user) {
     return <Navigate to="/auth" replace state={{ from: location }} />;
+  }
+
+  if (!isAnonymousSession && !surveyResponses && !surveyHydrated) {
+    return <RouteLoader />;
+  }
+
+  if (
+    !isAnonymousSession &&
+    surveyHydrated &&
+    !surveyResponses &&
+    !location.pathname.startsWith('/onboarding/survey') &&
+    !location.pathname.startsWith('/settings')
+  ) {
+    return <Navigate to="/onboarding/survey" replace state={{ from: location.pathname }} />;
   }
 
   return children;

@@ -12,6 +12,7 @@ export interface SurveyResponses {
   inGameRank: string;
   playTime: string;
   selfAssessment: number;
+  trainingGoal: string;
 }
 
 export type CalibrationStatus = 'not-started' | 'in-progress' | 'validated' | 'skipped';
@@ -61,6 +62,7 @@ interface TrackingSessionState {
   lastSession: TrainingSessionSummary | null;
   activeSessionId: string | null;
   isAnonymousSession: boolean;
+  surveyHydrated: boolean;
 }
 
 export interface TrackingSessionContextValue extends TrackingSessionState {
@@ -73,6 +75,7 @@ export interface TrackingSessionContextValue extends TrackingSessionState {
   clearRecentSessions: () => void;
   activeSession: TrainingSessionSummary | null;
   setAnonymousSession: (isAnonymous: boolean) => void;
+  setSurveyHydrated: (hydrated: boolean) => void;
   resetState: () => void;
 }
 
@@ -101,6 +104,7 @@ const createDefaultState = (): TrackingSessionState => {
     lastSession: sessions[0] ?? null,
     activeSessionId: sessions[0]?.id ?? null,
     isAnonymousSession: false,
+    surveyHydrated: false,
   };
 };
 
@@ -157,7 +161,11 @@ export const TrackingSessionProvider = ({ children }: { children: ReactNode }) =
         return {
           ...createDefaultState(),
           ...parsed,
+          surveyResponses: parsed.surveyResponses
+            ? { trainingGoal: '', mainGameOther: '', ...parsed.surveyResponses }
+            : null,
           isAnonymousSession: parsed.isAnonymousSession ?? false,
+          surveyHydrated: parsed.surveyHydrated ?? false,
         };
       }
       return createDefaultState();
@@ -177,7 +185,7 @@ export const TrackingSessionProvider = ({ children }: { children: ReactNode }) =
   const setSurveyResponses = (responses: SurveyResponses | null) => {
     setState(prev => ({
       ...prev,
-      surveyResponses: responses,
+      surveyResponses: responses ? { trainingGoal: '', mainGameOther: '', ...responses } : null,
     }));
   };
 
@@ -239,6 +247,13 @@ export const TrackingSessionProvider = ({ children }: { children: ReactNode }) =
     }));
   };
 
+  const setSurveyHydrated = (hydrated: boolean) => {
+    setState(prev => ({
+      ...prev,
+      surveyHydrated: hydrated,
+    }));
+  };
+
   const resetState = () => {
     setState(createDefaultState());
     if (typeof window !== 'undefined') {
@@ -264,6 +279,7 @@ export const TrackingSessionProvider = ({ children }: { children: ReactNode }) =
     clearRecentSessions,
     activeSession,
     setAnonymousSession,
+    setSurveyHydrated,
     resetState,
   }), [state, activeSession]);
 

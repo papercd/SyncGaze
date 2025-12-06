@@ -21,7 +21,7 @@ describe('SurveyPage', () => {
     globalThis.fetch = originalFetch;
   });
 
-  it('submits valid survey responses and navigates to tracker flow', async () => {
+  it('submits valid survey responses and navigates to dashboard', async () => {
     const mockFetch = vi.fn(() =>
       Promise.resolve({
         ok: true,
@@ -38,24 +38,25 @@ describe('SurveyPage', () => {
         <TrackingSessionProvider>
           <Routes>
             <Route path="/onboarding/survey" element={<SurveyPage />} />
-            <Route path="/tracker-flow" element={<div>Tracker Flow Destination</div>} />
+            <Route path="/dashboard" element={<div>Dashboard Destination</div>} />
           </Routes>
         </TrackingSessionProvider>
       </MemoryRouter>,
     );
 
-    await user.click(screen.getByLabelText(/만 18세 이상/));
-    await user.click(screen.getByLabelText(/웹캠/));
+    await user.click(screen.getByLabelText(/PC\/네트워크 환경이 준비/));
+    await user.click(screen.getByLabelText(/웹캠\/카메라가 있습니다/));
     await user.click(screen.getByRole('button', { name: 'Valorant' }));
     await user.click(screen.getByLabelText('Valorant'));
-    await user.type(screen.getByPlaceholderText('현재 랭크를 정확히 입력하세요'), 'Immortal 2');
-    await user.selectOptions(screen.getByLabelText('Q6. 총 플레이 시간'), '500-1000시간');
-    fireEvent.change(screen.getByLabelText(/FPS 실력 자가 평가/), { target: { value: '6' } });
+    await user.type(screen.getByPlaceholderText(/예: 실버 2/), 'Immortal 2');
+    await user.selectOptions(screen.getByLabelText(/얼마나 자주 플레이/), '주 7-14시간');
+    fireEvent.change(screen.getByLabelText(/현재 에임/), { target: { value: '6' } });
+    await user.type(screen.getByLabelText(/이번 시즌에 꼭 달성하고 싶은 목표/), '랭크 올리기');
 
-    await user.click(screen.getByRole('button', { name: /설문 제출/ }));
+    await user.click(screen.getByRole('button', { name: /저장하고 계속하기/ }));
 
     await waitFor(() => {
-      expect(screen.getByText('Tracker Flow Destination')).toBeInTheDocument();
+      expect(screen.getByText('Dashboard Destination')).toBeInTheDocument();
     });
 
     expect(mockFetch).toHaveBeenCalledWith(

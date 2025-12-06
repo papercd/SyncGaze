@@ -1,7 +1,7 @@
 // frontend/src/pages/ResultsPage.tsx
 // UPDATED: Stops WebGazer when mounting results page, Improved Heatmap Colors & Legend
 
-import { SplinePointer,Sparkles,Hourglass,ScanEye,RulerDimensionLine,Link,MousePointerClick } from 'lucide-react';
+import { SplinePointer, Sparkles, Hourglass, ScanEye, RulerDimensionLine, Link, MousePointerClick, Info } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import './ResultsPage.css';
@@ -18,6 +18,15 @@ import { persistLatestSession } from '../utils/resultsStorage';
 import { saveSessionForUser } from '../utils/remoteSessions';
 // Analytics 인터페이스와 함수를 utils에서 import (ResultsPage 내의 중복 정의 제거)
 import { calculatePerformanceAnalytics, generateErrorTimeSeries, PerformanceAnalytics } from '../utils/analytics';
+
+const metricTooltips: Record<string, string> = {
+  targets: '명중 수는 결정력과 전투 페이스를 보여주며, FPS에서 킬 교환과 라운드 승률에 직결됩니다.',
+  avgReaction: '반응 시간이 짧을수록 첫 발 이점을 가져가며, 피킹/트레이드 상황에서 생존율을 높입니다.',
+  gazeReaction: '시선 반응은 목표 포착 속도를 의미하며, 인게임 정보 수집과 트래킹 정확도를 좌우합니다.',
+  gazeAimLatency: '눈-손 딜레이가 짧을수록 시선과 사격이 한몸처럼 맞물려 교전 시간이 줄어듭니다.',
+  hitError: '히트 시점 오차(px)가 작을수록 크로스헤어 센터링과 미세 에임이 안정적입니다.',
+  sync: '시선-마우스 동기화는 시선이 향한 곳으로 총구가 따라가는 정도로, 플릭·트래킹 일관성을 높입니다.',
+};
 
 interface Analytics {
   totalTargets: number;
@@ -757,7 +766,7 @@ const ResultsPage = () => {
             {/* 1. Targets Hit */}
             <button
               type="button"
-              className="metric-card actionable highlight"
+              className="metric-card actionable"
               onClick={() => handleOpenDetailed('targets')}
             >
               <div className="metric-icon">
@@ -771,6 +780,10 @@ const ResultsPage = () => {
                 </div>
                 <div className="metric-label">{t('results.metric.targets.label')}</div>
                 <div className="metric-desc">{t('results.metric.targets.desc')}</div>
+                <div className="metric-tooltip">
+                  <Info size={14} />
+                  <span>{metricTooltips.targets}</span>
+                </div>
               </div>
             </button>
 
@@ -789,6 +802,10 @@ const ResultsPage = () => {
                 </div>
                 <div className="metric-label">{t('results.metric.avgReaction.label')}</div>
                 <div className="metric-desc">{t('results.metric.avgReaction.desc')}</div>
+                <div className="metric-tooltip">
+                  <Info size={14} />
+                  <span>{metricTooltips.avgReaction}</span>
+                </div>
               </div>
             </button>
 
@@ -807,6 +824,10 @@ const ResultsPage = () => {
                 </div>
                 <div className="metric-label">{t('results.metric.gazeReaction.label')}</div>
                 <div className="metric-desc">{t('results.metric.gazeReaction.desc')}</div>
+                <div className="metric-tooltip">
+                  <Info size={14} />
+                  <span>{metricTooltips.gazeReaction}</span>
+                </div>
               </div>
             </button>
 
@@ -825,6 +846,10 @@ const ResultsPage = () => {
                 </div>
                 <div className="metric-label">{t('results.metric.gazeAimLatency.label')}</div>
                 <div className="metric-desc">{t('results.metric.gazeAimLatency.desc')}</div>
+                <div className="metric-tooltip">
+                  <Info size={14} />
+                  <span>{metricTooltips.gazeAimLatency}</span>
+                </div>
               </div>
             </button>
 
@@ -843,6 +868,10 @@ const ResultsPage = () => {
                 </div>
                 <div className="metric-label">{t('results.metric.hitError.label')}</div>
                 <div className="metric-desc">{t('results.metric.hitError.desc')}</div>
+                <div className="metric-tooltip">
+                  <Info size={14} />
+                  <span>{metricTooltips.hitError}</span>
+                </div>
               </div>
             </button>
 
@@ -861,6 +890,10 @@ const ResultsPage = () => {
                 </div>
                 <div className="metric-label">{t('results.metric.sync.label')}</div>
                 <div className="metric-desc">{t('results.metric.sync.desc')}</div>
+                <div className="metric-tooltip">
+                  <Info size={14} />
+                  <span>{metricTooltips.sync}</span>
+                </div>
               </div>
             </button>
           </div>

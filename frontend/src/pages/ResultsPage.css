@@ -112,6 +112,7 @@
   transition: all 0.3s ease;
   min-height: 160px;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  position: relative;
 }
 
 .metric-card.actionable {
@@ -181,6 +182,48 @@
   color: #9da5c5;
   line-height: 1.4;
   margin-top: auto;
+}
+
+.metric-tooltip {
+  position: absolute;
+  left: 50%;
+  top: -12px;
+  transform: translate(-50%, -110%);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(10, 12, 24, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #f2f4ff;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  transition: all 0.2s ease;
+  pointer-events: none;
+  z-index: 5;
+  max-width: 320px;
+  text-align: left;
+}
+
+.metric-card:hover .metric-tooltip,
+.metric-card:focus-visible .metric-tooltip {
+  opacity: 1;
+  transform: translate(-50%, -120%);
+}
+
+.metric-tooltip::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 8px 8px 0 8px;
+  border-style: solid;
+  border-color: rgba(10, 12, 24, 0.95) transparent transparent transparent;
+  filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.25));
 }
 
 /* Visualizations Section */

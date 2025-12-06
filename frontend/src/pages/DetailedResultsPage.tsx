@@ -70,6 +70,8 @@ const PerformanceLineChart = ({
   zoomLevel = 1,
   showHitMarkers = true, // NEW: 마커 표시 여부 제어
   yAxisLabel = 'Error (px)',
+  constrainHeight = false,
+  tickDensityMultiplier = 1,
 }: {
   series: SeriesConfig[];
   duration: number;
@@ -77,6 +79,8 @@ const PerformanceLineChart = ({
   zoomLevel?: number;
   showHitMarkers?: boolean;
   yAxisLabel?: string;
+  constrainHeight?: boolean;
+  tickDensityMultiplier?: number;
 }) => {
   const activeSeries = series.filter(s => s.points.some(p => p.value !== null));
 
@@ -97,8 +101,8 @@ const PerformanceLineChart = ({
   const maxVal = allValues.length ? Math.max(...allValues) : 100;
   const yMax = Math.ceil(maxVal * 1.1);
 
-  const xTickCount = Math.max(6, Math.round(6 * zoomLevel));
-  const yTickCount = Math.max(5, Math.round(5 * zoomLevel));
+  const xTickCount = Math.max(6, Math.round(6 * zoomLevel * tickDensityMultiplier));
+  const yTickCount = Math.max(5, Math.round(5 * zoomLevel * tickDensityMultiplier));
 
   const xTickValues = Array.from({ length: xTickCount }, (_, i) => {
     const value = (xMax / (xTickCount - 1 || 1)) * i;
@@ -124,7 +128,25 @@ const PerformanceLineChart = ({
     height - paddingBottom - (value / yMax) * (height - paddingTop - paddingBottom);
 
   return (
-    <div className="chart-scroll-wrapper" style={{ overflow: 'auto', maxWidth: '100%', maxHeight: '70vh' }}>
+    <div
+      className="chart-scroll-wrapper"
+      style={
+        constrainHeight
+          ? {
+              overflow: 'auto',
+              maxWidth: '100%',
+              maxHeight: '100%',
+              height: '100%',
+              flex: 1,
+              minHeight: '100%',
+            }
+          : {
+              overflowX: 'auto',
+              overflowY: 'visible',
+              maxWidth: '100%',
+            }
+      }
+    >
       <div
         style={{
           width: `${zoomLevel * 100}%`,
@@ -981,6 +1003,8 @@ const DetailedResultsPage = () => {
             hitTimes={hitTimes}
             zoomLevel={modalZoom}
             showHitMarkers={visibleMetrics['hit-moment']}
+            constrainHeight
+            tickDensityMultiplier={2}
           />
         );
       }
@@ -993,6 +1017,8 @@ const DetailedResultsPage = () => {
             zoomLevel={modalZoom}
             showHitMarkers={rollingVisibility['rolling-hits']}
             yAxisLabel={`Last ${rollingWindowSeconds}s window`}
+            constrainHeight
+            tickDensityMultiplier={2}
           />
         );
       }
@@ -1005,6 +1031,8 @@ const DetailedResultsPage = () => {
             zoomLevel={modalZoom}
             showHitMarkers={velocityVisibility['velocity-hits']}
             yAxisLabel="Speed (px/s) · Reaction (ms)"
+            constrainHeight
+            tickDensityMultiplier={2}
           />
         );
       }

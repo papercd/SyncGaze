@@ -715,9 +715,16 @@ const ResultsPage = () => {
     <div className="results-page">
       {/* Header */}
       <header className="results-header">
-        <h1>{t('results.title')}</h1>
         <div className="header-content">
-          
+          <div className="header-top">
+            <h1>{t('results.title')}</h1>
+            <button
+              className="secondary-button header-detailed-btn"
+              onClick={() => handleOpenDetailed()}
+            >
+              {t('results.button.detailed')}
+            </button>
+          </div>
           <div className="header-meta">
             <span>{localizedDate}</span>
             <span>•</span>
@@ -727,15 +734,6 @@ const ResultsPage = () => {
                 sessionData.duration.toString(),
               )}
             </span>
-          </div>
-          <div className="header-actions">
-            <button
-              className="secondary-button"
-              onClick={() => handleOpenDetailed()}
-              style={{ fontSize: '0.9rem', padding: '8px 16px' }}
-            >
-              {t('results.button.detailed')}
-            </button>
           </div>
         </div>
       </header>
@@ -759,11 +757,14 @@ const ResultsPage = () => {
 
         {/* Key Metrics */}
         <section className="metrics-section">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <h2 style={{ margin: 0 }}>{t('results.section.overview')}</h2>
-            <span style={{ color: '#9da5c5', fontSize: '0.85rem' }}>
-              아이콘 위로 마우스를 올리면 상세 설명을 볼 수 있어요.
-            </span>
+          <div className="metrics-header">
+            <div className="metrics-header__title">
+              <h2 style={{ margin: 0 }}>{t('results.section.overview')}</h2>
+            </div>
+            <div className="metrics-header__actions">
+              <div className="metrics-hint">아이콘에 마우스를 올리면 설명이 표시됩니다.</div>
+              <div className="metrics-hint metrics-hint--link">카드를 클릭하면 관련 상세 분석 페이지로 이동합니다.</div>
+            </div>
           </div>
           
           <div className="metrics-grid">

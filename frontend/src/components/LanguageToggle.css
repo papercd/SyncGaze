@@ -1,7 +1,7 @@
 /* Landing page variant - fixed top-right position */
 .language-toggle--landing {
   position: fixed;
-  bottom: 16px;
+  top: 16px;
   right: 16px;
   display: inline-flex;
   align-items: center;
@@ -59,8 +59,8 @@
 
 @media (max-width: 768px) {
   .language-toggle--landing {
-    top: 12px;
     right: 12px;
+    top: 12px;
     padding: 6px 10px;
     font-size: 0.85rem;
   }

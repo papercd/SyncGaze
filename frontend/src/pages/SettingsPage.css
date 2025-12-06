@@ -9,9 +9,9 @@
 
 /* Header */
 .settings-header {
-  max-width: 100%;
+  max-width: 1200px;
   margin: 0 auto 2rem;
-  padding: 0;
+  padding: 0 0.5rem;
   border-bottom: none;
   background: transparent;
   backdrop-filter: none;
@@ -71,9 +71,10 @@
 }
 
 .settings-main {
-  max-width: 60%;
-  margin: 0;
-  padding: 0;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 0.5rem;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
@@ -163,7 +164,8 @@
   }
   
   .settings-main {
-    max-width: 70%;
+    max-width: 100%;
+    padding: 0;
   }
 }
 

@@ -1,8 +1,9 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../state/authContext';
-import { Home, Crosshair, Wrench, BarChart3, Trophy, Settings } from 'lucide-react';
+import { Home, Crosshair, Wrench, BarChart3, Trophy, Settings, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import LanguageToggle from './LanguageToggle';
 import './SideNavigation.css';
+import { useState } from 'react';
 
 interface NavItem {
   path: string;
@@ -15,6 +16,7 @@ const SideNavigation = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const [collapsed, setCollapsed] = useState(false);
 
   const navItems: NavItem[] = [
     { path: '/dashboard', icon: Home, label: 'Dashboard', protected: true },
@@ -29,7 +31,17 @@ const SideNavigation = () => {
   );
 
   return (
-    <nav className="side-navigation">
+    <nav className={`side-navigation ${collapsed ? 'collapsed' : ''}`}>
+      <div className="side-nav-header">
+        <button
+          type="button"
+          className="collapse-toggle"
+          aria-label={collapsed ? 'Expand navigation' : 'Collapse navigation'}
+          onClick={() => setCollapsed(prev => !prev)}
+        >
+          {collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+        </button>
+      </div>
       <div className="side-nav-items">
         {filteredNavItems.map((item) => {
           const IconComponent = item.icon;
@@ -42,23 +54,25 @@ const SideNavigation = () => {
               <span className="nav-icon">
                 <IconComponent size={20} />
               </span>
-              <span className="nav-label">{item.label}</span>
+              {!collapsed && <span className="nav-label">{item.label}</span>}
             </button>
           );
         })}
         
         {/* Language Toggle at bottom of nav items */}
         <div className="nav-items-spacer"></div>
-        <LanguageToggle variant="sidebar" />
+        {!collapsed && <LanguageToggle variant="sidebar" />}
       </div>
 
       <div className="side-nav-footer">
         {user && (
           <div className="user-info">
             <div className="user-avatar">{user.email?.[0]?.toUpperCase()}</div>
-            <div className="user-details">
-              <div className="user-email">{user.email}</div>
-            </div>
+            {!collapsed && (
+              <div className="user-details">
+                <div className="user-email">{user.email}</div>
+              </div>
+            )}
           </div>
         )}
       </div>

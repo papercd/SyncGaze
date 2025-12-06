@@ -256,9 +256,9 @@ const AppRouter = () => {
         <Route
           path="/about"
           element={(
-            <ProtectedRoute>
+            
               <AboutPage />
-            </ProtectedRoute>
+            
           )}
         />
         

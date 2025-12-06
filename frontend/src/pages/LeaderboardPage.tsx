@@ -232,7 +232,6 @@ const LeaderboardPage = () => {
     <div className="leaderboard-page">
       <header className="leaderboard-header">
         <div>
-          <p className="eyebrow">{t('leaderboard.title.eyebrow')}</p>
           <h1>{t('leaderboard.title.main')}</h1>
           <p className="subtext">
             {t('leaderboard.subtitle.count', 'Top {count} sessions fetched from the Firebase leaderboard API.').replace(
@@ -240,16 +239,9 @@ const LeaderboardPage = () => {
               visibleCount.toString(),
             )}
           </p>
-          <p className="subtext">
-            {t('leaderboard.subtitle.metric', 'Selected metric: {metric}').replace('{metric}', activeMetricLabel)}
-          </p>
-        </div>
-        <div className="leaderboard-actions">
-          <button className="leaderboard-button ghost" onClick={() => navigate('/dashboard')}>
-            {t('leaderboard.action.dashboard', 'Dashboard')}
-          </button>
          
         </div>
+      
       </header>
 
       <div className="filter-stack">
@@ -340,7 +332,9 @@ const LeaderboardPage = () => {
                     )}
                   </h2>
                 </div>
-                <div className="table-meta">
+                {/** 
+                 * 
+                 * <div className="table-meta">
                   <p className="meta-text sort-hint">{t('leaderboard.table.hint', 'Click a column header to sort the leaderboard.')}</p>
                   <span className="meta-text">
                     {t('leaderboard.table.meta', '{metric} leaderboard • {sort}')
@@ -348,6 +342,8 @@ const LeaderboardPage = () => {
                       .replace('{sort}', sortDescription)}
                   </span>
                 </div>
+                */}
+                
               </div>
               <div className="table-wrapper">
                 <table>

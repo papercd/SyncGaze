@@ -378,6 +378,7 @@ export const translations: Record<string, Record<Language, string>> = {
   'landing.cta.primary.auth': { ko: '시작하기', en: 'Get Started' },
   'landing.cta.primary.dashboard': { ko: '대시보드로 이동', en: 'Go to Dashboard' },
   'landing.cta.learnMore': { ko: '더 알아보기', en: 'Learn More' },
+  'landing.cta.aboutUs': { ko: '팀 소개', en: 'About Us' },
   'landing.section.features.title': { ko: '왜 SyncGaze인가요?', en: 'Why Choose SyncGaze?' },
   'landing.feature.eyeTracking.title': { ko: '시선 추적 기술', en: 'Eye Tracking Technology' },
   'landing.feature.eyeTracking.desc': {
@@ -596,8 +597,8 @@ export const translations: Record<string, Record<Language, string>> = {
   'leaderboard.title.eyebrow': { ko: '리더보드', en: 'Leaderboard' },
   'leaderboard.title.main': { ko: '최신 트레이닝 순위', en: 'Latest Training Rankings' },
   'leaderboard.subtitle.count': {
-    ko: '파이어베이스 리더보드 API에서 불러온 상위 {count}개 세션입니다.',
-    en: 'Top {count} sessions fetched from the Firebase leaderboard API.',
+    ko: '저희 유저들의 상위 {count}개 세션입니다.',
+    en: 'Top {count} performant sessions fetched from our users.',
   },
   'leaderboard.subtitle.metric': { ko: '선택 지표: {metric}', en: 'Selected metric: {metric}' },
   'leaderboard.action.dashboard': { ko: '대시보드', en: 'Dashboard' },

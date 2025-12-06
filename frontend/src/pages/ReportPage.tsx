@@ -1,6 +1,7 @@
-// frontend/src/pages/ReportPage.tsx
+// frontend/src/pages/ReportPage.tsx - UPDATED with session IDs removed
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { FileText, Sparkles } from 'lucide-react';
 import { useAuth } from '../state/authContext';
 import { useTrackingSession } from '../state/trackingSessionContext';
 import { generatePerformanceReport, saveReport, getUserReports, PerformanceReport } from '../services/reportService';
@@ -66,7 +67,7 @@ const ReportPage = () => {
         targetsHit: activeSession.targetsHit,
         totalTargets: activeSession.totalTargets,
         predictedScore: activeSession.predictedScore ?? null,
-        calibrationError: calibrationResult?.validationError,
+        calibrationError: calibrationResult?.validationError ?? null,
       });
 
       setCurrentReport(report);
@@ -93,14 +94,37 @@ const ReportPage = () => {
     }
   };
 
+  const formatReportDate = (dateString: string, includeTime: boolean = false): string => {
+    const date = new Date(dateString);
+    if (includeTime) {
+      return date.toLocaleString('ko-KR', { 
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+    return date.toLocaleDateString('ko-KR', { 
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  const getReportTitle = (report: PerformanceReport): string => {
+    const date = new Date(report.generatedAt);
+    const timeString = date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+    return `${timeString} 리포트`;
+  };
+
   const renderReportContent = (report: PerformanceReport) => {
     return (
       <div className="report-content">
         <div className="report-header">
           <h2>성능 분석 리포트</h2>
           <div className="report-meta">
-            <span>생성일: {new Date(report.generatedAt).toLocaleString('ko-KR')}</span>
-            <span>세션 ID: {report.sessionId}</span>
+            <span>📅 {formatReportDate(report.generatedAt, true)}</span>
           </div>
         </div>
 
@@ -111,7 +135,7 @@ const ReportPage = () => {
 
         <div className="report-data-summary">
           <h3>측정 데이터</h3>
-            <div className="data-grid">
+          <div className="data-grid">
             <div className="data-item">
               <span className="data-label">예측 점수</span>
               <span className="data-value">
@@ -176,7 +200,11 @@ const ReportPage = () => {
             <h3>저장된 리포트</h3>
             <div className="report-list">
               {savedReports.length === 0 ? (
-                <p className="no-reports">저장된 리포트가 없습니다.</p>
+                <p className="no-reports">
+                  <FileText size={48} strokeWidth={1.5} style={{ opacity: 0.3, margin: '1rem auto' }} />
+                  <br />
+                  저장된 리포트가 없습니다
+                </p>
               ) : (
                 savedReports.map(report => (
                   <div
@@ -185,10 +213,10 @@ const ReportPage = () => {
                     onClick={() => handleViewSavedReport(report.id)}
                   >
                     <div className="report-item-date">
-                      {new Date(report.generatedAt).toLocaleDateString('ko-KR')}
+                      {formatReportDate(report.generatedAt)}
                     </div>
                     <div className="report-item-preview">
-                      세션: {report.sessionId.slice(0, 8)}...
+                      {getReportTitle(report)}
                     </div>
                   </div>
                 ))
@@ -261,7 +289,10 @@ const ReportPage = () => {
                       리포트 생성 중...
                     </>
                   ) : (
-                    '리포트 생성하기'
+                    <>
+                      <Sparkles size={20} />
+                      리포트 생성하기
+                    </>
                   )}
                 </button>
               </div>

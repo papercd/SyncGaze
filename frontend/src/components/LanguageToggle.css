@@ -1,4 +1,5 @@
-.language-toggle {
+/* Landing page variant - fixed top-right position */
+.language-toggle--landing {
   position: fixed;
   bottom: 16px;
   right: 16px;
@@ -17,10 +18,35 @@
   transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
 
-.language-toggle:hover {
+.language-toggle--landing:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   background: rgba(255, 255, 255, 0.08);
+}
+
+/* Sidebar variant - compact button in navigation */
+.language-toggle--sidebar {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.4rem 1rem;
+  border-radius: 12px;
+  background: rgba(102, 126, 234, 0.1);
+  color: #fff;
+  border: 1px solid rgba(102, 126, 234, 0.2);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin: 0 auto;
+  width: fit-content;
+}
+
+.language-toggle--sidebar:hover {
+  background: rgba(102, 126, 234, 0.15);
+  border-color: rgba(102, 126, 234, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
 }
 
 .language-toggle__current {
@@ -31,11 +57,21 @@
   letter-spacing: 0.5px;
 }
 
-@media (max-width: 640px) {
-  .language-toggle {
-    bottom: 12px;
+@media (max-width: 768px) {
+  .language-toggle--landing {
+    top: 12px;
     right: 12px;
     padding: 6px 10px;
     font-size: 0.85rem;
+  }
+  
+  .language-toggle--sidebar {
+    font-size: 0.8rem;
+    padding: 0.5rem 0.75rem;
+  }
+  
+  /* On very narrow sidebars, hide the text and show only the language code */
+  .language-toggle--sidebar span:first-child {
+    display: none;
   }
 }

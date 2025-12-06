@@ -1,6 +1,7 @@
 // src/pages/CalibrationPage.tsx
 import { useEffect, useRef, useState, type FC } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Camera,Waypoints,LampCeiling,UserCheck } from 'lucide-react';
 import './CalibrationPage.css';
 import { useTrackingSession } from '../state/trackingSessionContext';
 import {
@@ -82,6 +83,40 @@ const CalibrationPage = () => {
     saveCalibrationResult,
   ]);
 
+  // Add this useEffect in CalibrationPage.tsx, after your other useEffects
+
+  useEffect(() => {
+    // Reposition the WebGazer video container after it's created
+    const repositionCamera = () => {
+      const videoContainer = document.getElementById('webgazerVideoContainer');
+      if (videoContainer) {
+        // Position below header (70px) and to the right of sidebar (260px)
+        videoContainer.style.top = '70px';    // 70px header + 12px margin
+        videoContainer.style.left = '260px';  // 260px sidebar + 12px margin
+        videoContainer.style.zIndex = '100';
+        return true;
+      }
+      return false;
+    };
+
+    // Try repositioning immediately
+    if (repositionCamera()) return;
+
+    // If container doesn't exist yet, watch for it
+    const observer = new MutationObserver(() => {
+      if (repositionCamera()) {
+        observer.disconnect();
+      }
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+
+    return () => observer.disconnect();
+  }, [gameState]); // Re-run when gameState changes
+
   const handleConfirmExit = () => {
     stopSession();
     navigate('/dashboard');
@@ -138,28 +173,38 @@ const CalibrationPage = () => {
               <h1>{t('calibration.prep.title')}</h1>
               <div className="instructions-content">
                 <div className="instruction-item">
-                  <span className="instruction-icon">📷</span>
+                  <span className ="instruction-icon">
+                    <Camera size={40} strokeWidth={2.5}/>   
+                  </span>
                   <div>
                     <h3>{t('calibration.prep.camera.title')}</h3>
                     <p>{t('calibration.prep.camera.desc')}</p>
                   </div>
                 </div>
                 <div className="instruction-item">
-                  <span className="instruction-icon">👁️</span>
+                  <span className ="instruction-icon">
+                    <Waypoints size={40} strokeWidth={2.5}/>   
+                  </span>
+                  
                   <div>
                     <h3>{t('calibration.prep.points.title')}</h3>
                     <p>{t('calibration.prep.points.desc')}</p>
                   </div>
                 </div>
                 <div className="instruction-item">
-                  <span className="instruction-icon">💡</span>
+                  <span className ="instruction-icon">
+                    <LampCeiling size={40} strokeWidth={2.5}/>   
+                  </span>
+                  
                   <div>
                     <h3>{t('calibration.prep.light.title')}</h3>
                     <p>{t('calibration.prep.light.desc')}</p>
                   </div>
                 </div>
                 <div className="instruction-item">
-                  <span className="instruction-icon">🎯</span>
+                  <span className ="instruction-icon">
+                    <UserCheck size={40} strokeWidth={2.5}/>   
+                  </span>
                   <div>
                     <h3>{t('calibration.prep.posture.title')}</h3>
                     <p>{t('calibration.prep.posture.desc')}</p>
@@ -197,7 +242,7 @@ const CalibrationPage = () => {
         return (
           <div className="calibration-screen">
             <div className="calibrating-container">
-              <h2>{t('calibration.progress.title')}</h2>
+              
               <CalibrationComponent
                 onComplete={handleCalibrationComplete}
                 liveGaze={liveGaze}

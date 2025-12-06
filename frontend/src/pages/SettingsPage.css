@@ -1,76 +1,100 @@
+/* src/pages/SettingsPage.css - UPDATED to match DetailedResultsPage styling */
+
 .settings-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
-  color: #fff;
+  background: linear-gradient(135deg, #0b1021 0%, #1d1f3a 50%, #0f0c29 100%);
+  color: #f7f7ff;
+  padding: 2.5rem;
 }
 
+/* Header */
 .settings-header {
-  padding: 2rem 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(15, 12, 41, 0.8);
-  backdrop-filter: blur(10px);
+  max-width: 100%;
+  margin: 0 auto 2rem;
+  padding: 0;
+  border-bottom: none;
+  background: transparent;
+  backdrop-filter: none;
 }
 
 .settings-header__content {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 0 2rem;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 1.5rem;
 }
 
 .settings-kicker {
   text-transform: uppercase;
   letter-spacing: 1px;
-  font-size: 0.85rem;
-  color: #9ea5d6;
-  margin: 0 0 0.35rem 0;
+  font-size: 0.8rem;
+  color: #7c9bff;
+  margin: 0 0 0.25rem 0;
+  font-weight: 600;
 }
 
 .settings-header h1 {
   margin: 0;
   font-size: 2.4rem;
+  background: linear-gradient(135deg, #7c9bff 0%, #9e7bff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .settings-subtitle {
-  margin: 0.5rem 0 0 0;
-  color: #cdd2f7;
+  margin: 0.35rem 0 0 0;
+  color: #aeb5ce;
+  font-size: 1rem;
 }
 
 .settings-back {
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #fff;
-  padding: 0.6rem 1.2rem;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #f7f7ff;
+  padding: 0.75rem 1.4rem;
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
+  font-weight: 700;
+  font-size: 0.95rem;
+  white-space: nowrap;
 }
 
 .settings-back:hover {
   border-color: #667eea;
-  background: rgba(102, 126, 234, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  transform: translateY(-2px);
 }
 
 .settings-main {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 2.5rem 2rem 3rem;
+  max-width: 60%;
+  margin: 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
 }
 
+/* Settings Card */
 .settings-card {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 18px;
-  padding: 2rem;
+  padding: 1.75rem;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.5rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.18);
+}
+
+.settings-card__header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .settings-card__header {
@@ -116,13 +140,31 @@
 
 .settings-card__header h2 {
   margin: 0;
-  font-size: 1.6rem;
+  font-size: 1.3rem;
+  color: #fff;
 }
 
 .settings-description {
   margin: 0.5rem 0 0 0;
-  color: #cdd2f7;
+  color: #9da5c5;
   max-width: 700px;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .settings-page {
+    padding: 1.5rem;
+  }
+
+  .settings-header h1 {
+    font-size: 2rem;
+  }
+  
+  .settings-main {
+    max-width: 70%;
+  }
 }
 
 @media (max-width: 768px) {
@@ -133,9 +175,33 @@
 
   .settings-back {
     align-self: flex-end;
+    width: auto;
+  }
+
+  .settings-card {
+    padding: 1.25rem;
+  }
+  
+  .settings-main {
+    max-width: 100%;
   }
 
   .settings-card__header {
     flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .settings-page {
+    padding: 1rem;
+  }
+
+  .settings-header h1 {
+    font-size: 1.8rem;
+  }
+
+  .settings-back {
+    width: 100%;
+    text-align: center;
   }
 }

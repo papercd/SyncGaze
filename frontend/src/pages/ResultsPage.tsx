@@ -728,6 +728,15 @@ const ResultsPage = () => {
               )}
             </span>
           </div>
+          <div className="header-actions">
+            <button
+              className="secondary-button"
+              onClick={() => handleOpenDetailed()}
+              style={{ fontSize: '0.9rem', padding: '8px 16px' }}
+            >
+              {t('results.button.detailed')}
+            </button>
+          </div>
         </div>
       </header>
 
@@ -750,16 +759,11 @@ const ResultsPage = () => {
 
         {/* Key Metrics */}
         <section className="metrics-section">
-          {/* --- Header with button --- */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
             <h2 style={{ margin: 0 }}>{t('results.section.overview')}</h2>
-            <button
-              className="secondary-button"
-              onClick={() => handleOpenDetailed()}
-              style={{ fontSize: '0.9rem', padding: '8px 16px' }}
-            >
-              {t('results.button.detailed')}
-            </button>
+            <span style={{ color: '#9da5c5', fontSize: '0.85rem' }}>
+              아이콘 위로 마우스를 올리면 상세 설명을 볼 수 있어요.
+            </span>
           </div>
           
           <div className="metrics-grid">

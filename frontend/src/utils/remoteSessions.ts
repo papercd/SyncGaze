@@ -100,6 +100,7 @@ interface FirestoreSessionPayload {
   analytics?: PerformanceAnalytics | null;
   leaderboardOptIn?: boolean;
   leaderboardLabel?: string | null;
+  predictedScore?: number | null;
 }
 
 const stripUndefined = <T extends Record<string, unknown>>(obj: T): T => {

@@ -90,6 +90,12 @@
   margin-left: 88px;
 }
 
+.app-layout--no-sidebar .layout-content,
+.layout-content--full {
+  margin-left: 0 !important;
+  width: 100%;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .layout-content {

@@ -90,9 +90,11 @@ const CalibrationPage = () => {
     const repositionCamera = () => {
       const videoContainer = document.getElementById('webgazerVideoContainer');
       if (videoContainer) {
-        // Position below header (70px) and to the right of sidebar (260px)
-        videoContainer.style.top = '70px';    // 70px header + 12px margin
-        videoContainer.style.left = '260px';  // 260px sidebar + 12px margin
+        const noSidebar = document.querySelector('.app-layout--no-sidebar');
+        const sidebarWidth = noSidebar ? 0 : 260;
+        // Position below header and offset by sidebar when present
+        videoContainer.style.top = '70px';
+        videoContainer.style.left = `${sidebarWidth}px`;
         videoContainer.style.zIndex = '100';
         return true;
       }

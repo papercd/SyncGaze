@@ -1,5 +1,6 @@
 import type { WheelEvent } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Info, Maximize2 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import './DetailedResultsPage.css';
 import {
@@ -13,6 +14,13 @@ import { calculatePerformanceAnalytics, generateErrorTimeSeries } from '../utils
 
 // UPDATED: Added 'trends' and 'heatmap' to focus metrics
 type FocusMetric = 'accuracy' | 'targets' | 'reaction' | 'gaze' | 'mouse' | 'trends' | 'heatmap';
+
+const vizDescriptions: Record<'trends' | 'rolling' | 'velocity' | 'heatmap', string> = {
+  trends: '시간 흐름에 따른 시선·마우스 오차와 동기화 추세를 확인합니다.',
+  rolling: '최근 윈도우 기준의 정확도, 초당 히트, 히트 타이밍을 보여줍니다.',
+  velocity: '마우스 속도와 반응 시간을 한눈에 비교합니다.',
+  heatmap: '세션 동안의 시선 집중 분포를 시각화합니다.',
+};
 
 interface ErrorStats {
   avg: number;
@@ -239,8 +247,8 @@ const PerformanceLineChart = ({
         {/* NEW: Conditional legend item */}
         {showHitMarkers && (
           <div className="legend-item">
-            <span className="legend-swatch" style={{ backgroundColor: '#871212ff', width: 8, height: 8, borderRadius: '50%' }} />
-            <span className="legend-label">Hit Moment</span>
+            <span className="legend-swatch legend-swatch--hit" />
+            <span className="legend-label">Hits</span>
           </div>
         )}
       </div>
@@ -1119,42 +1127,52 @@ const DetailedResultsPage = () => {
         
         <div className="viz-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
           
-          {/* Performance Chart with Filter Controls (UPDATED: Added conditional class for 'trends' focus) */}
           <div className={`viz-card detail-card bordered ${focusMetric === 'trends' ? 'focused' : ''}`} style={{ padding: '20px' }}>
-            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px'}}>
-              <h3>Performance Trends</h3>
-              
-              {/* NEW: Filter Toggles */}
-              <div className="visibility-controls" style={{ display: 'flex', gap: '8px' }}>
-                {[
-                  { key: 'gaze-error', label: 'Gaze', color: '#4ecdc4', textColor: '#1a1d24' },
-                  { key: 'mouse-error', label: 'Mouse', color: '#ffb86c', textColor: '#1a1d24' },
-                  { key: 'synchronization', label: 'Sync', color: '#7a5ff5', textColor: '#fff' },
-                  { key: 'hit-moment', label: 'Hits', color: '#871212', textColor: '#fff' }
-                ].map(({ key, label, color, textColor }) => (
-                  <button
-                    key={key}
-                    onClick={() => toggleMetric(key)}
-                    style={{
-                      padding: '4px 12px',
-                      fontSize: '0.8rem',
-                      borderRadius: '16px',
-                      border: `1px solid ${color}`,
-                      backgroundColor: visibleMetrics[key] ? color : 'transparent',
-                      color: visibleMetrics[key] ? textColor : color,
-                      cursor: 'pointer',
-                      fontWeight: 600,
-                      transition: 'all 0.2s',
-                    }}
-                    aria-pressed={visibleMetrics[key]}
-                  >
-                    {label}
-                  </button>
-                ))}
+            <div className="viz-card__header">
+              <div className="viz-card__title">
+                <h3>Performance Trends</h3>
+                <button
+                  type="button"
+                  className="icon-button"
+                  aria-label="Performance Trends 설명"
+                  title={vizDescriptions.trends}
+                >
+                  <Info size={16} />
+                </button>
               </div>
-              <button className="detail-button small ghost" type="button" onClick={() => openModal('trends')}>
-                팝업으로 보기
-              </button>
+              <div className="viz-card__actions">
+                <div className="visibility-controls" style={{ display: 'flex', gap: '8px' }}>
+                  {[
+                    { key: 'gaze-error', label: 'Gaze', color: '#4ecdc4', textColor: '#1a1d24' },
+                    { key: 'mouse-error', label: 'Mouse', color: '#ffb86c', textColor: '#1a1d24' },
+                    { key: 'synchronization', label: 'Sync', color: '#7a5ff5', textColor: '#fff' },
+                    { key: 'hit-moment', label: 'Hits', color: '#871212', textColor: '#fff' }
+                  ].map(({ key, label, color, textColor }) => (
+                    <button
+                      key={key}
+                      onClick={() => toggleMetric(key)}
+                      style={{
+                        padding: '4px 12px',
+                        fontSize: '0.8rem',
+                        borderRadius: '16px',
+                        border: `1px solid ${color}`,
+                        backgroundColor: visibleMetrics[key] ? color : 'transparent',
+                        color: visibleMetrics[key] ? textColor : color,
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                        transition: 'all 0.2s',
+                      }}
+                      aria-pressed={visibleMetrics[key]}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <button className="detail-button small ghost icon-button--inline" type="button" onClick={() => openModal('trends')}>
+                  <Maximize2 size={14} />
+                  <span>팝업으로 보기</span>
+                </button>
+              </div>
             </div>
             
             <div style={{ marginTop: '16px', cursor: 'zoom-in' }} onClick={() => openModal('trends')}>
@@ -1169,10 +1187,21 @@ const DetailedResultsPage = () => {
           </div>
 
           <div className="viz-card detail-card bordered" style={{ padding: '20px' }}>
-            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px'}}>
-              <h3>Rolling Performance</h3>
-              <div className="visibility-controls" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                {[{ key: 'rolling-accuracy', label: 'Rolling Accuracy', color: '#7c9bff' }, { key: 'rolling-hps', label: 'HPS', color: '#f1c40f' }, { key: 'rolling-hits', label: 'Hit markers', color: '#871212' }].map(({ key, label, color }) => (
+            <div className="viz-card__header">
+              <div className="viz-card__title">
+                <h3>Rolling Performance</h3>
+                <button
+                  type="button"
+                  className="icon-button"
+                  aria-label="Rolling Performance 설명"
+                  title={vizDescriptions.rolling}
+                >
+                  <Info size={16} />
+                </button>
+              </div>
+              <div className="viz-card__actions">
+                <div className="visibility-controls" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {[{ key: 'rolling-accuracy', label: 'Rolling Accuracy', color: '#7c9bff' }, { key: 'rolling-hps', label: 'HPS', color: '#f1c40f' }, { key: 'rolling-hits', label: 'Hits', color: '#d14b4b', isHit: true }].map(({ key, label, color, isHit }) => (
                   <button
                     key={key}
                     onClick={() => toggleRollingMetric(key)}
@@ -1183,19 +1212,25 @@ const DetailedResultsPage = () => {
                       border: `1px solid ${color}`,
                       backgroundColor: rollingVisibility[key] ? color : 'transparent',
                       color: rollingVisibility[key] ? '#0b1021' : color,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
                       cursor: 'pointer',
                       fontWeight: 600,
                       transition: 'all 0.2s',
                     }}
                     aria-pressed={rollingVisibility[key]}
                   >
+                    {isHit && <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: rollingVisibility[key] ? '#0b1021' : color }} />}
                     {label}
                   </button>
                 ))}
+                </div>
+                <button className="detail-button small ghost icon-button--inline" type="button" onClick={() => openModal('rolling')}>
+                  <Maximize2 size={14} />
+                  <span>팝업으로 보기</span>
+                </button>
               </div>
-              <button className="detail-button small ghost" type="button" onClick={() => openModal('rolling')}>
-                팝업으로 보기
-              </button>
             </div>
             <div style={{ marginTop: '16px', cursor: 'zoom-in' }} onClick={() => openModal('rolling')}>
               <PerformanceLineChart
@@ -1210,33 +1245,50 @@ const DetailedResultsPage = () => {
           </div>
 
           <div className="viz-card detail-card bordered" style={{ padding: '20px' }}>
-            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px'}}>
-              <h3>Velocity & Reaction</h3>
-              <div className="visibility-controls" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                {[{ key: 'mouse-velocity', label: 'Mouse Velocity', color: '#4ecdc4' }, { key: 'reaction-time', label: 'Reaction Time', color: '#ff6b6b' }, { key: 'velocity-hits', label: 'Hit markers', color: '#871212' }].map(({ key, label, color }) => (
-                  <button
-                    key={key}
-                    onClick={() => toggleVelocityMetric(key)}
-                    style={{
-                      padding: '4px 12px',
-                      fontSize: '0.8rem',
-                      borderRadius: '16px',
-                      border: `1px solid ${color}`,
-                      backgroundColor: velocityVisibility[key] ? color : 'transparent',
-                      color: velocityVisibility[key] ? '#0b1021' : color,
-                      cursor: 'pointer',
-                      fontWeight: 600,
-                      transition: 'all 0.2s',
-                    }}
-                    aria-pressed={velocityVisibility[key]}
-                  >
-                    {label}
-                  </button>
-                ))}
+            <div className="viz-card__header">
+              <div className="viz-card__title">
+                <h3>Velocity & Reaction</h3>
+                <button
+                  type="button"
+                  className="icon-button"
+                  aria-label="Velocity & Reaction 설명"
+                  title={vizDescriptions.velocity}
+                >
+                  <Info size={16} />
+                </button>
               </div>
-              <button className="detail-button small ghost" type="button" onClick={() => openModal('velocity')}>
-                팝업으로 보기
-              </button>
+              <div className="viz-card__actions">
+                <div className="visibility-controls" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {[{ key: 'mouse-velocity', label: 'Mouse Velocity', color: '#4ecdc4' }, { key: 'reaction-time', label: 'Reaction Time', color: '#ff6b6b' }, { key: 'velocity-hits', label: 'Hits', color: '#d14b4b', isHit: true }].map(({ key, label, color, isHit }) => (
+                    <button
+                      key={key}
+                      onClick={() => toggleVelocityMetric(key)}
+                      style={{
+                        padding: '4px 12px',
+                        fontSize: '0.8rem',
+                        borderRadius: '16px',
+                        border: `1px solid ${color}`,
+                        backgroundColor: velocityVisibility[key] ? color : 'transparent',
+                        color: velocityVisibility[key] ? '#0b1021' : color,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                        transition: 'all 0.2s',
+                      }}
+                      aria-pressed={velocityVisibility[key]}
+                    >
+                      {isHit && <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: velocityVisibility[key] ? '#0b1021' : color }} />}
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <button className="detail-button small ghost icon-button--inline" type="button" onClick={() => openModal('velocity')}>
+                  <Maximize2 size={14} />
+                  <span>팝업으로 보기</span>
+                </button>
+              </div>
             </div>
             <div style={{ marginTop: '16px', cursor: 'zoom-in' }} onClick={() => openModal('velocity')}>
               <PerformanceLineChart
@@ -1252,11 +1304,24 @@ const DetailedResultsPage = () => {
 
           {/* Heatmap (UPDATED: Added conditional class for 'heatmap' focus) */}
           <div className={`viz-card detail-card bordered ${focusMetric === 'heatmap' ? 'focused' : ''}`} style={{ padding: '20px' }}>
-             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-              <h3>Gaze Heatmap</h3>
-              <button className="detail-button small ghost" type="button" onClick={() => openModal('heatmap')}>
-                팝업으로 보기
-              </button>
+             <div className="viz-card__header">
+              <div className="viz-card__title">
+                <h3>Gaze Heatmap</h3>
+                <button
+                  type="button"
+                  className="icon-button"
+                  aria-label="Gaze Heatmap 설명"
+                  title={vizDescriptions.heatmap}
+                >
+                  <Info size={16} />
+                </button>
+              </div>
+              <div className="viz-card__actions">
+                <button className="detail-button small ghost icon-button--inline" type="button" onClick={() => openModal('heatmap')}>
+                  <Maximize2 size={14} />
+                  <span>팝업으로 보기</span>
+                </button>
+              </div>
             </div>
             <div className="heatmap-wrapper" style={{ marginTop: '16px', border: '1px solid #333', borderRadius: '8px', overflow: 'hidden', cursor: 'zoom-in' }} onClick={() => openModal('heatmap')}>
               <div style={{ width: '100%', overflow: 'auto', maxHeight: '400px', backgroundColor: '#1a1d24' }}>

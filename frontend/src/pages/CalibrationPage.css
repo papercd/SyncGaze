@@ -268,7 +268,7 @@
 
 .calibration-grid .calibration-dot {
   position: absolute;
-  z-index: 10;
+  z-index: 1102; /* Above header/video to keep target visible */
 }
 
 #webgazerVideoContainer {

@@ -87,7 +87,7 @@ const PerformanceLineChart = ({
 
   const width = 720; 
   const height = 360;
-  const padding = 56;
+  const basePadding = 56;
   
   // X축 최대값: 시리즈가 없으면 duration 기준
   const xMax = Math.max(duration, ...activeSeries.map(s => s.points.at(-1)?.time ?? 0), 1);
@@ -97,24 +97,50 @@ const PerformanceLineChart = ({
   const maxVal = allValues.length ? Math.max(...allValues) : 100;
   const yMax = Math.ceil(maxVal * 1.1);
 
-  const xScale = (time: number) => padding + (time / xMax) * (width - padding * 2);
-  const yScale = (value: number) => height - padding - (value / yMax) * (height - padding * 2);
+  const xTickCount = Math.max(6, Math.round(6 * zoomLevel));
+  const yTickCount = Math.max(5, Math.round(5 * zoomLevel));
 
-  const xTicks = 6;
-  const xTickValues = Array.from({ length: xTicks }, (_, i) => Math.round((xMax / (xTicks - 1)) * i));
-  const yTickValues = Array.from({ length: 5 }, (_, i) => Math.round((yMax / 4) * i));
+  const xTickValues = Array.from({ length: xTickCount }, (_, i) => {
+    const value = (xMax / (xTickCount - 1 || 1)) * i;
+    return Number(value.toFixed(1));
+  });
 
-  const formatTime = (seconds: number) => `${seconds}s`;
+  const yTickValues = Array.from({ length: yTickCount }, (_, i) => {
+    const value = (yMax / (yTickCount - 1 || 1)) * i;
+    return Number(value.toFixed(1));
+  });
+
+  const formatTime = (seconds: number) => (seconds % 1 === 0 ? `${seconds}s` : `${seconds.toFixed(1)}s`);
+
+  const longestYLabelChars = yTickValues.reduce((max, val) => Math.max(max, val.toString().length), 0);
+  const paddingLeft = Math.max(basePadding, 24 + longestYLabelChars * 7);
+  const paddingRight = basePadding;
+  const paddingTop = basePadding;
+  const paddingBottom = basePadding;
+  const yLabelX = Math.max(16, paddingLeft - 40);
+
+  const xScale = (time: number) => paddingLeft + (time / xMax) * (width - paddingLeft - paddingRight);
+  const yScale = (value: number) =>
+    height - paddingBottom - (value / yMax) * (height - paddingTop - paddingBottom);
 
   return (
-    <div className="chart-scroll-wrapper" style={{ overflowX: 'auto', overflowY: 'hidden', maxWidth: '100%' }}>
-      <div style={{ width: `${zoomLevel * 100}%`, minWidth: '100%', position: 'relative', transition: 'width 0.2s ease-out' }}>
+    <div className="chart-scroll-wrapper" style={{ overflow: 'auto', maxWidth: '100%', maxHeight: '70vh' }}>
+      <div
+        style={{
+          width: `${zoomLevel * 100}%`,
+          height: `${zoomLevel * 100}%`,
+          minWidth: '100%',
+          minHeight: '100%',
+          position: 'relative',
+          transition: 'width 0.2s ease-out, height 0.2s ease-out',
+        }}
+      >
         <svg 
           viewBox={`0 0 ${width} ${height}`} 
           className="chart-svg" 
           role="img" 
           aria-label="Performance trends over time" 
-          style={{ width: '100%', height: 'auto', display: 'block' }} 
+          style={{ width: '100%', height: '100%', display: 'block' }} 
         >
           <defs>
             {activeSeries.map(({ gradientId, color }) => (
@@ -125,33 +151,33 @@ const PerformanceLineChart = ({
             ))}
           </defs>
 
-          <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} className="chart-axis" />
-          <line x1={padding} y1={padding} x2={padding} y2={height - padding} className="chart-axis" />
+          <line x1={paddingLeft} y1={height - paddingBottom} x2={width - paddingRight} y2={height - paddingBottom} className="chart-axis" />
+          <line x1={paddingLeft} y1={paddingTop} x2={paddingLeft} y2={height - paddingBottom} className="chart-axis" />
 
           {xTickValues.map(tick => (
-            <line key={`x-${tick}`} x1={xScale(tick)} x2={xScale(tick)} y1={padding} y2={height - padding} className="chart-grid" />
+            <line key={`x-${tick}`} x1={xScale(tick)} x2={xScale(tick)} y1={paddingTop} y2={height - paddingBottom} className="chart-grid" />
           ))}
           {yTickValues.map(tick => (
-            <line key={`y-${tick}`} x1={padding} x2={width - padding} y1={yScale(tick)} y2={yScale(tick)} className="chart-grid" />
+            <line key={`y-${tick}`} x1={paddingLeft} x2={width - paddingRight} y1={yScale(tick)} y2={yScale(tick)} className="chart-grid" />
           ))}
 
           {/* NEW: Conditional rendering for hit markers */}
           {showHitMarkers && hitTimes.map((time, idx) => (
             <g key={`hit-${idx}`}>
-              <line x1={xScale(time)} x2={xScale(time)} y1={padding} y2={height - padding} stroke="rgba(127, 9, 9, 0.79)" strokeWidth="1.5" strokeDasharray="4 4" />
-              <circle cx={xScale(time)} cy={height - padding} r={3} fill="#871212ff" opacity="0.8" />
+              <line x1={xScale(time)} x2={xScale(time)} y1={paddingTop} y2={height - paddingBottom} stroke="rgba(127, 9, 9, 0.79)" strokeWidth="1.5" strokeDasharray="4 4" />
+              <circle cx={xScale(time)} cy={height - paddingBottom} r={3} fill="#871212ff" opacity="0.8" />
             </g>
           ))}
 
           {xTickValues.map(tick => (
-            <text key={`xlabel-${tick}`} x={xScale(tick)} y={height - padding + 24} className="chart-label" textAnchor="middle">{formatTime(tick)}</text>
+            <text key={`xlabel-${tick}`} x={xScale(tick)} y={height - paddingBottom + 24} className="chart-label" textAnchor="middle">{formatTime(tick)}</text>
           ))}
           {yTickValues.map(tick => (
-            <text key={`ylabel-${tick}`} x={padding - 12} y={yScale(tick) + 4} className="chart-label" textAnchor="end">{tick}</text>
+            <text key={`ylabel-${tick}`} x={paddingLeft - 12} y={yScale(tick) + 4} className="chart-label" textAnchor="end">{tick}</text>
           ))}
 
-          <text x={(width + padding) / 2} y={height - 12} className="chart-axis-title" textAnchor="middle">Time (seconds)</text>
-          <text x={16} y={height / 2} className="chart-axis-title" textAnchor="middle" transform={`rotate(-90 16 ${height / 2})`}>
+          <text x={(width + paddingLeft - paddingRight) / 2} y={height - 12} className="chart-axis-title" textAnchor="middle">Time (seconds)</text>
+          <text x={yLabelX} y={height / 2} className="chart-axis-title" textAnchor="middle" transform={`rotate(-90 ${yLabelX} ${height / 2})`}>
             {yAxisLabel}
           </text>
 
@@ -165,7 +191,11 @@ const PerformanceLineChart = ({
                   <>
                     <path d={pathD} className="chart-line" stroke={color} strokeWidth="2" fill="none" />
                     {fill && (
-                      <path d={`${pathD} L${xScale(validPoints[validPoints.length-1].time)},${height-padding} L${xScale(validPoints[0].time)},${height-padding} Z`} fill={`url(#${gradientId})`} stroke="none" />
+                      <path
+                        d={`${pathD} L${xScale(validPoints[validPoints.length-1].time)},${height - paddingBottom} L${xScale(validPoints[0].time)},${height - paddingBottom} Z`}
+                        fill={`url(#${gradientId})`}
+                        stroke="none"
+                      />
                     )}
                   </>
                 )}

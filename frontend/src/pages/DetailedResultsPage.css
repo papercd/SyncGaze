@@ -277,8 +277,8 @@
 }
 
 .viz-modal {
-  width: min(1100px, 95vw);
-  max-height: 90vh;
+  width: min(1300px, 96vw);
+  max-height: 92vh;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));

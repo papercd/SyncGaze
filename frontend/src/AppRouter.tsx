@@ -15,7 +15,6 @@ import LeaderboardPage from './pages/LeaderboardPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage.tsx';
 import SettingsPage from './pages/SettingsPage';
-import ThankYouPage from './pages/onboarding/ThankYouPage';
 import SessionsHistoryPage from './pages/SessionsHistoryPage.tsx';
 import { ReactElement, useEffect } from 'react';
 import { useAuth } from './state/authContext';

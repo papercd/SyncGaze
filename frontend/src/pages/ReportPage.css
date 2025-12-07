@@ -311,6 +311,7 @@
 .report-session-meta .meta-value {
   color: #f7f7ff;
   font-weight: 700;
+  margin-left: 0.35rem;
 }
 
 /* Markdown Content */

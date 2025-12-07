@@ -128,6 +128,19 @@ const DashboardPage = () => {
     }, null as TrainingSessionSummary | null);
   }, [recentSessions]);
 
+  const bestGazeReaction = useMemo(() => {
+    if (!recentSessions.length) return null as { session: TrainingSessionSummary; gaze: number } | null;
+    let best: { session: TrainingSessionSummary; gaze: number } | null = null;
+    recentSessions.forEach(session => {
+      const analytics = calculatePerformanceAnalytics(session.rawData);
+      const gaze = analytics.avgGazeReactionTime;
+      if (!best || (gaze > 0 && gaze < best.gaze)) {
+        best = { session, gaze };
+      }
+    });
+    return best;
+  }, [recentSessions]);
+
   const reactionPercentile = useMemo(() => {
     if (!bestReactionSession) return null;
     const rt = bestReactionSession.avgReactionTime;
@@ -142,7 +155,22 @@ const DashboardPage = () => {
     const label = `상위 ${clamp}%`;
     const color = clamp <= 25 ? '#66d9ff' : clamp <= 60 ? '#f1c40f' : '#ff6b6b';
     return { value: clamp, label, color };
-  }, [latestSession]);
+  }, [bestReactionSession]);
+
+  const gazePercentile = useMemo(() => {
+    if (!bestGazeReaction) return null;
+    const v = bestGazeReaction.gaze;
+    let value = 45;
+    if (v <= 200) value = 12;
+    else if (v <= 250) value = 25;
+    else if (v <= 350) value = 45;
+    else if (v <= 450) value = 65;
+    else value = 88;
+    const clamp = Math.min(99, Math.max(1, Math.round(value)));
+    const label = `상위 ${clamp}%`;
+    const color = clamp <= 25 ? '#66d9ff' : clamp <= 60 ? '#f1c40f' : '#ff6b6b';
+    return { value: clamp, label, color };
+  }, [bestGazeReaction]);
 
   useEffect(() => {
     const fetchReactionRank = async () => {
@@ -185,7 +213,7 @@ const DashboardPage = () => {
           <p>{isFirstTime ? t('dashboard.welcome.first.desc') : t('dashboard.welcome.return.desc')}</p>
         </section>
 
-        {/* Reaction Time (Best) - standalone card */}
+        {/* Reaction Time (Best) - standalone row */}
         <section className="stats-grid stats-grid--compact">
           <div className="stat-card reaction-stat">
             <div className ="stat-icon">
@@ -219,6 +247,23 @@ const DashboardPage = () => {
                   </p>
                 </div>
               )}
+            </div>
+          </div>
+
+          <div className="stat-card reaction-stat">
+            <div className ="stat-icon">
+              <ScanEye size={32} strokeWidth={2.5}/>   
+            </div>
+            <div className="stat-info">
+              <div className="stat-top-row">
+                <h3>{bestGazeReaction ? `${bestGazeReaction.gaze.toFixed(0)}ms` : '--'}</h3>
+                {gazePercentile && (
+                  <span className="stat-pill" style={{ color: gazePercentile.color, borderColor: gazePercentile.color }}>
+                    {gazePercentile.label}
+                  </span>
+                )}
+              </div>
+              <p>{t('dashboard.reaction.gazeLabel', 'Avg Gaze Reaction (best)')}</p>
             </div>
           </div>
         </section>

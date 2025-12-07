@@ -90,6 +90,9 @@
 .control-settings-actions {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
 .control-reset {
@@ -105,4 +108,22 @@
 .control-reset:hover {
   border-color: #667eea;
   background: rgba(102, 126, 234, 0.1);
+}
+
+.control-test {
+  background: linear-gradient(135deg, #667eea 0%, #8f7bff 100%);
+  color: #0b1021;
+  border: none;
+  padding: 0.55rem 1.2rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.control-test:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 28px rgba(102, 126, 234, 0.45);
 }

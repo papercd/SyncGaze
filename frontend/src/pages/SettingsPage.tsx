@@ -1,14 +1,17 @@
 import './SettingsPage.css';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ControlSettingsPanel from '../components/ControlSettingsPanel';
 import { useTrackingSession } from '../state/trackingSessionContext';
 import { findGameOption, OTHER_GAME_VALUE } from '../features/onboarding/survey';
 import { useTranslation } from '../state/languageContext';
+import { SensitivityPreviewModal } from '../components/SensitivityPreviewModal';
 
 const SettingsPage = () => {
   const navigate = useNavigate();
   const { surveyResponses } = useTrackingSession();
   const { t } = useTranslation();
+  const [showSensitivityPreview, setShowSensitivityPreview] = useState(false);
 
   const focusGameLabel = surveyResponses
     ? surveyResponses.mainGame === OTHER_GAME_VALUE
@@ -113,9 +116,15 @@ const SettingsPage = () => {
               </p>
             </div>
           </div>
-          <ControlSettingsPanel showReset />
+          <ControlSettingsPanel
+            showReset
+            onOpenPreview={() => setShowSensitivityPreview(true)}
+          />
         </section>
       </main>
+      {showSensitivityPreview && (
+        <SensitivityPreviewModal onClose={() => setShowSensitivityPreview(false)} />
+      )}
     </div>
   );
 };

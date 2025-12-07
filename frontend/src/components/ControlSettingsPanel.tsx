@@ -5,6 +5,7 @@ import React from 'react';
 interface ControlSettingsPanelProps {
   showReset?: boolean;
   compact?: boolean;
+  onOpenPreview?: () => void;
 }
 
 const formatSensitivity = (value: number) => value.toFixed(4);
@@ -53,7 +54,11 @@ const describeSensitivity = (value: number) => {
   return { ratioLabel: `${ratio.toFixed(2)}×`, descriptor };
 };
 
-const ControlSettingsPanel: React.FC<ControlSettingsPanelProps> = ({ showReset = false, compact = false }) => {
+const ControlSettingsPanel: React.FC<ControlSettingsPanelProps> = ({
+  showReset = false,
+  compact = false,
+  onOpenPreview
+}) => {
   const { controlSensitivity, setControlSensitivity, resetSettings } = useControlSettings();
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -106,11 +111,18 @@ const ControlSettingsPanel: React.FC<ControlSettingsPanelProps> = ({ showReset =
         <div className="control-settings-footnote">Default: {formatSensitivity(DEFAULT_SENSITIVITY)}</div>
       </div>
 
-      {showReset && (
+      {(showReset || onOpenPreview) && (
         <div className="control-settings-actions">
-          <button type="button" className="control-reset" onClick={resetSettings}>
-            Reset to default
-          </button>
+          {onOpenPreview && (
+            <button type="button" className="control-test" onClick={onOpenPreview}>
+              Test in training arena
+            </button>
+          )}
+          {showReset && (
+            <button type="button" className="control-reset" onClick={resetSettings}>
+              Reset to default
+            </button>
+          )}
         </div>
       )}
     </div>

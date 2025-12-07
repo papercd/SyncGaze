@@ -6,7 +6,10 @@ import { useTrackingSession, TrainingSessionSummary } from '../state/trackingSes
 import { useAuth } from '../state/authContext';
 import { useTranslation } from '../state/languageContext';
 import { getUserReports } from '../services/reportService';
-import {Crosshair,Trophy,Settings,Hourglass,MousePointerClick,RotateCcw,Flag} from 'lucide-react';
+import { collection, getDocs, limit, orderBy, query } from 'firebase/firestore';
+import { db } from '../lib/firebase';
+import type { LeaderboardEntry } from '../utils/remoteSessions';
+import { Crosshair, Trophy, Settings, Hourglass, MousePointerClick, RotateCcw, Flag, Award, Timer } from 'lucide-react';
 
 const DashboardPage = () => {
   const navigate = useNavigate();
@@ -17,6 +20,7 @@ const DashboardPage = () => {
   const [isLoadingReports, setIsLoadingReports] = useState(false);
   const hasRealSession = recentSessions.some(session => !session.id.startsWith('mock-'));
   const isNewUser = isAnonymousSession || !hasRealSession;
+  const [reactionRank, setReactionRank] = useState<number | null>(null);
 
   useEffect(() => {
     const loadReports = async () => {
@@ -112,6 +116,53 @@ const DashboardPage = () => {
   // ✅ NEW: Conditional welcome message based on session history
   const isFirstTime = recentSessions.length === 0;
 
+  const latestSession = recentSessions[0];
+
+  const bestReactionSession = useMemo(() => {
+    if (!recentSessions.length) return null;
+    return [...recentSessions].reduce((best, session) => {
+      if (!best) return session;
+      return session.avgReactionTime < best.avgReactionTime ? session : best;
+    }, null as TrainingSessionSummary | null);
+  }, [recentSessions]);
+
+  const reactionPercentile = useMemo(() => {
+    if (!bestReactionSession) return null;
+    const rt = bestReactionSession.avgReactionTime;
+    // Same buckets as ResultsPage
+    let value = 50;
+    if (rt <= 200) value = 10;
+    else if (rt <= 250) value = 25;
+    else if (rt <= 300) value = 50;
+    else if (rt <= 350) value = 70;
+    else value = 90;
+    const clamp = Math.min(99, Math.max(1, Math.round(value)));
+    const label = `상위 ${clamp}%`;
+    const color = clamp <= 25 ? '#66d9ff' : clamp <= 60 ? '#f1c40f' : '#ff6b6b';
+    return { value: clamp, label, color };
+  }, [latestSession]);
+
+  useEffect(() => {
+    const fetchReactionRank = async () => {
+      if (!user?.uid) {
+        setReactionRank(null);
+        return;
+      }
+      try {
+        const ref = collection(db, 'leaderboardEntries');
+        const q = query(ref, orderBy('avgReactionTime', 'asc'), limit(200));
+        const snapshot = await getDocs(q);
+        const data = snapshot.docs.map(doc => doc.data() as LeaderboardEntry);
+        const foundIndex = data.findIndex(entry => entry.uid === user.uid);
+        setReactionRank(foundIndex >= 0 ? foundIndex + 1 : null);
+      } catch (error) {
+        console.error('Failed to fetch reaction leaderboard', error);
+      }
+    };
+
+    fetchReactionRank();
+  }, [user?.uid]);
+
   return (
     <div className="dashboard-page">
       {/* Header */}
@@ -123,6 +174,32 @@ const DashboardPage = () => {
         <section className="welcome-section">
           <h2>{isFirstTime ? t('dashboard.welcome.first') : t('dashboard.welcome.return')}</h2>
           <p>{isFirstTime ? t('dashboard.welcome.first.desc') : t('dashboard.welcome.return.desc')}</p>
+        </section>
+
+        {/* Reaction Time (Best) - standalone card */}
+        <section className="stats-grid stats-grid--compact">
+          <div className="stat-card reaction-stat">
+            <div className ="stat-icon">
+              <Hourglass size={32} strokeWidth={2.5}/>   
+            </div>
+            <div className="stat-info">
+              <div className="stat-top-row">
+                <h3>{bestReactionSession ? `${bestReactionSession.avgReactionTime.toFixed(0)}ms` : '--'}</h3>
+                {reactionPercentile && (
+                  <span className="stat-pill" style={{ color: reactionPercentile.color, borderColor: reactionPercentile.color }}>
+                    {reactionPercentile.label}
+                  </span>
+                )}
+                {reactionRank && reactionRank <= 3 && (
+                  <span className="stat-medal" data-rank={reactionRank}>
+                    <Award size={18} color={reactionRank === 1 ? '#d4af37' : reactionRank === 2 ? '#c0c0c0' : '#cd7f32'} />
+                    <span className="medal-rank">#{reactionRank}</span>
+                  </span>
+                )}
+              </div>
+              <p>{t('dashboard.reaction.label', 'Reaction Time (best)')}</p>
+            </div>
+          </div>
         </section>
 
         {/* Quick Stats */}
@@ -150,11 +227,11 @@ const DashboardPage = () => {
           </div>
 
           <div className="stat-card">
-              <div className ="stat-icon">
-                <Hourglass size={32} strokeWidth={2.5}/>   
-              </div>
+            <div className ="stat-icon">
+              <Timer size={32} strokeWidth={2.5}/>   
+            </div>
             <div className="stat-info">
-              <h3>{stats.avgReactionTime}ms</h3>
+              <h3>{stats.avgReactionTime.toFixed(2)}ms</h3>
               <p>{t('dashboard.stats.avgReaction')}</p>
             </div>
           </div>

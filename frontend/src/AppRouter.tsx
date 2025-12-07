@@ -16,6 +16,7 @@ import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage.tsx';
 import SettingsPage from './pages/SettingsPage';
 import SessionsHistoryPage from './pages/SessionsHistoryPage.tsx';
+import AccountPage from './pages/AccountPage';
 import { ReactElement, useEffect } from 'react';
 import { useAuth } from './state/authContext';
 import SessionRemoteHydrator from './components/SessionRemoteHydrator';
@@ -229,6 +230,16 @@ const AppRouter = () => {
             <ProtectedRoute>
               <Layout>
                 <ThankYouPage />
+              </Layout>
+            </ProtectedRoute>
+          )}
+        />
+        <Route
+          path="/account"
+          element={(
+            <ProtectedRoute>
+              <Layout>
+                <AccountPage />
               </Layout>
             </ProtectedRoute>
           )}

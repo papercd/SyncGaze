@@ -2,7 +2,6 @@ import type { WheelEvent } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Info, Maximize2 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Info, Maximize2 } from 'lucide-react';
 import './DetailedResultsPage.css';
 import {
   CalibrationResult,

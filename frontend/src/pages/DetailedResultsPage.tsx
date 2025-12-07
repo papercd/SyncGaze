@@ -1,4 +1,6 @@
+import type { WheelEvent } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Info, Maximize2 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import './DetailedResultsPage.css';
 import {
@@ -12,6 +14,13 @@ import { calculatePerformanceAnalytics, generateErrorTimeSeries } from '../utils
 
 // UPDATED: Added 'trends' and 'heatmap' to focus metrics
 type FocusMetric = 'accuracy' | 'targets' | 'reaction' | 'gaze' | 'mouse' | 'trends' | 'heatmap';
+
+const vizDescriptions: Record<'trends' | 'rolling' | 'velocity' | 'heatmap', string> = {
+  trends: '시간 흐름에 따른 시선·마우스 오차와 동기화 추세를 확인합니다.',
+  rolling: '최근 윈도우 기준의 정확도, 초당 히트, 히트 타이밍을 보여줍니다.',
+  velocity: '마우스 속도와 반응 시간을 한눈에 비교합니다.',
+  heatmap: '세션 동안의 시선 집중 분포를 시각화합니다.',
+};
 
 interface ErrorStats {
   avg: number;
@@ -61,48 +70,6 @@ type ReplayFrame = TrainingDataPoint & {
   displayMouseY: number | null;
 };
 
-// --- Zoom Control Component ---
-const ZoomControls = ({ 
-  scale, 
-  onZoomIn, 
-  onZoomOut, 
-  onReset 
-}: { 
-  scale: number; 
-  onZoomIn: () => void; 
-  onZoomOut: () => void; 
-  onReset: () => void; 
-}) => (
-  <div className="zoom-controls" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-    <button 
-      className="detail-button small" 
-      onClick={onZoomOut} 
-      disabled={scale <= 1}
-      style={{ padding: '4px 12px', minWidth: '32px' }}
-    >
-      -
-    </button>
-    <span style={{ fontSize: '0.9rem', minWidth: '40px', textAlign: 'center', fontWeight: 500 }}>
-      {Math.round(scale * 100)}%
-    </span>
-    <button 
-      className="detail-button small" 
-      onClick={onZoomIn} 
-      disabled={scale >= 4}
-      style={{ padding: '4px 12px', minWidth: '32px' }}
-    >
-      +
-    </button>
-    <button 
-      className="detail-button small ghost" 
-      onClick={onReset}
-      style={{ padding: '4px 12px', marginLeft: '4px' }}
-    >
-      Reset
-    </button>
-  </div>
-);
-
 // --- PerformanceLineChart Component (UPDATED with filtering) ---
 const PerformanceLineChart = ({
   series,
@@ -111,6 +78,8 @@ const PerformanceLineChart = ({
   zoomLevel = 1,
   showHitMarkers = true, // NEW: 마커 표시 여부 제어
   yAxisLabel = 'Error (px)',
+  constrainHeight = false,
+  tickDensityMultiplier = 1,
 }: {
   series: SeriesConfig[];
   duration: number;
@@ -118,6 +87,8 @@ const PerformanceLineChart = ({
   zoomLevel?: number;
   showHitMarkers?: boolean;
   yAxisLabel?: string;
+  constrainHeight?: boolean;
+  tickDensityMultiplier?: number;
 }) => {
   const activeSeries = series.filter(s => s.points.some(p => p.value !== null));
 
@@ -128,7 +99,7 @@ const PerformanceLineChart = ({
 
   const width = 720; 
   const height = 360;
-  const padding = 56;
+  const basePadding = 56;
   
   // X축 최대값: 시리즈가 없으면 duration 기준
   const xMax = Math.max(duration, ...activeSeries.map(s => s.points.at(-1)?.time ?? 0), 1);
@@ -138,24 +109,68 @@ const PerformanceLineChart = ({
   const maxVal = allValues.length ? Math.max(...allValues) : 100;
   const yMax = Math.ceil(maxVal * 1.1);
 
-  const xScale = (time: number) => padding + (time / xMax) * (width - padding * 2);
-  const yScale = (value: number) => height - padding - (value / yMax) * (height - padding * 2);
+  const xTickCount = Math.max(6, Math.round(6 * zoomLevel * tickDensityMultiplier));
+  const yTickCount = Math.max(5, Math.round(5 * zoomLevel * tickDensityMultiplier));
 
-  const xTicks = 6;
-  const xTickValues = Array.from({ length: xTicks }, (_, i) => Math.round((xMax / (xTicks - 1)) * i));
-  const yTickValues = Array.from({ length: 5 }, (_, i) => Math.round((yMax / 4) * i));
+  const xTickValues = Array.from({ length: xTickCount }, (_, i) => {
+    const value = (xMax / (xTickCount - 1 || 1)) * i;
+    return Number(value.toFixed(1));
+  });
 
-  const formatTime = (seconds: number) => `${seconds}s`;
+  const yTickValues = Array.from({ length: yTickCount }, (_, i) => {
+    const value = (yMax / (yTickCount - 1 || 1)) * i;
+    return Number(value.toFixed(1));
+  });
+
+  const formatTime = (seconds: number) => (seconds % 1 === 0 ? `${seconds}s` : `${seconds.toFixed(1)}s`);
+
+  const longestYLabelChars = yTickValues.reduce((max, val) => Math.max(max, val.toString().length), 0);
+  const paddingLeft = Math.max(basePadding, 24 + longestYLabelChars * 7);
+  const paddingRight = basePadding;
+  const paddingTop = basePadding;
+  const paddingBottom = basePadding;
+  const yLabelX = Math.max(16, paddingLeft - 40);
+
+  const xScale = (time: number) => paddingLeft + (time / xMax) * (width - paddingLeft - paddingRight);
+  const yScale = (value: number) =>
+    height - paddingBottom - (value / yMax) * (height - paddingTop - paddingBottom);
 
   return (
-    <div className="chart-scroll-wrapper" style={{ overflowX: 'auto', overflowY: 'hidden', maxWidth: '100%' }}>
-      <div style={{ width: `${zoomLevel * 100}%`, minWidth: '100%', position: 'relative', transition: 'width 0.2s ease-out' }}>
+    <div
+      className="chart-scroll-wrapper"
+      style={
+        constrainHeight
+          ? {
+              overflow: 'auto',
+              maxWidth: '100%',
+              maxHeight: '100%',
+              height: '100%',
+              flex: 1,
+              minHeight: '100%',
+            }
+          : {
+              overflowX: 'auto',
+              overflowY: 'visible',
+              maxWidth: '100%',
+            }
+      }
+    >
+      <div
+        style={{
+          width: `${zoomLevel * 100}%`,
+          height: `${zoomLevel * 100}%`,
+          minWidth: '100%',
+          minHeight: '100%',
+          position: 'relative',
+          transition: 'width 0.2s ease-out, height 0.2s ease-out',
+        }}
+      >
         <svg 
           viewBox={`0 0 ${width} ${height}`} 
           className="chart-svg" 
           role="img" 
           aria-label="Performance trends over time" 
-          style={{ width: '100%', height: 'auto', display: 'block' }} 
+          style={{ width: '100%', height: '100%', display: 'block' }} 
         >
           <defs>
             {activeSeries.map(({ gradientId, color }) => (
@@ -166,33 +181,33 @@ const PerformanceLineChart = ({
             ))}
           </defs>
 
-          <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} className="chart-axis" />
-          <line x1={padding} y1={padding} x2={padding} y2={height - padding} className="chart-axis" />
+          <line x1={paddingLeft} y1={height - paddingBottom} x2={width - paddingRight} y2={height - paddingBottom} className="chart-axis" />
+          <line x1={paddingLeft} y1={paddingTop} x2={paddingLeft} y2={height - paddingBottom} className="chart-axis" />
 
           {xTickValues.map(tick => (
-            <line key={`x-${tick}`} x1={xScale(tick)} x2={xScale(tick)} y1={padding} y2={height - padding} className="chart-grid" />
+            <line key={`x-${tick}`} x1={xScale(tick)} x2={xScale(tick)} y1={paddingTop} y2={height - paddingBottom} className="chart-grid" />
           ))}
           {yTickValues.map(tick => (
-            <line key={`y-${tick}`} x1={padding} x2={width - padding} y1={yScale(tick)} y2={yScale(tick)} className="chart-grid" />
+            <line key={`y-${tick}`} x1={paddingLeft} x2={width - paddingRight} y1={yScale(tick)} y2={yScale(tick)} className="chart-grid" />
           ))}
 
           {/* NEW: Conditional rendering for hit markers */}
           {showHitMarkers && hitTimes.map((time, idx) => (
             <g key={`hit-${idx}`}>
-              <line x1={xScale(time)} x2={xScale(time)} y1={padding} y2={height - padding} stroke="rgba(127, 9, 9, 0.79)" strokeWidth="1.5" strokeDasharray="4 4" />
-              <circle cx={xScale(time)} cy={height - padding} r={3} fill="#871212ff" opacity="0.8" />
+              <line x1={xScale(time)} x2={xScale(time)} y1={paddingTop} y2={height - paddingBottom} stroke="rgba(127, 9, 9, 0.79)" strokeWidth="1.5" strokeDasharray="4 4" />
+              <circle cx={xScale(time)} cy={height - paddingBottom} r={3} fill="#871212ff" opacity="0.8" />
             </g>
           ))}
 
           {xTickValues.map(tick => (
-            <text key={`xlabel-${tick}`} x={xScale(tick)} y={height - padding + 24} className="chart-label" textAnchor="middle">{formatTime(tick)}</text>
+            <text key={`xlabel-${tick}`} x={xScale(tick)} y={height - paddingBottom + 24} className="chart-label" textAnchor="middle">{formatTime(tick)}</text>
           ))}
           {yTickValues.map(tick => (
-            <text key={`ylabel-${tick}`} x={padding - 12} y={yScale(tick) + 4} className="chart-label" textAnchor="end">{tick}</text>
+            <text key={`ylabel-${tick}`} x={paddingLeft - 12} y={yScale(tick) + 4} className="chart-label" textAnchor="end">{tick}</text>
           ))}
 
-          <text x={(width + padding) / 2} y={height - 12} className="chart-axis-title" textAnchor="middle">Time (seconds)</text>
-          <text x={16} y={height / 2} className="chart-axis-title" textAnchor="middle" transform={`rotate(-90 16 ${height / 2})`}>
+          <text x={(width + paddingLeft - paddingRight) / 2} y={height - 12} className="chart-axis-title" textAnchor="middle">Time (seconds)</text>
+          <text x={yLabelX} y={height / 2} className="chart-axis-title" textAnchor="middle" transform={`rotate(-90 ${yLabelX} ${height / 2})`}>
             {yAxisLabel}
           </text>
 
@@ -206,7 +221,11 @@ const PerformanceLineChart = ({
                   <>
                     <path d={pathD} className="chart-line" stroke={color} strokeWidth="2" fill="none" />
                     {fill && (
-                      <path d={`${pathD} L${xScale(validPoints[validPoints.length-1].time)},${height-padding} L${xScale(validPoints[0].time)},${height-padding} Z`} fill={`url(#${gradientId})`} stroke="none" />
+                      <path
+                        d={`${pathD} L${xScale(validPoints[validPoints.length-1].time)},${height - paddingBottom} L${xScale(validPoints[0].time)},${height - paddingBottom} Z`}
+                        fill={`url(#${gradientId})`}
+                        stroke="none"
+                      />
                     )}
                   </>
                 )}
@@ -228,8 +247,8 @@ const PerformanceLineChart = ({
         {/* NEW: Conditional legend item */}
         {showHitMarkers && (
           <div className="legend-item">
-            <span className="legend-swatch" style={{ backgroundColor: '#871212ff', width: 8, height: 8, borderRadius: '50%' }} />
-            <span className="legend-label">Hit Moment</span>
+            <span className="legend-swatch legend-swatch--hit" />
+            <span className="legend-label">Hits</span>
           </div>
         )}
       </div>
@@ -308,11 +327,6 @@ const DetailedResultsPage = () => {
   const [sessionData, setSessionData] = useState<TrainingSessionSummary | null>(activeSession);
   const [calibration, setCalibration] = useState<CalibrationResult | null>(calibrationResult);
 
-  const [chartZoom, setChartZoom] = useState(1);
-  const [heatmapZoom, setHeatmapZoom] = useState(1);
-  const [rollingZoom, setRollingZoom] = useState(1);
-  const [velocityZoom, setVelocityZoom] = useState(1);
-
   const [replayTargetId, setReplayTargetId] = useState<string | null>(null);
   const [replayTargetIndex, setReplayTargetIndex] = useState<number | null>(null);
 
@@ -329,6 +343,9 @@ const DetailedResultsPage = () => {
     'synchronization': true,
     'hit-moment': true,
   });
+
+  const [activeModal, setActiveModal] = useState<'trends' | 'rolling' | 'velocity' | 'heatmap' | null>(null);
+  const [modalZoom, setModalZoom] = useState(1);
 
   const [rollingVisibility, setRollingVisibility] = useState<Record<string, boolean>>({
     'rolling-accuracy': true,
@@ -358,6 +375,33 @@ const DetailedResultsPage = () => {
 
   const heatmapCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const heatmapContainerRef = useRef<HTMLDivElement | null>(null);
+  const modalHeatmapCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const modalHeatmapContainerRef = useRef<HTMLDivElement | null>(null);
+
+  const openModal = (type: 'trends' | 'rolling' | 'velocity' | 'heatmap') => {
+    setActiveModal(type);
+    setModalZoom(1);
+  };
+
+  const closeModal = () => setActiveModal(null);
+
+  const handleModalWheel = useCallback((event: WheelEvent) => {
+    event.preventDefault();
+    const direction = event.deltaY > 0 ? -0.2 : 0.2;
+    setModalZoom(prev => Math.max(0.8, Math.min(3, +(prev + direction).toFixed(2))));
+  }, []);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        closeModal();
+      }
+    };
+    if (activeModal) {
+      window.addEventListener('keydown', onKeyDown);
+    }
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [activeModal]);
 
   useEffect(() => {
     if (activeSession) {
@@ -697,9 +741,9 @@ const DetailedResultsPage = () => {
     return { heatmapPoints, baseScreenWidth, baseScreenHeight };
   }, [sessionData]);
 
-  const drawHeatmap = useCallback(() => {
-    const canvas = heatmapCanvasRef.current;
-    const container = heatmapContainerRef.current;
+  const drawHeatmap = useCallback((canvasEl?: HTMLCanvasElement | null, containerEl?: HTMLDivElement | null) => {
+    const canvas = canvasEl ?? heatmapCanvasRef.current;
+    const container = containerEl ?? heatmapContainerRef.current;
     if (!canvas || !container) return;
 
     const rect = container.getBoundingClientRect();
@@ -765,6 +809,22 @@ const DetailedResultsPage = () => {
     drawHeatmap();
     return () => resizeObserver.disconnect();
   }, [drawHeatmap, heatmapPoints.length]);
+
+  useEffect(() => {
+    if (activeModal !== 'heatmap') return;
+    const container = modalHeatmapContainerRef.current;
+    if (!container) return;
+    const resizeObserver = new ResizeObserver(() => drawHeatmap(modalHeatmapCanvasRef.current, container));
+    resizeObserver.observe(container);
+    drawHeatmap(modalHeatmapCanvasRef.current, container);
+    return () => resizeObserver.disconnect();
+  }, [activeModal, drawHeatmap, heatmapPoints.length]);
+
+  useEffect(() => {
+    if (activeModal === 'heatmap') {
+      drawHeatmap(modalHeatmapCanvasRef.current, modalHeatmapContainerRef.current);
+    }
+  }, [activeModal, modalZoom, drawHeatmap]);
 
   const resolveReplayFrame = useCallback((samples: TrainingDataPoint[], index: number): ReplayFrame | null => {
     if (!samples.length) return null;
@@ -932,6 +992,117 @@ const DetailedResultsPage = () => {
     ? (analytics.targetsHit / analytics.totalTargets) * 100 
     : 0;
 
+  const renderModalContent = () => {
+    if (!activeModal) return null;
+
+    const titles: Record<'trends' | 'rolling' | 'velocity' | 'heatmap', string> = {
+      trends: 'Performance Trends',
+      rolling: 'Rolling Performance',
+      velocity: 'Velocity & Reaction',
+      heatmap: 'Gaze Heatmap',
+    };
+
+    const modalBody = (() => {
+      if (activeModal === 'trends') {
+        return (
+          <PerformanceLineChart
+            series={filteredSeries}
+            duration={sessionData.duration}
+            hitTimes={hitTimes}
+            zoomLevel={modalZoom}
+            showHitMarkers={visibleMetrics['hit-moment']}
+            constrainHeight
+            tickDensityMultiplier={2}
+          />
+        );
+      }
+      if (activeModal === 'rolling') {
+        return (
+          <PerformanceLineChart
+            series={filteredRollingSeries}
+            duration={sessionData.duration}
+            hitTimes={rollingVisibility['rolling-hits'] ? rollingPerformance.hitTimes : []}
+            zoomLevel={modalZoom}
+            showHitMarkers={rollingVisibility['rolling-hits']}
+            yAxisLabel={`Last ${rollingWindowSeconds}s window`}
+            constrainHeight
+            tickDensityMultiplier={2}
+          />
+        );
+      }
+      if (activeModal === 'velocity') {
+        return (
+          <PerformanceLineChart
+            series={filteredVelocitySeries}
+            duration={sessionData.duration}
+            hitTimes={velocityVisibility['velocity-hits'] ? velocityReaction.hitTimes : []}
+            zoomLevel={modalZoom}
+            showHitMarkers={velocityVisibility['velocity-hits']}
+            yAxisLabel="Speed (px/s) · Reaction (ms)"
+            constrainHeight
+            tickDensityMultiplier={2}
+          />
+        );
+      }
+      return (
+        <div className="heatmap-wrapper" style={{ border: '1px solid #333', borderRadius: '12px', overflow: 'hidden', backgroundColor: '#1a1d24' }}>
+          <div style={{ width: '100%', overflow: 'auto', maxHeight: '70vh', backgroundColor: '#1a1d24' }}>
+            <div
+              className="heatmap-container"
+              ref={modalHeatmapContainerRef}
+              style={{
+                position: 'relative',
+                width: `${modalZoom * 100}%`,
+                height: 'auto',
+                aspectRatio: `${baseScreenWidth} / ${baseScreenHeight}`,
+                transition: 'width 0.1s ease-out',
+              }}
+            >
+              <canvas
+                ref={modalHeatmapCanvasRef}
+                className="heatmap-canvas"
+                style={{ width: '100%', height: '100%', display: 'block' }}
+                aria-label="Gaze heatmap enlarged"
+              />
+              <div className="heatmap-overlay" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+                <div className="heatmap-grid"></div>
+              </div>
+            </div>
+          </div>
+          {heatmapPoints.length > 0 && (
+            <div className="heatmap-legend" style={{ marginTop: '12px', padding: '0 8px 8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#666', marginBottom: '4px', fontWeight: 500 }}>
+                <span>Low Focus</span>
+                <span>High Focus</span>
+              </div>
+              <div style={{ height: '6px', width: '100%', background: 'linear-gradient(to right, hsla(240, 100%, 50%, 0.5), hsla(180, 100%, 50%, 0.6), hsla(120, 100%, 50%, 0.7), hsla(60, 100%, 50%, 0.8), hsla(0, 100%, 50%, 0.9))', borderRadius: '4px' }} />
+            </div>
+          )}
+        </div>
+      );
+    })();
+
+    return (
+      <div className="viz-modal-overlay" role="dialog" aria-modal="true" onClick={closeModal}>
+        <div className="viz-modal detail-card" onClick={e => e.stopPropagation()}>
+          <div className="viz-modal__header">
+            <h3>{titles[activeModal]}</h3>
+            <div className="viz-modal__actions">
+              <span className="zoom-readout">{Math.round(modalZoom * 100)}%</span>
+              <button className="detail-button small ghost" type="button" onClick={closeModal}>
+                닫기
+              </button>
+            </div>
+          </div>
+          <div className="viz-modal__body" onWheel={handleModalWheel}>
+            <p className="viz-modal__hint">마우스 스크롤로 확대/축소할 수 있어요.</p>
+            <div className="viz-modal__content">{modalBody}</div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="detailed-results-page">
       <header className="detailed-header">
@@ -956,64 +1127,81 @@ const DetailedResultsPage = () => {
         
         <div className="viz-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
           
-          {/* Performance Chart with Filter Controls (UPDATED: Added conditional class for 'trends' focus) */}
           <div className={`viz-card detail-card bordered ${focusMetric === 'trends' ? 'focused' : ''}`} style={{ padding: '20px' }}>
-            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px'}}>
-              <h3>Performance Trends</h3>
-              
-              {/* NEW: Filter Toggles */}
-              <div className="visibility-controls" style={{ display: 'flex', gap: '8px' }}>
-                {[
-                  { key: 'gaze-error', label: 'Gaze', color: '#4ecdc4', textColor: '#1a1d24' },
-                  { key: 'mouse-error', label: 'Mouse', color: '#ffb86c', textColor: '#1a1d24' },
-                  { key: 'synchronization', label: 'Sync', color: '#7a5ff5', textColor: '#fff' },
-                  { key: 'hit-moment', label: 'Hits', color: '#871212', textColor: '#fff' }
-                ].map(({ key, label, color, textColor }) => (
-                  <button
-                    key={key}
-                    onClick={() => toggleMetric(key)}
-                    style={{
-                      padding: '4px 12px',
-                      fontSize: '0.8rem',
-                      borderRadius: '16px',
-                      border: `1px solid ${color}`,
-                      backgroundColor: visibleMetrics[key] ? color : 'transparent',
-                      color: visibleMetrics[key] ? textColor : color,
-                      cursor: 'pointer',
-                      fontWeight: 600,
-                      transition: 'all 0.2s',
-                    }}
-                    aria-pressed={visibleMetrics[key]}
-                  >
-                    {label}
-                  </button>
-                ))}
+            <div className="viz-card__header">
+              <div className="viz-card__title">
+                <h3>Performance Trends</h3>
+                <button
+                  type="button"
+                  className="icon-button"
+                  aria-label="Performance Trends 설명"
+                  title={vizDescriptions.trends}
+                >
+                  <Info size={16} />
+                </button>
               </div>
-
-              <ZoomControls 
-                scale={chartZoom}
-                onZoomIn={() => setChartZoom(prev => Math.min(prev + 0.5, 4))}
-                onZoomOut={() => setChartZoom(prev => Math.max(prev - 0.5, 1))}
-                onReset={() => setChartZoom(1)}
-              />
+              <div className="viz-card__actions">
+                <div className="visibility-controls" style={{ display: 'flex', gap: '8px' }}>
+                  {[
+                    { key: 'gaze-error', label: 'Gaze', color: '#4ecdc4', textColor: '#1a1d24' },
+                    { key: 'mouse-error', label: 'Mouse', color: '#ffb86c', textColor: '#1a1d24' },
+                    { key: 'synchronization', label: 'Sync', color: '#7a5ff5', textColor: '#fff' },
+                    { key: 'hit-moment', label: 'Hits', color: '#871212', textColor: '#fff' }
+                  ].map(({ key, label, color, textColor }) => (
+                    <button
+                      key={key}
+                      onClick={() => toggleMetric(key)}
+                      style={{
+                        padding: '4px 12px',
+                        fontSize: '0.8rem',
+                        borderRadius: '16px',
+                        border: `1px solid ${color}`,
+                        backgroundColor: visibleMetrics[key] ? color : 'transparent',
+                        color: visibleMetrics[key] ? textColor : color,
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                        transition: 'all 0.2s',
+                      }}
+                      aria-pressed={visibleMetrics[key]}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <button className="detail-button small ghost icon-button--inline" type="button" onClick={() => openModal('trends')}>
+                  <Maximize2 size={14} />
+                  <span>팝업으로 보기</span>
+                </button>
+              </div>
             </div>
             
-            <div style={{ marginTop: '16px' }}>
+            <div style={{ marginTop: '16px', cursor: 'zoom-in' }} onClick={() => openModal('trends')}>
               <PerformanceLineChart
                 series={filteredSeries}
                 duration={sessionData.duration}
                 hitTimes={hitTimes}
-                zoomLevel={chartZoom}
+                zoomLevel={1}
                 showHitMarkers={visibleMetrics['hit-moment']}
               />
             </div>
           </div>
 
           <div className="viz-card detail-card bordered" style={{ padding: '20px' }}>
-            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px'}}>
-              <h3>Rolling Performance</h3>
-              <div className="visibility-controls" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                {[{ key: 'rolling-accuracy', label: 'Rolling Accuracy', color: '#7c9bff' }, { key: 'rolling-hps', label: 'HPS', color: '#f1c40f' }, { key: 'rolling-hits', label: 'Hit markers', color: '#871212' }].map(({ key, label, color }) => (
+            <div className="viz-card__header">
+              <div className="viz-card__title">
+                <h3>Rolling Performance</h3>
+                <button
+                  type="button"
+                  className="icon-button"
+                  aria-label="Rolling Performance 설명"
+                  title={vizDescriptions.rolling}
+                >
+                  <Info size={16} />
+                </button>
+              </div>
+              <div className="viz-card__actions">
+                <div className="visibility-controls" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {[{ key: 'rolling-accuracy', label: 'Rolling Accuracy', color: '#7c9bff' }, { key: 'rolling-hps', label: 'HPS', color: '#f1c40f' }, { key: 'rolling-hits', label: 'Hits', color: '#d14b4b', isHit: true }].map(({ key, label, color, isHit }) => (
                   <button
                     key={key}
                     onClick={() => toggleRollingMetric(key)}
@@ -1024,29 +1212,32 @@ const DetailedResultsPage = () => {
                       border: `1px solid ${color}`,
                       backgroundColor: rollingVisibility[key] ? color : 'transparent',
                       color: rollingVisibility[key] ? '#0b1021' : color,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
                       cursor: 'pointer',
                       fontWeight: 600,
                       transition: 'all 0.2s',
                     }}
                     aria-pressed={rollingVisibility[key]}
                   >
+                    {isHit && <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: rollingVisibility[key] ? '#0b1021' : color }} />}
                     {label}
                   </button>
                 ))}
+                </div>
+                <button className="detail-button small ghost icon-button--inline" type="button" onClick={() => openModal('rolling')}>
+                  <Maximize2 size={14} />
+                  <span>팝업으로 보기</span>
+                </button>
               </div>
-              <ZoomControls
-                scale={rollingZoom}
-                onZoomIn={() => setRollingZoom(prev => Math.min(prev + 0.5, 4))}
-                onZoomOut={() => setRollingZoom(prev => Math.max(prev - 0.5, 1))}
-                onReset={() => setRollingZoom(1)}
-              />
             </div>
-            <div style={{ marginTop: '16px' }}>
+            <div style={{ marginTop: '16px', cursor: 'zoom-in' }} onClick={() => openModal('rolling')}>
               <PerformanceLineChart
                 series={filteredRollingSeries}
                 duration={sessionData.duration}
                 hitTimes={rollingVisibility['rolling-hits'] ? rollingPerformance.hitTimes : []}
-                zoomLevel={rollingZoom}
+                zoomLevel={1}
                 showHitMarkers={rollingVisibility['rolling-hits']}
                 yAxisLabel={`Last ${rollingWindowSeconds}s window`}
               />
@@ -1054,43 +1245,57 @@ const DetailedResultsPage = () => {
           </div>
 
           <div className="viz-card detail-card bordered" style={{ padding: '20px' }}>
-            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px'}}>
-              <h3>Velocity & Reaction</h3>
-              <div className="visibility-controls" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                {[{ key: 'mouse-velocity', label: 'Mouse Velocity', color: '#4ecdc4' }, { key: 'reaction-time', label: 'Reaction Time', color: '#ff6b6b' }, { key: 'velocity-hits', label: 'Hit markers', color: '#871212' }].map(({ key, label, color }) => (
-                  <button
-                    key={key}
-                    onClick={() => toggleVelocityMetric(key)}
-                    style={{
-                      padding: '4px 12px',
-                      fontSize: '0.8rem',
-                      borderRadius: '16px',
-                      border: `1px solid ${color}`,
-                      backgroundColor: velocityVisibility[key] ? color : 'transparent',
-                      color: velocityVisibility[key] ? '#0b1021' : color,
-                      cursor: 'pointer',
-                      fontWeight: 600,
-                      transition: 'all 0.2s',
-                    }}
-                    aria-pressed={velocityVisibility[key]}
-                  >
-                    {label}
-                  </button>
-                ))}
+            <div className="viz-card__header">
+              <div className="viz-card__title">
+                <h3>Velocity & Reaction</h3>
+                <button
+                  type="button"
+                  className="icon-button"
+                  aria-label="Velocity & Reaction 설명"
+                  title={vizDescriptions.velocity}
+                >
+                  <Info size={16} />
+                </button>
               </div>
-              <ZoomControls
-                scale={velocityZoom}
-                onZoomIn={() => setVelocityZoom(prev => Math.min(prev + 0.5, 4))}
-                onZoomOut={() => setVelocityZoom(prev => Math.max(prev - 0.5, 1))}
-                onReset={() => setVelocityZoom(1)}
-              />
+              <div className="viz-card__actions">
+                <div className="visibility-controls" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {[{ key: 'mouse-velocity', label: 'Mouse Velocity', color: '#4ecdc4' }, { key: 'reaction-time', label: 'Reaction Time', color: '#ff6b6b' }, { key: 'velocity-hits', label: 'Hits', color: '#d14b4b', isHit: true }].map(({ key, label, color, isHit }) => (
+                    <button
+                      key={key}
+                      onClick={() => toggleVelocityMetric(key)}
+                      style={{
+                        padding: '4px 12px',
+                        fontSize: '0.8rem',
+                        borderRadius: '16px',
+                        border: `1px solid ${color}`,
+                        backgroundColor: velocityVisibility[key] ? color : 'transparent',
+                        color: velocityVisibility[key] ? '#0b1021' : color,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                        transition: 'all 0.2s',
+                      }}
+                      aria-pressed={velocityVisibility[key]}
+                    >
+                      {isHit && <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: velocityVisibility[key] ? '#0b1021' : color }} />}
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <button className="detail-button small ghost icon-button--inline" type="button" onClick={() => openModal('velocity')}>
+                  <Maximize2 size={14} />
+                  <span>팝업으로 보기</span>
+                </button>
+              </div>
             </div>
-            <div style={{ marginTop: '16px' }}>
+            <div style={{ marginTop: '16px', cursor: 'zoom-in' }} onClick={() => openModal('velocity')}>
               <PerformanceLineChart
                 series={filteredVelocitySeries}
                 duration={sessionData.duration}
                 hitTimes={velocityVisibility['velocity-hits'] ? velocityReaction.hitTimes : []}
-                zoomLevel={velocityZoom}
+                zoomLevel={1}
                 showHitMarkers={velocityVisibility['velocity-hits']}
                 yAxisLabel="Speed (px/s) · Reaction (ms)"
               />
@@ -1099,23 +1304,33 @@ const DetailedResultsPage = () => {
 
           {/* Heatmap (UPDATED: Added conditional class for 'heatmap' focus) */}
           <div className={`viz-card detail-card bordered ${focusMetric === 'heatmap' ? 'focused' : ''}`} style={{ padding: '20px' }}>
-             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-              <h3>Gaze Heatmap</h3>
-              <ZoomControls 
-                scale={heatmapZoom}
-                onZoomIn={() => setHeatmapZoom(prev => Math.min(prev + 0.25, 2.5))}
-                onZoomOut={() => setHeatmapZoom(prev => Math.max(prev - 0.25, 1))}
-                onReset={() => setHeatmapZoom(1)}
-              />
+             <div className="viz-card__header">
+              <div className="viz-card__title">
+                <h3>Gaze Heatmap</h3>
+                <button
+                  type="button"
+                  className="icon-button"
+                  aria-label="Gaze Heatmap 설명"
+                  title={vizDescriptions.heatmap}
+                >
+                  <Info size={16} />
+                </button>
+              </div>
+              <div className="viz-card__actions">
+                <button className="detail-button small ghost icon-button--inline" type="button" onClick={() => openModal('heatmap')}>
+                  <Maximize2 size={14} />
+                  <span>팝업으로 보기</span>
+                </button>
+              </div>
             </div>
-            <div className="heatmap-wrapper" style={{ marginTop: '16px', border: '1px solid #333', borderRadius: '8px', overflow: 'hidden' }}>
+            <div className="heatmap-wrapper" style={{ marginTop: '16px', border: '1px solid #333', borderRadius: '8px', overflow: 'hidden', cursor: 'zoom-in' }} onClick={() => openModal('heatmap')}>
               <div style={{ width: '100%', overflow: 'auto', maxHeight: '400px', backgroundColor: '#1a1d24' }}>
                 <div 
                   className="heatmap-container"
                   ref={heatmapContainerRef}
                   style={{ 
                     position: 'relative', 
-                    width: `${heatmapZoom * 100}%`,
+                    width: '100%',
                     height: 'auto',
                     aspectRatio: `${baseScreenWidth} / ${baseScreenHeight}`, 
                     transition: 'width 0.2s ease-out'
@@ -1336,6 +1551,8 @@ const DetailedResultsPage = () => {
           </div>
         </div>
       </section>
+
+      {renderModalContent()}
 
       {replayTargetId && (
         <div className="replay-overlay" role="dialog" aria-modal="true">

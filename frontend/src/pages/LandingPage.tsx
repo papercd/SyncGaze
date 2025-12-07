@@ -1,6 +1,6 @@
 // src/pages/LandingPage.tsx
 import { useNavigate } from 'react-router-dom';
-import { useRef } from 'react';
+import { useRef, KeyboardEvent } from 'react';
 import './LandingPage.css';
 import DarkVeilBackground from '../components/DarkVeil';
 import Crosshair from '../components/ScreenCrosshair';
@@ -20,6 +20,15 @@ const LandingPage = () => {
       navigate('/dashboard');
     } else {
       navigate('/auth');
+    }
+  };
+
+  const handleAboutNavigate = () => navigate('/about');
+
+  const handleAboutLinkKeyDown = (event: KeyboardEvent<HTMLParagraphElement>) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      handleAboutNavigate();
     }
   };
 
@@ -56,10 +65,21 @@ const LandingPage = () => {
               }}>
                 {t('landing.cta.learnMore')}
               </button>
-              <button className="secondary-button" onClick={() => navigate('/about')}>
-                {t('landing.cta.aboutUs')}
-              </button>
             </div>
+            <p
+              className="cta-about-link"
+              role="link"
+              tabIndex={0}
+              onClick={handleAboutNavigate}
+              onKeyDown={handleAboutLinkKeyDown}
+            >
+              <span className="cta-about-text">
+                {t('landing.cta.aboutUsDetail.intro')}
+              </span>{' '}
+              <span className="cta-about-highlight">
+                {t('landing.cta.aboutUsDetail.highlight')}
+              </span>
+            </p>
           </div>
         </header>
 

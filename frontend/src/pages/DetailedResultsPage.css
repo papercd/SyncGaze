@@ -25,7 +25,9 @@
   margin: 0;
   font-size: 2.4rem;
   background: linear-gradient(135deg, #7c9bff 0%, #9e7bff 100%);
+  background-clip: text;
   -webkit-background-clip: text;
+  color: transparent;
   -webkit-text-fill-color: transparent;
 }
 
@@ -463,6 +465,7 @@
   inset: -8px 0 -8px 0;
   width: 100%;
   background: transparent;
+  appearance: none;
   -webkit-appearance: none;
 }
 

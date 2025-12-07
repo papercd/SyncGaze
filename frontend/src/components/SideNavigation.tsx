@@ -67,14 +67,20 @@ const SideNavigation = () => {
 
       <div className="side-nav-footer">
         {user && (
-          <div className="user-info">
+          <button
+            type="button"
+            className="user-info"
+            onClick={() => navigate('/account')}
+            aria-label="계정 정보 및 세션 요약 보기"
+          >
             <div className="user-avatar">{user.email?.[0]?.toUpperCase()}</div>
             {!collapsed && (
               <div className="user-details">
                 <div className="user-email">{user.email}</div>
+                <div className="user-meta">계정·세션 요약 보기</div>
               </div>
             )}
-          </div>
+          </button>
         )}
       </div>
     </nav>

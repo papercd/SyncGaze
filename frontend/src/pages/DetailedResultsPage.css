@@ -145,9 +145,32 @@
 
 .card-level {
   display: inline-block;
-  margin-top: 0.35rem;
+  margin-top: 0;
   font-weight: 700;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+}
+
+.detail-level-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 0.35rem;
+}
+
+.detail-percentile {
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+
+.card-percentile {
+  font-weight: 700;
+  font-size: 0.78rem;
+}
+
+.detail-separator {
+  color: #9da5c5;
+  opacity: 0.8;
+  font-size: 0.8rem;
 }
 
 .detail-metric-tooltip {

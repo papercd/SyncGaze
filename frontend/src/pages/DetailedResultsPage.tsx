@@ -125,6 +125,71 @@ const metricDetailLevel = (
   }
 };
 
+type DetailMetricKey = 'accuracy' | 'reaction' | 'gaze' | 'gazeAim' | 'sync' | 'coverage';
+type MetricPercentile = { value: number; label: string };
+
+const clampPercentile = (value: number): number => Math.min(99, Math.max(1, Math.round(value)));
+const formatPercentileLabel = (value: number) => `상위 ${clampPercentile(value)}%`;
+
+const metricPercentile = (
+  key: DetailMetricKey,
+  analytics: PerformanceAnalytics,
+  coverage?: { gaze: number; mouse: number }
+): MetricPercentile => {
+  switch (key) {
+    case 'accuracy': {
+      const ratio = analytics.totalTargets > 0 ? analytics.targetsHit / analytics.totalTargets : 0;
+      if (ratio >= 0.9) return { value: 10, label: formatPercentileLabel(10) };
+      if (ratio >= 0.8) return { value: 20, label: formatPercentileLabel(20) };
+      if (ratio >= 0.65) return { value: 40, label: formatPercentileLabel(40) };
+      if (ratio >= 0.5) return { value: 60, label: formatPercentileLabel(60) };
+      return { value: 85, label: formatPercentileLabel(85) };
+    }
+    case 'reaction': {
+      const v = analytics.avgReactionTime;
+      if (v <= 200) return { value: 10, label: formatPercentileLabel(10) };
+      if (v <= 250) return { value: 25, label: formatPercentileLabel(25) };
+      if (v <= 300) return { value: 50, label: formatPercentileLabel(50) };
+      if (v <= 350) return { value: 70, label: formatPercentileLabel(70) };
+      return { value: 90, label: formatPercentileLabel(90) };
+    }
+    case 'gaze': {
+      const v = analytics.avgGazeReactionTime;
+      if (v <= 200) return { value: 12, label: formatPercentileLabel(12) };
+      if (v <= 250) return { value: 25, label: formatPercentileLabel(25) };
+      if (v <= 350) return { value: 45, label: formatPercentileLabel(45) };
+      if (v <= 450) return { value: 65, label: formatPercentileLabel(65) };
+      return { value: 88, label: formatPercentileLabel(88) };
+    }
+    case 'gazeAim': {
+      const v = analytics.gazeAimLatency;
+      if (v <= 250) return { value: 15, label: formatPercentileLabel(15) };
+      if (v <= 400) return { value: 35, label: formatPercentileLabel(35) };
+      if (v <= 600) return { value: 60, label: formatPercentileLabel(60) };
+      return { value: 85, label: formatPercentileLabel(85) };
+    }
+    case 'sync': {
+      const v = analytics.synchronization;
+      if (v <= 90) return { value: 15, label: formatPercentileLabel(15) };
+      if (v <= 140) return { value: 35, label: formatPercentileLabel(35) };
+      if (v <= 200) return { value: 60, label: formatPercentileLabel(60) };
+      return { value: 85, label: formatPercentileLabel(85) };
+    }
+    case 'coverage': {
+      const gazeCov = coverage?.gaze ?? 0;
+      const mouseCov = coverage?.mouse ?? 0;
+      const avgCov = (gazeCov + mouseCov) / 2;
+      if (avgCov >= 95) return { value: 12, label: formatPercentileLabel(12) };
+      if (avgCov >= 85) return { value: 28, label: formatPercentileLabel(28) };
+      if (avgCov >= 70) return { value: 48, label: formatPercentileLabel(48) };
+      if (avgCov >= 55) return { value: 68, label: formatPercentileLabel(68) };
+      return { value: 88, label: formatPercentileLabel(88) };
+    }
+    default:
+      return { value: 50, label: formatPercentileLabel(50) };
+  }
+};
+
 // --- Zoom Control Component ---
 const ZoomControls = ({ 
   scale, 
@@ -1216,13 +1281,19 @@ const DetailedResultsPage = () => {
             <p className="card-meta">{analytics.targetsHit} / {analytics.totalTargets} targets hit</p>
             {(() => {
               const level = metricDetailLevel('accuracy', analytics);
+              const percentile = metricPercentile('accuracy', analytics);
               return (
                 <>
-                  <span className="card-level" style={level}>{level.label}</span>
+                  <div className="detail-level-row">
+                    <span className="detail-percentile" style={{ color: level.color }}>{percentile.label}</span>
+                    <span className="detail-separator">•</span>
+                    <span className="card-level" style={level}>{level.label}</span>
+                  </div>
                   <div className="detail-metric-tooltip">
                     <Info size={14} />
                     <span>{metricTooltips.accuracy}</span>
                     <span className="card-level" style={level}>{level.label}</span>
+                    <span className="card-percentile" style={{ color: level.color }}>{percentile.label}</span>
                   </div>
                 </>
               );
@@ -1236,13 +1307,19 @@ const DetailedResultsPage = () => {
             <p className="card-meta">Mouse click latency</p>
             {(() => {
               const level = metricDetailLevel('reaction', analytics);
+              const percentile = metricPercentile('reaction', analytics);
               return (
                 <>
-                  <span className="card-level" style={level}>{level.label}</span>
+                  <div className="detail-level-row">
+                    <span className="detail-percentile" style={{ color: level.color }}>{percentile.label}</span>
+                    <span className="detail-separator">•</span>
+                    <span className="card-level" style={level}>{level.label}</span>
+                  </div>
                   <div className="detail-metric-tooltip">
                     <Info size={14} />
                     <span>{metricTooltips.reaction}</span>
                     <span className="card-level" style={level}>{level.label}</span>
+                    <span className="card-percentile" style={{ color: level.color }}>{percentile.label}</span>
                   </div>
                 </>
               );
@@ -1256,13 +1333,19 @@ const DetailedResultsPage = () => {
             <p className="card-meta">Time to first look at target</p>
             {(() => {
               const level = metricDetailLevel('gaze', analytics);
+              const percentile = metricPercentile('gaze', analytics);
               return (
                 <>
-                  <span className="card-level" style={level}>{level.label}</span>
+                  <div className="detail-level-row">
+                    <span className="detail-percentile" style={{ color: level.color }}>{percentile.label}</span>
+                    <span className="detail-separator">•</span>
+                    <span className="card-level" style={level}>{level.label}</span>
+                  </div>
                   <div className="detail-metric-tooltip">
                     <Info size={14} />
                     <span>{metricTooltips.gaze}</span>
                     <span className="card-level" style={level}>{level.label}</span>
+                    <span className="card-percentile" style={{ color: level.color }}>{percentile.label}</span>
                   </div>
                 </>
               );
@@ -1276,13 +1359,19 @@ const DetailedResultsPage = () => {
             <p className="card-meta">Eye vs Hand delay</p>
             {(() => {
               const level = metricDetailLevel('gazeAim', analytics);
+              const percentile = metricPercentile('gazeAim', analytics);
               return (
                 <>
-                  <span className="card-level" style={level}>{level.label}</span>
+                  <div className="detail-level-row">
+                    <span className="detail-percentile" style={{ color: level.color }}>{percentile.label}</span>
+                    <span className="detail-separator">•</span>
+                    <span className="card-level" style={level}>{level.label}</span>
+                  </div>
                   <div className="detail-metric-tooltip">
                     <Info size={14} />
                     <span>{metricTooltips.gazeAim}</span>
                     <span className="card-level" style={level}>{level.label}</span>
+                    <span className="card-percentile" style={{ color: level.color }}>{percentile.label}</span>
                   </div>
                 </>
               );
@@ -1290,19 +1379,25 @@ const DetailedResultsPage = () => {
           </div>
 
            {/* 5. Synchronization */}
-           <div className="detail-card">
+          <div className="detail-card">
             <p className="card-label">Synchronization</p>
             <p className="card-value">{analytics.synchronization.toFixed(0)} px</p>
             <p className="card-meta">Avg distance: Gaze ↔ Mouse</p>
             {(() => {
               const level = metricDetailLevel('sync', analytics);
+              const percentile = metricPercentile('sync', analytics);
               return (
                 <>
-                  <span className="card-level" style={level}>{level.label}</span>
+                  <div className="detail-level-row">
+                    <span className="detail-percentile" style={{ color: level.color }}>{percentile.label}</span>
+                    <span className="detail-separator">•</span>
+                    <span className="card-level" style={level}>{level.label}</span>
+                  </div>
                   <div className="detail-metric-tooltip">
                     <Info size={14} />
                     <span>{metricTooltips.sync}</span>
                     <span className="card-level" style={level}>{level.label}</span>
+                    <span className="card-percentile" style={{ color: level.color }}>{percentile.label}</span>
                   </div>
                 </>
               );
@@ -1316,13 +1411,19 @@ const DetailedResultsPage = () => {
             <p className="card-meta">Tracking coverage</p>
             {(() => {
               const level = metricDetailLevel('coverage', analytics, coverage);
+              const percentile = metricPercentile('coverage', analytics, coverage);
               return (
                 <>
-                  <span className="card-level" style={level}>{level.label}</span>
+                  <div className="detail-level-row">
+                    <span className="detail-percentile" style={{ color: level.color }}>{percentile.label}</span>
+                    <span className="detail-separator">•</span>
+                    <span className="card-level" style={level}>{level.label}</span>
+                  </div>
                   <div className="detail-metric-tooltip">
                     <Info size={14} />
                     <span>{metricTooltips.coverage}</span>
                     <span className="card-level" style={level}>{level.label}</span>
+                    <span className="card-percentile" style={{ color: level.color }}>{percentile.label}</span>
                   </div>
                 </>
               );
@@ -1336,13 +1437,19 @@ const DetailedResultsPage = () => {
             <p className="card-meta">Input coverage</p>
             {(() => {
               const level = metricDetailLevel('coverage', analytics, coverage);
+              const percentile = metricPercentile('coverage', analytics, coverage);
               return (
                 <>
-                  <span className="card-level" style={level}>{level.label}</span>
+                  <div className="detail-level-row">
+                    <span className="detail-percentile" style={{ color: level.color }}>{percentile.label}</span>
+                    <span className="detail-separator">•</span>
+                    <span className="card-level" style={level}>{level.label}</span>
+                  </div>
                   <div className="detail-metric-tooltip">
                     <Info size={14} />
                     <span>{metricTooltips.coverage}</span>
                     <span className="card-level" style={level}>{level.label}</span>
+                    <span className="card-percentile" style={{ color: level.color }}>{percentile.label}</span>
                   </div>
                 </>
               );

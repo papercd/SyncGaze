@@ -281,6 +281,13 @@
   margin-top: 4px;
 }
 
+.metric-percentile {
+  margin-top: 2px;
+  font-weight: 700;
+  color: #7c9bff;
+  font-size: 0.82rem;
+}
+
 /* Visualizations Section */
 .viz-section {
   background: rgba(255, 255, 255, 0.03);

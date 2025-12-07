@@ -36,6 +36,14 @@ type MetricKey =
   | 'hitError'
   | 'sync';
 
+type MetricPercentile = {
+  value: number;
+  label: string;
+};
+
+const clampPercentile = (value: number): number => Math.min(99, Math.max(1, Math.round(value)));
+const formatPercentileLabel = (value: number) => `상위 ${clampPercentile(value)}%`;
+
 const metricLevel = (key: MetricKey, analytics: PerformanceAnalytics) => {
   const badColor = '#ff6b6b';
   const midColor = '#f1c40f';
@@ -80,6 +88,59 @@ const metricLevel = (key: MetricKey, analytics: PerformanceAnalytics) => {
     }
     default:
       return { label: '', color: '#d8ddf3' };
+  }
+};
+
+const metricPercentile = (key: MetricKey, analytics: PerformanceAnalytics): MetricPercentile => {
+  switch (key) {
+    case 'targets': {
+      const ratio = analytics.totalTargets > 0 ? analytics.targetsHit / analytics.totalTargets : 0;
+      if (ratio >= 0.9) return { value: 10, label: formatPercentileLabel(10) };
+      if (ratio >= 0.8) return { value: 20, label: formatPercentileLabel(20) };
+      if (ratio >= 0.65) return { value: 40, label: formatPercentileLabel(40) };
+      if (ratio >= 0.5) return { value: 60, label: formatPercentileLabel(60) };
+      return { value: 85, label: formatPercentileLabel(85) };
+    }
+    case 'avgReaction': {
+      const v = analytics.avgReactionTime;
+      if (v <= 200) return { value: 10, label: formatPercentileLabel(10) };
+      if (v <= 250) return { value: 25, label: formatPercentileLabel(25) };
+      if (v <= 300) return { value: 50, label: formatPercentileLabel(50) };
+      if (v <= 350) return { value: 70, label: formatPercentileLabel(70) };
+      return { value: 90, label: formatPercentileLabel(90) };
+    }
+    case 'gazeReaction': {
+      const v = analytics.avgGazeReactionTime;
+      if (v <= 200) return { value: 12, label: formatPercentileLabel(12) };
+      if (v <= 250) return { value: 25, label: formatPercentileLabel(25) };
+      if (v <= 350) return { value: 45, label: formatPercentileLabel(45) };
+      if (v <= 450) return { value: 65, label: formatPercentileLabel(65) };
+      return { value: 88, label: formatPercentileLabel(88) };
+    }
+    case 'gazeAimLatency': {
+      const v = analytics.gazeAimLatency;
+      if (v <= 250) return { value: 15, label: formatPercentileLabel(15) };
+      if (v <= 400) return { value: 35, label: formatPercentileLabel(35) };
+      if (v <= 600) return { value: 60, label: formatPercentileLabel(60) };
+      return { value: 85, label: formatPercentileLabel(85) };
+    }
+    case 'hitError': {
+      const avgError = (analytics.gazeErrorAtHit + analytics.mouseErrorAtHit) / 2;
+      if (avgError <= 60) return { value: 15, label: formatPercentileLabel(15) };
+      if (avgError <= 90) return { value: 30, label: formatPercentileLabel(30) };
+      if (avgError <= 130) return { value: 55, label: formatPercentileLabel(55) };
+      if (avgError <= 170) return { value: 75, label: formatPercentileLabel(75) };
+      return { value: 90, label: formatPercentileLabel(90) };
+    }
+    case 'sync': {
+      const v = analytics.synchronization;
+      if (v <= 90) return { value: 15, label: formatPercentileLabel(15) };
+      if (v <= 140) return { value: 35, label: formatPercentileLabel(35) };
+      if (v <= 200) return { value: 60, label: formatPercentileLabel(60) };
+      return { value: 85, label: formatPercentileLabel(85) };
+    }
+    default:
+      return { value: 50, label: formatPercentileLabel(50) };
   }
 };
 
@@ -824,174 +885,215 @@ const ResultsPage = () => {
           
           <div className="metrics-grid">
             {/* 1. Targets Hit */}
-            <button
-              type="button"
-              className="metric-card actionable"
-              onClick={() => handleOpenDetailed('targets')}
-            >
-              <div className="metric-icon">
-                <SplinePointer size={32} strokeWidth={2.5}/>   
-              </div>
+            {(() => {
+              const level = metricLevel('targets', analytics);
+              const percentile = metricPercentile('targets', analytics);
+              return (
+                <button
+                  type="button"
+                  className="metric-card actionable"
+                  onClick={() => handleOpenDetailed('targets')}
+                >
+                  <div className="metric-icon">
+                    <SplinePointer size={32} strokeWidth={2.5}/>   
+                  </div>
 
-
-              <div className="metric-content">
-                <div className="metric-value">
-                  {analytics.targetsHit}/{analytics.totalTargets}
-                </div>
-                <div className="metric-label">{t('results.metric.targets.label')}</div>
-                <div className="metric-desc">{t('results.metric.targets.desc')}</div>
-                <div className="metric-tooltip">
-                  <Info size={14} />
-                  <span>{metricTooltips.targets}</span>
-                  <span
-                    className="metric-level"
-                    style={metricLevel('targets', analytics)}
-                  >
-                    {metricLevel('targets', analytics).label}
-                  </span>
-                </div>
-              </div>
-            </button>
+                  <div className="metric-content">
+                    <div className="metric-value">
+                      {analytics.targetsHit}/{analytics.totalTargets}
+                    </div>
+                    <div className="metric-label">{t('results.metric.targets.label')}</div>
+                    <div className="metric-desc">{t('results.metric.targets.desc')}</div>
+                    <div className="metric-tooltip">
+                      <Info size={14} />
+                      <span>{metricTooltips.targets}</span>
+                      <span
+                        className="metric-level"
+                        style={{ color: level.color }}
+                      >
+                        {level.label}
+                      </span>
+                      <span className="metric-percentile">{percentile.label}</span>
+                    </div>
+                  </div>
+                </button>
+              );
+            })()}
 
             {/* 2. Avg Reaction Time (Mouse) */}
-            <button
-              type="button"
-              className="metric-card actionable"
-              onClick={() => handleOpenDetailed('reaction')}
-            >
-              <div className="metric-icon">
-                <Hourglass size={32} strokeWidth={2.5}/>   
-              </div>
-              <div className="metric-content">
-                <div className="metric-value">
-                  {analytics.avgReactionTime.toFixed(0)}ms
-                </div>
-                <div className="metric-label">{t('results.metric.avgReaction.label')}</div>
-                <div className="metric-desc">{t('results.metric.avgReaction.desc')}</div>
-                <div className="metric-tooltip">
-                  <Info size={14} />
-                  <span>{metricTooltips.avgReaction}</span>
-                  <span
-                    className="metric-level"
-                    style={metricLevel('avgReaction', analytics)}
-                  >
-                    {metricLevel('avgReaction', analytics).label}
-                  </span>
-                </div>
-              </div>
-            </button>
+            {(() => {
+              const level = metricLevel('avgReaction', analytics);
+              const percentile = metricPercentile('avgReaction', analytics);
+              return (
+                <button
+                  type="button"
+                  className="metric-card actionable"
+                  onClick={() => handleOpenDetailed('reaction')}
+                >
+                  <div className="metric-icon">
+                    <Hourglass size={32} strokeWidth={2.5}/>   
+                  </div>
+                  <div className="metric-content">
+                    <div className="metric-value">
+                      {analytics.avgReactionTime.toFixed(0)}ms
+                    </div>
+                    <div className="metric-label">{t('results.metric.avgReaction.label')}</div>
+                    <div className="metric-desc">{t('results.metric.avgReaction.desc')}</div>
+                    <div className="metric-tooltip">
+                      <Info size={14} />
+                      <span>{metricTooltips.avgReaction}</span>
+                      <span
+                        className="metric-level"
+                        style={{ color: level.color }}
+                      >
+                        {level.label}
+                      </span>
+                      <span className="metric-percentile">{percentile.label}</span>
+                    </div>
+                  </div>
+                </button>
+              );
+            })()}
 
             {/* 3. Gaze Reaction Time (Eye) - NEW */}
-            <button
-              type="button"
-              className="metric-card actionable"
-              onClick={() => handleOpenDetailed('gaze')}
-            >
-              <div className="metric-icon">
-                <ScanEye size={32} strokeWidth={2.5}/>   
-              </div>
-              <div className="metric-content">
-                <div className="metric-value">
-                  {analytics.avgGazeReactionTime.toFixed(0)}ms
-                </div>
-                <div className="metric-label">{t('results.metric.gazeReaction.label')}</div>
-                <div className="metric-desc">{t('results.metric.gazeReaction.desc')}</div>
-                <div className="metric-tooltip">
-                  <Info size={14} />
-                  <span>{metricTooltips.gazeReaction}</span>
-                  <span
-                    className="metric-level"
-                    style={metricLevel('gazeReaction', analytics)}
-                  >
-                    {metricLevel('gazeReaction', analytics).label}
-                  </span>
-                </div>
-              </div>
-            </button>
+            {(() => {
+              const level = metricLevel('gazeReaction', analytics);
+              const percentile = metricPercentile('gazeReaction', analytics);
+              return (
+                <button
+                  type="button"
+                  className="metric-card actionable"
+                  onClick={() => handleOpenDetailed('gaze')}
+                >
+                  <div className="metric-icon">
+                    <ScanEye size={32} strokeWidth={2.5}/>   
+                  </div>
+                  <div className="metric-content">
+                    <div className="metric-value">
+                      {analytics.avgGazeReactionTime.toFixed(0)}ms
+                    </div>
+                    <div className="metric-label">{t('results.metric.gazeReaction.label')}</div>
+                    <div className="metric-desc">{t('results.metric.gazeReaction.desc')}</div>
+                    <div className="metric-tooltip">
+                      <Info size={14} />
+                      <span>{metricTooltips.gazeReaction}</span>
+                      <span
+                        className="metric-level"
+                        style={{ color: level.color }}
+                      >
+                        {level.label}
+                      </span>
+                      <span className="metric-percentile">{percentile.label}</span>
+                    </div>
+                  </div>
+                </button>
+              );
+            })()}
 
             {/* 4. Gaze-Aim Latency - NEW */}
-            <button
-              type="button"
-              className="metric-card actionable"
-              onClick={() => handleOpenDetailed('reaction')}
-            >
-              <div className="metric-icon">
-                <MousePointerClick size={32} strokeWidth={2.5}/>   
-              </div>
-              <div className="metric-content">
-                <div className="metric-value">
-                  {analytics.gazeAimLatency.toFixed(0)}ms
-                </div>
-                <div className="metric-label">{t('results.metric.gazeAimLatency.label')}</div>
-                <div className="metric-desc">{t('results.metric.gazeAimLatency.desc')}</div>
-                <div className="metric-tooltip">
-                  <Info size={14} />
-                  <span>{metricTooltips.gazeAimLatency}</span>
-                  <span
-                    className="metric-level"
-                    style={metricLevel('gazeAimLatency', analytics)}
-                  >
-                    {metricLevel('gazeAimLatency', analytics).label}
-                  </span>
-                </div>
-              </div>
-            </button>
+            {(() => {
+              const level = metricLevel('gazeAimLatency', analytics);
+              const percentile = metricPercentile('gazeAimLatency', analytics);
+              return (
+                <button
+                  type="button"
+                  className="metric-card actionable"
+                  onClick={() => handleOpenDetailed('reaction')}
+                >
+                  <div className="metric-icon">
+                    <MousePointerClick size={32} strokeWidth={2.5}/>   
+                  </div>
+                  <div className="metric-content">
+                    <div className="metric-value">
+                      {analytics.gazeAimLatency.toFixed(0)}ms
+                    </div>
+                    <div className="metric-label">{t('results.metric.gazeAimLatency.label')}</div>
+                    <div className="metric-desc">{t('results.metric.gazeAimLatency.desc')}</div>
+                    <div className="metric-tooltip">
+                      <Info size={14} />
+                      <span>{metricTooltips.gazeAimLatency}</span>
+                      <span
+                        className="metric-level"
+                        style={{ color: level.color }}
+                      >
+                        {level.label}
+                      </span>
+                      <span className="metric-percentile">{percentile.label}</span>
+                    </div>
+                  </div>
+                </button>
+              );
+            })()}
 
             {/* 5. Errors (Gaze / Mouse) - UPDATED from Accuracy */}
-            <button
-              type="button"
-              className="metric-card actionable"
-              onClick={() => handleOpenDetailed('accuracy')}
-            >
-              <div className="metric-icon">
-                <RulerDimensionLine size={32} strokeWidth={2.5}/>   
-              </div>
-              <div className="metric-content">
-                <div className="metric-value" style={{ fontSize: '1.5rem' }}>
-                   G: {analytics.gazeErrorAtHit.toFixed(0)}px / M: {analytics.mouseErrorAtHit.toFixed(0)}px
-                </div>
-                <div className="metric-label">{t('results.metric.hitError.label')}</div>
-                <div className="metric-desc">{t('results.metric.hitError.desc')}</div>
-                <div className="metric-tooltip">
-                  <Info size={14} />
-                  <span>{metricTooltips.hitError}</span>
-                  <span
-                    className="metric-level"
-                    style={metricLevel('hitError', analytics)}
-                  >
-                    {metricLevel('hitError', analytics).label}
-                  </span>
-                </div>
-              </div>
-            </button>
+            {(() => {
+              const level = metricLevel('hitError', analytics);
+              const percentile = metricPercentile('hitError', analytics);
+              return (
+                <button
+                  type="button"
+                  className="metric-card actionable"
+                  onClick={() => handleOpenDetailed('accuracy')}
+                >
+                  <div className="metric-icon">
+                    <RulerDimensionLine size={32} strokeWidth={2.5}/>   
+                  </div>
+                  <div className="metric-content">
+                    <div className="metric-value" style={{ fontSize: '1.5rem' }}>
+                       G: {analytics.gazeErrorAtHit.toFixed(0)}px / M: {analytics.mouseErrorAtHit.toFixed(0)}px
+                    </div>
+                    <div className="metric-label">{t('results.metric.hitError.label')}</div>
+                    <div className="metric-desc">{t('results.metric.hitError.desc')}</div>
+                    <div className="metric-tooltip">
+                      <Info size={14} />
+                      <span>{metricTooltips.hitError}</span>
+                      <span
+                        className="metric-level"
+                        style={{ color: level.color }}
+                      >
+                        {level.label}
+                      </span>
+                      <span className="metric-percentile">{percentile.label}</span>
+                    </div>
+                  </div>
+                </button>
+              );
+            })()}
 
             {/* 6. Synchronization - NEW */}
-            <button
-              type="button"
-              className="metric-card actionable"
-              onClick={() => handleOpenDetailed('mouse')}
-            >
-              <div className="metric-icon">
-                <Link size={32} strokeWidth={2.5}/>   
-              </div>
-              <div className="metric-content">
-                <div className="metric-value">
-                  {analytics.synchronization.toFixed(0)}px
-                </div>
-                <div className="metric-label">{t('results.metric.sync.label')}</div>
-                <div className="metric-desc">{t('results.metric.sync.desc')}</div>
-                <div className="metric-tooltip">
-                  <Info size={14} />
-                  <span>{metricTooltips.sync}</span>
-                  <span
-                    className="metric-level"
-                    style={metricLevel('sync', analytics)}
-                  >
-                    {metricLevel('sync', analytics).label}
-                  </span>
-                </div>
-              </div>
-            </button>
+            {(() => {
+              const level = metricLevel('sync', analytics);
+              const percentile = metricPercentile('sync', analytics);
+              return (
+                <button
+                  type="button"
+                  className="metric-card actionable"
+                  onClick={() => handleOpenDetailed('mouse')}
+                >
+                  <div className="metric-icon">
+                    <Link size={32} strokeWidth={2.5}/>   
+                  </div>
+                  <div className="metric-content">
+                    <div className="metric-value">
+                      {analytics.synchronization.toFixed(0)}px
+                    </div>
+                    <div className="metric-label">{t('results.metric.sync.label')}</div>
+                    <div className="metric-desc">{t('results.metric.sync.desc')}</div>
+                    <div className="metric-tooltip">
+                      <Info size={14} />
+                      <span>{metricTooltips.sync}</span>
+                      <span
+                        className="metric-level"
+                        style={{ color: level.color }}
+                      >
+                        {level.label}
+                      </span>
+                      <span className="metric-percentile">{percentile.label}</span>
+                    </div>
+                  </div>
+                </button>
+              );
+            })()}
           </div>
         </section>
 

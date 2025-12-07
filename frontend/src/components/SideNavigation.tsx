@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../state/authContext';
-import { Home, Crosshair, Wrench, BarChart3, Trophy, Settings, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Home, Crosshair, Wrench, BarChart3, Trophy, Settings, PanelLeftClose, PanelLeftOpen, FileText } from 'lucide-react';
 import LanguageToggle from './LanguageToggle';
 import './SideNavigation.css';
 import { useState } from 'react';
@@ -22,6 +22,7 @@ const SideNavigation = () => {
     { path: '/dashboard', icon: Home, label: 'Dashboard', protected: true },
     { path: '/calibration', icon: Crosshair, label: 'Train', protected: true },
     { path: '/sessions', icon: BarChart3, label: 'Your sessions', protected: true },
+    { path: '/report', icon: FileText, label: 'Report', protected: true },
     { path: '/leaderboard', icon: Trophy, label: 'Leaderboard', protected: true },
     { path: '/settings', icon: Settings, label: 'Settings', protected: true },
   ];

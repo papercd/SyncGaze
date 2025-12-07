@@ -94,6 +94,15 @@
   width: 100%;
 }
 
+.reaction-stat .stat-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
 .stat-top-row {
   display: flex;
   align-items: center;
@@ -141,6 +150,41 @@
 .medal-rank {
   font-weight: 700;
   color: inherit;
+}
+
+.stat-congrats {
+  min-width: 180px;
+  padding: 0.5rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.stat-congrats[data-rank="1"] {
+  border-color: rgba(212, 175, 55, 0.6);
+  box-shadow: 0 0 0 1px rgba(212, 175, 55, 0.35);
+}
+
+.stat-congrats[data-rank="2"] {
+  border-color: rgba(192, 192, 192, 0.6);
+  box-shadow: 0 0 0 1px rgba(192, 192, 192, 0.35);
+}
+
+.stat-congrats[data-rank="3"] {
+  border-color: rgba(205, 127, 50, 0.6);
+  box-shadow: 0 0 0 1px rgba(205, 127, 50, 0.35);
+}
+
+.stat-congrats__title {
+  margin: 0 0 4px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.stat-congrats__meta {
+  margin: 0;
+  color: #d8ddf3;
+  font-size: 0.9rem;
 }
 
 .stat-subtext {

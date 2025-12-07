@@ -9,7 +9,8 @@ import { getUserReports } from '../services/reportService';
 import { collection, getDocs, limit, orderBy, query } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import type { LeaderboardEntry } from '../utils/remoteSessions';
-import { Crosshair, Trophy, Settings, Hourglass, MousePointerClick, RotateCcw, Flag, Award, Timer } from 'lucide-react';
+import { calculatePerformanceAnalytics } from '../utils/analytics';
+import { Crosshair, Trophy, Settings, Hourglass, MousePointerClick, RotateCcw, Flag, Award, Timer, ScanEye } from 'lucide-react';
 
 const DashboardPage = () => {
   const navigate = useNavigate();
@@ -21,6 +22,7 @@ const DashboardPage = () => {
   const hasRealSession = recentSessions.some(session => !session.id.startsWith('mock-'));
   const isNewUser = isAnonymousSession || !hasRealSession;
   const [reactionRank, setReactionRank] = useState<number | null>(null);
+  const [reactionRankSince, setReactionRankSince] = useState<string | null>(null);
 
   useEffect(() => {
     const loadReports = async () => {
@@ -154,7 +156,14 @@ const DashboardPage = () => {
         const snapshot = await getDocs(q);
         const data = snapshot.docs.map(doc => doc.data() as LeaderboardEntry);
         const foundIndex = data.findIndex(entry => entry.uid === user.uid);
-        setReactionRank(foundIndex >= 0 ? foundIndex + 1 : null);
+        if (foundIndex >= 0) {
+          const entry = data[foundIndex];
+          setReactionRank(foundIndex + 1);
+          setReactionRankSince(entry.sessionDate ?? null);
+        } else {
+          setReactionRank(null);
+          setReactionRankSince(null);
+        }
       } catch (error) {
         console.error('Failed to fetch reaction leaderboard', error);
       }
@@ -182,22 +191,34 @@ const DashboardPage = () => {
             <div className ="stat-icon">
               <Hourglass size={32} strokeWidth={2.5}/>   
             </div>
-            <div className="stat-info">
-              <div className="stat-top-row">
-                <h3>{bestReactionSession ? `${bestReactionSession.avgReactionTime.toFixed(0)}ms` : '--'}</h3>
-                {reactionPercentile && (
-                  <span className="stat-pill" style={{ color: reactionPercentile.color, borderColor: reactionPercentile.color }}>
-                    {reactionPercentile.label}
-                  </span>
-                )}
-                {reactionRank && reactionRank <= 3 && (
-                  <span className="stat-medal" data-rank={reactionRank}>
-                    <Award size={18} color={reactionRank === 1 ? '#d4af37' : reactionRank === 2 ? '#c0c0c0' : '#cd7f32'} />
-                    <span className="medal-rank">#{reactionRank}</span>
-                  </span>
-                )}
+            <div className="stat-inner">
+              <div className="stat-info">
+                <div className="stat-top-row">
+                  <h3>{bestReactionSession ? `${bestReactionSession.avgReactionTime.toFixed(0)}ms` : '--'}</h3>
+                  {reactionPercentile && (
+                    <span className="stat-pill" style={{ color: reactionPercentile.color, borderColor: reactionPercentile.color }}>
+                      {reactionPercentile.label}
+                    </span>
+                  )}
+                  {reactionRank && reactionRank <= 3 && (
+                    <span className="stat-medal" data-rank={reactionRank}>
+                      <Award size={18} color={reactionRank === 1 ? '#d4af37' : reactionRank === 2 ? '#c0c0c0' : '#cd7f32'} />
+                      <span className="medal-rank">#{reactionRank}</span>
+                    </span>
+                  )}
+                </div>
+                <p>{t('dashboard.reaction.label', 'Reaction Time (best)')}</p>
               </div>
-              <p>{t('dashboard.reaction.label', 'Reaction Time (best)')}</p>
+
+              {reactionRank && reactionRank <= 3 && (
+                <div className="stat-congrats" data-rank={reactionRank}>
+                  <p className="stat-congrats__title">축하합니다! 전체서버 {reactionRank}등 랭커 입니다!</p>
+                  <p className="stat-congrats__meta">
+                    현재 #{reactionRank}위를 유지중
+                    {reactionRankSince ? ` (since ${new Date(reactionRankSince).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})` : ''}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </section>

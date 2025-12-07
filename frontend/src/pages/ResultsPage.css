@@ -225,11 +225,19 @@
   font-weight: 600;
 }
 
+.metric-footer {
+  margin-top: auto;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
 .metric-desc {
   font-size: 0.85rem;
   color: #9da5c5;
   line-height: 1.4;
-  margin-top: auto;
 }
 
 .metric-tooltip {
@@ -284,8 +292,21 @@
 .metric-percentile {
   margin-top: 2px;
   font-weight: 700;
-  color: #7c9bff;
+  color: inherit;
   font-size: 0.82rem;
+}
+
+.metric-percentile-inline {
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.metric-percentile-badge {
+  position: left;
+  top: 0;
+  right: 0;
+  font-weight: 800;
+  font-size: 0.90rem;
 }
 
 /* Visualizations Section */

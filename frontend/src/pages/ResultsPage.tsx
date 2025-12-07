@@ -899,11 +899,16 @@ const ResultsPage = () => {
                   </div>
 
                   <div className="metric-content">
+                    <div className="metric-percentile-badge" style={{ color: level.color }}>
+                      {percentile.label}
+                    </div>
                     <div className="metric-value">
                       {analytics.targetsHit}/{analytics.totalTargets}
                     </div>
                     <div className="metric-label">{t('results.metric.targets.label')}</div>
-                    <div className="metric-desc">{t('results.metric.targets.desc')}</div>
+                    <div className="metric-footer">
+                      <div className="metric-desc">{t('results.metric.targets.desc')}</div>
+                    </div>
                     <div className="metric-tooltip">
                       <Info size={14} />
                       <span>{metricTooltips.targets}</span>
@@ -913,7 +918,9 @@ const ResultsPage = () => {
                       >
                         {level.label}
                       </span>
-                      <span className="metric-percentile">{percentile.label}</span>
+                      <span className="metric-percentile" style={{ color: level.color }}>
+                        {percentile.label}
+                      </span>
                     </div>
                   </div>
                 </button>
@@ -934,11 +941,16 @@ const ResultsPage = () => {
                     <Hourglass size={32} strokeWidth={2.5}/>   
                   </div>
                   <div className="metric-content">
+                    <div className="metric-percentile-badge" style={{ color: level.color }}>
+                      {percentile.label}
+                    </div>
                     <div className="metric-value">
                       {analytics.avgReactionTime.toFixed(0)}ms
                     </div>
                     <div className="metric-label">{t('results.metric.avgReaction.label')}</div>
-                    <div className="metric-desc">{t('results.metric.avgReaction.desc')}</div>
+                    <div className="metric-footer">
+                      <div className="metric-desc">{t('results.metric.avgReaction.desc')}</div>
+                    </div>
                     <div className="metric-tooltip">
                       <Info size={14} />
                       <span>{metricTooltips.avgReaction}</span>
@@ -948,7 +960,9 @@ const ResultsPage = () => {
                       >
                         {level.label}
                       </span>
-                      <span className="metric-percentile">{percentile.label}</span>
+                      <span className="metric-percentile" style={{ color: level.color }}>
+                        {percentile.label}
+                      </span>
                     </div>
                   </div>
                 </button>
@@ -969,11 +983,16 @@ const ResultsPage = () => {
                     <ScanEye size={32} strokeWidth={2.5}/>   
                   </div>
                   <div className="metric-content">
+                    <div className="metric-percentile-badge" style={{ color: level.color }}>
+                      {percentile.label}
+                    </div>
                     <div className="metric-value">
                       {analytics.avgGazeReactionTime.toFixed(0)}ms
                     </div>
                     <div className="metric-label">{t('results.metric.gazeReaction.label')}</div>
-                    <div className="metric-desc">{t('results.metric.gazeReaction.desc')}</div>
+                    <div className="metric-footer">
+                      <div className="metric-desc">{t('results.metric.gazeReaction.desc')}</div>
+                    </div>
                     <div className="metric-tooltip">
                       <Info size={14} />
                       <span>{metricTooltips.gazeReaction}</span>
@@ -983,7 +1002,9 @@ const ResultsPage = () => {
                       >
                         {level.label}
                       </span>
-                      <span className="metric-percentile">{percentile.label}</span>
+                      <span className="metric-percentile" style={{ color: level.color }}>
+                        {percentile.label}
+                      </span>
                     </div>
                   </div>
                 </button>
@@ -1004,11 +1025,16 @@ const ResultsPage = () => {
                     <MousePointerClick size={32} strokeWidth={2.5}/>   
                   </div>
                   <div className="metric-content">
+                    <div className="metric-percentile-badge" style={{ color: level.color }}>
+                      {percentile.label}
+                    </div>
                     <div className="metric-value">
                       {analytics.gazeAimLatency.toFixed(0)}ms
                     </div>
                     <div className="metric-label">{t('results.metric.gazeAimLatency.label')}</div>
-                    <div className="metric-desc">{t('results.metric.gazeAimLatency.desc')}</div>
+                    <div className="metric-footer">
+                      <div className="metric-desc">{t('results.metric.gazeAimLatency.desc')}</div>
+                    </div>
                     <div className="metric-tooltip">
                       <Info size={14} />
                       <span>{metricTooltips.gazeAimLatency}</span>
@@ -1018,7 +1044,9 @@ const ResultsPage = () => {
                       >
                         {level.label}
                       </span>
-                      <span className="metric-percentile">{percentile.label}</span>
+                      <span className="metric-percentile" style={{ color: level.color }}>
+                        {percentile.label}
+                      </span>
                     </div>
                   </div>
                 </button>
@@ -1039,11 +1067,16 @@ const ResultsPage = () => {
                     <RulerDimensionLine size={32} strokeWidth={2.5}/>   
                   </div>
                   <div className="metric-content">
+                    <div className="metric-percentile-badge" style={{ color: level.color }}>
+                      {percentile.label}
+                    </div>
                     <div className="metric-value" style={{ fontSize: '1.5rem' }}>
                        G: {analytics.gazeErrorAtHit.toFixed(0)}px / M: {analytics.mouseErrorAtHit.toFixed(0)}px
                     </div>
                     <div className="metric-label">{t('results.metric.hitError.label')}</div>
-                    <div className="metric-desc">{t('results.metric.hitError.desc')}</div>
+                    <div className="metric-footer">
+                      <div className="metric-desc">{t('results.metric.hitError.desc')}</div>
+                    </div>
                     <div className="metric-tooltip">
                       <Info size={14} />
                       <span>{metricTooltips.hitError}</span>
@@ -1053,7 +1086,9 @@ const ResultsPage = () => {
                       >
                         {level.label}
                       </span>
-                      <span className="metric-percentile">{percentile.label}</span>
+                      <span className="metric-percentile" style={{ color: level.color }}>
+                        {percentile.label}
+                      </span>
                     </div>
                   </div>
                 </button>
@@ -1074,11 +1109,16 @@ const ResultsPage = () => {
                     <Link size={32} strokeWidth={2.5}/>   
                   </div>
                   <div className="metric-content">
+                    <div className="metric-percentile-badge" style={{ color: level.color }}>
+                      {percentile.label}
+                    </div>
                     <div className="metric-value">
                       {analytics.synchronization.toFixed(0)}px
                     </div>
                     <div className="metric-label">{t('results.metric.sync.label')}</div>
-                    <div className="metric-desc">{t('results.metric.sync.desc')}</div>
+                    <div className="metric-footer">
+                      <div className="metric-desc">{t('results.metric.sync.desc')}</div>
+                    </div>
                     <div className="metric-tooltip">
                       <Info size={14} />
                       <span>{metricTooltips.sync}</span>
@@ -1088,7 +1128,9 @@ const ResultsPage = () => {
                       >
                         {level.label}
                       </span>
-                      <span className="metric-percentile">{percentile.label}</span>
+                      <span className="metric-percentile" style={{ color: level.color }}>
+                        {percentile.label}
+                      </span>
                     </div>
                   </div>
                 </button>

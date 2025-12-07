@@ -28,6 +28,61 @@ const metricTooltips: Record<string, string> = {
   sync: '시선-마우스 동기화는 시선이 향한 곳으로 총구가 따라가는 정도로, 플릭·트래킹 일관성을 높입니다.',
 };
 
+type MetricKey =
+  | 'targets'
+  | 'avgReaction'
+  | 'gazeReaction'
+  | 'gazeAimLatency'
+  | 'hitError'
+  | 'sync';
+
+const metricLevel = (key: MetricKey, analytics: PerformanceAnalytics) => {
+  const badColor = '#ff6b6b';
+  const midColor = '#f1c40f';
+  const goodColor = '#66d9ff';
+
+  switch (key) {
+    case 'targets': {
+      const ratio = analytics.totalTargets > 0 ? analytics.targetsHit / analytics.totalTargets : 0;
+      if (ratio >= 0.8) return { label: '상위권 명중률', color: goodColor };
+      if (ratio >= 0.5) return { label: '보통 명중률', color: midColor };
+      return { label: '명중률 개선 필요', color: badColor };
+    }
+    case 'avgReaction': {
+      const v = analytics.avgReactionTime;
+      if (v <= 300) return { label: '반응 속도 우수', color: goodColor };
+      if (v <= 600) return { label: '평균 반응 속도', color: midColor };
+      return { label: '반응 속도 개선 필요', color: badColor };
+    }
+    case 'gazeReaction': {
+      const v = analytics.avgGazeReactionTime;
+      if (v <= 250) return { label: '시선 포착 빠름', color: goodColor };
+      if (v <= 450) return { label: '시선 포착 보통', color: midColor };
+      return { label: '시선 포착 지연', color: badColor };
+    }
+    case 'gazeAimLatency': {
+      const v = analytics.gazeAimLatency;
+      if (v <= 300) return { label: '눈-손 딜레이 짧음', color: goodColor };
+      if (v <= 600) return { label: '눈-손 딜레이 보통', color: midColor };
+      return { label: '딜레이 개선 필요', color: badColor };
+    }
+    case 'hitError': {
+      const avgError = (analytics.gazeErrorAtHit + analytics.mouseErrorAtHit) / 2;
+      if (avgError <= 80) return { label: '정확도 우수', color: goodColor };
+      if (avgError <= 140) return { label: '정확도 보통', color: midColor };
+      return { label: '정확도 개선 필요', color: badColor };
+    }
+    case 'sync': {
+      const v = analytics.synchronization;
+      if (v <= 120) return { label: '시선-마우스 잘 맞음', color: goodColor };
+      if (v <= 200) return { label: '동기화 보통', color: midColor };
+      return { label: '동기화 개선 필요', color: badColor };
+    }
+    default:
+      return { label: '', color: '#d8ddf3' };
+  }
+};
+
 interface Analytics {
   totalTargets: number;
   targetsHit: number;
@@ -788,6 +843,12 @@ const ResultsPage = () => {
                 <div className="metric-tooltip">
                   <Info size={14} />
                   <span>{metricTooltips.targets}</span>
+                  <span
+                    className="metric-level"
+                    style={metricLevel('targets', analytics)}
+                  >
+                    {metricLevel('targets', analytics).label}
+                  </span>
                 </div>
               </div>
             </button>
@@ -810,6 +871,12 @@ const ResultsPage = () => {
                 <div className="metric-tooltip">
                   <Info size={14} />
                   <span>{metricTooltips.avgReaction}</span>
+                  <span
+                    className="metric-level"
+                    style={metricLevel('avgReaction', analytics)}
+                  >
+                    {metricLevel('avgReaction', analytics).label}
+                  </span>
                 </div>
               </div>
             </button>
@@ -832,6 +899,12 @@ const ResultsPage = () => {
                 <div className="metric-tooltip">
                   <Info size={14} />
                   <span>{metricTooltips.gazeReaction}</span>
+                  <span
+                    className="metric-level"
+                    style={metricLevel('gazeReaction', analytics)}
+                  >
+                    {metricLevel('gazeReaction', analytics).label}
+                  </span>
                 </div>
               </div>
             </button>
@@ -854,6 +927,12 @@ const ResultsPage = () => {
                 <div className="metric-tooltip">
                   <Info size={14} />
                   <span>{metricTooltips.gazeAimLatency}</span>
+                  <span
+                    className="metric-level"
+                    style={metricLevel('gazeAimLatency', analytics)}
+                  >
+                    {metricLevel('gazeAimLatency', analytics).label}
+                  </span>
                 </div>
               </div>
             </button>
@@ -876,6 +955,12 @@ const ResultsPage = () => {
                 <div className="metric-tooltip">
                   <Info size={14} />
                   <span>{metricTooltips.hitError}</span>
+                  <span
+                    className="metric-level"
+                    style={metricLevel('hitError', analytics)}
+                  >
+                    {metricLevel('hitError', analytics).label}
+                  </span>
                 </div>
               </div>
             </button>
@@ -898,6 +983,12 @@ const ResultsPage = () => {
                 <div className="metric-tooltip">
                   <Info size={14} />
                   <span>{metricTooltips.sync}</span>
+                  <span
+                    className="metric-level"
+                    style={metricLevel('sync', analytics)}
+                  >
+                    {metricLevel('sync', analytics).label}
+                  </span>
                 </div>
               </div>
             </button>

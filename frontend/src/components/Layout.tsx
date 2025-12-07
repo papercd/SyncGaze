@@ -1,5 +1,5 @@
 import { ReactNode, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../state/authContext';
 import { useTrackingSession } from '../state/trackingSessionContext';
 import { useTranslation } from '../state/languageContext';
@@ -12,9 +12,11 @@ interface LayoutProps {
 
 const Layout = ({ children }: LayoutProps) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, signOut } = useAuth();
   const { calibrationResult, resetState } = useTrackingSession();
   const { t } = useTranslation();
+  const hideSidebar = location.pathname.startsWith('/calibration');
 
   const handleLogout = async () => {
     try {
@@ -46,7 +48,7 @@ const Layout = ({ children }: LayoutProps) => {
   }, [calibrationResult, t]);
 
   return (
-    <div className="app-layout">
+    <div className={`app-layout ${hideSidebar ? 'app-layout--no-sidebar' : ''}`}>
       {/* Top bar spanning full width */}
       <header className="app-header">
         <button 
@@ -69,10 +71,10 @@ const Layout = ({ children }: LayoutProps) => {
       </header>
 
       {/* Sidebar below the header */}
-      <SideNavigation />
+      {!hideSidebar && <SideNavigation />}
       
       {/* Main content */}
-      <main className="layout-content">
+      <main className={`layout-content ${hideSidebar ? 'layout-content--full' : ''}`}>
         {children}
       </main>
     </div>

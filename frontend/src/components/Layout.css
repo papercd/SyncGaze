@@ -83,6 +83,17 @@
   margin-top: 70px; /* Match header height */
   min-height: calc(100vh - 70px);
   overflow-x: hidden;
+  transition: margin-left 0.3s ease;
+}
+
+.side-navigation.collapsed ~ .layout-content {
+  margin-left: 88px;
+}
+
+.app-layout--no-sidebar .layout-content,
+.layout-content--full {
+  margin-left: 0 !important;
+  width: 100%;
 }
 
 /* Responsive Design */

@@ -71,8 +71,8 @@ export const translations: Record<string, Record<Language, string>> = {
     en: 'e.g., Escape from Tarkov Arena',
   },
   'survey.q5.title': {
-    ko: '에임 트레이너나 연습 모드를 얼마나 활용하고 있나요?',
-    en: 'How often do you use aim trainers or practice modes?',
+    ko: '에임 트레이너나 연습 모드를 사용해본 적이 있나요?',
+    en: 'Have you ever used aim trainers or practice modes?',
   },
   'survey.q5.yes': { ko: '예', en: 'Yes' },
   'survey.q5.no': { ko: '아니오', en: 'No' },

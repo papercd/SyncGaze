@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FileText, Sparkles } from 'lucide-react';
 import { useAuth } from '../state/authContext';
-import { useTrackingSession } from '../state/trackingSessionContext';
+import { useTrackingSession, type TrainingSessionSummary } from '../state/trackingSessionContext';
 import { generatePerformanceReport, saveReport, getUserReports, PerformanceReport } from '../services/reportService';
 import { predictScore } from '../services/predictionService';
 import './ReportPage.css';
@@ -12,7 +12,7 @@ const ReportPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const { activeSession, calibrationResult } = useTrackingSession();
+  const { activeSession, calibrationResult, recentSessions } = useTrackingSession();
   const reportSessionId = (location.state as { sessionId?: string } | null)?.sessionId;
 
   const [isGenerating, setIsGenerating] = useState(false);
@@ -169,12 +169,44 @@ const ReportPage = () => {
   };
 
   const renderReportContent = (report: PerformanceReport) => {
+    const sessionInfo: TrainingSessionSummary | undefined = recentSessions.find(s => s.id === report.sessionId);
+    const sessionDateText = sessionInfo
+      ? new Date(sessionInfo.date).toLocaleString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })
+      : null;
+    const sessionDurationText = sessionInfo ? `${sessionInfo.duration}s` : null;
+    const sessionAccuracyText = sessionInfo ? `${sessionInfo.accuracy.toFixed(1)}%` : null;
+    const sessionTargetsText = sessionInfo ? `${sessionInfo.targetsHit}/${sessionInfo.totalTargets}` : null;
+
     return (
       <div className="report-content">
         <div className="report-header">
           <h2>성능 분석 리포트</h2>
           <div className="report-meta">
             <span>📅 {formatReportDate(report.generatedAt, true)}</span>
+          </div>
+          <div className="report-session-meta">
+            <div className="meta-row">
+              <span className="meta-label">{'세션 ID'}</span>
+              <span className="meta-value">{report.sessionId}</span>
+            </div>
+            <div className="meta-grid">
+              <div className="meta-item">
+                <span className="meta-label">날짜</span>
+                <span className="meta-value">{sessionDateText ?? '-'}</span>
+              </div>
+              <div className="meta-item">
+                <span className="meta-label">세션 길이</span>
+                <span className="meta-value">{sessionDurationText ?? '-'}</span>
+              </div>
+              <div className="meta-item">
+                <span className="meta-label">명중</span>
+                <span className="meta-value">{sessionTargetsText ?? '-'}</span>
+              </div>
+              <div className="meta-item">
+                <span className="meta-label">정확도</span>
+                <span className="meta-value">{sessionAccuracyText ?? '-'}</span>
+              </div>
+            </div>
           </div>
         </div>
 

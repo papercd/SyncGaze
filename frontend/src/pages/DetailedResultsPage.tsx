@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { Info, Maximize2 } from 'lucide-react';
 import './DetailedResultsPage.css';
 import {
   CalibrationResult,
@@ -9,6 +10,7 @@ import {
 } from '../state/trackingSessionContext';
 import { loadStoredCalibration, loadStoredSession, persistLatestSession } from '../utils/resultsStorage';
 import { calculatePerformanceAnalytics, generateErrorTimeSeries } from '../utils/analytics';
+import type { PerformanceAnalytics } from '../utils/analytics';
 
 // UPDATED: Added 'trends' and 'heatmap' to focus metrics
 type FocusMetric = 'accuracy' | 'targets' | 'reaction' | 'gaze' | 'mouse' | 'trends' | 'heatmap';
@@ -59,6 +61,68 @@ type ReplayFrame = TrainingDataPoint & {
   displayGazeY: number | null;
   displayMouseX: number | null;
   displayMouseY: number | null;
+};
+
+const metricTooltips: Record<string, string> = {
+  accuracy: '명중률은 교전 성공률과 직접 연결됩니다. 높은 명중률은 라운드 승률을 끌어올립니다.',
+  reaction: '반응 속도가 빠를수록 첫 발 이점을 확보해 피킹/트레이드에서 유리합니다.',
+  gaze: '시선 반응은 목표 포착 속도를 의미하며, 인게임 정보 수집과 트래킹 정확도를 좌우합니다.',
+  gazeAim: '눈-손 딜레이가 짧을수록 시선과 사격이 한몸처럼 맞물려 교전 시간이 줄어듭니다.',
+  sync: '시선-마우스 동기화는 시선이 향한 곳으로 총구가 따라가는 정도로, 플릭·트래킹 일관성을 높입니다.',
+  coverage: '높은 커버리지는 더 신뢰도 높은 데이터와 정확한 분석을 보장합니다.',
+};
+
+const metricDetailLevel = (
+  key: 'accuracy' | 'reaction' | 'gaze' | 'gazeAim' | 'sync' | 'coverage',
+  analytics: PerformanceAnalytics,
+  coverage?: { gaze: number; mouse: number },
+) => {
+  const badColor = '#ff6b6b';
+  const midColor = '#f1c40f';
+  const goodColor = '#66d9ff';
+
+  switch (key) {
+    case 'accuracy': {
+      const ratio = analytics.totalTargets > 0 ? analytics.targetsHit / analytics.totalTargets : 0;
+      if (ratio >= 0.8) return { label: '상위권 명중률', color: goodColor };
+      if (ratio >= 0.5) return { label: '보통 명중률', color: midColor };
+      return { label: '명중률 개선 필요', color: badColor };
+    }
+    case 'reaction': {
+      const v = analytics.avgReactionTime;
+      if (v <= 300) return { label: '반응 속도 우수', color: goodColor };
+      if (v <= 600) return { label: '평균 반응 속도', color: midColor };
+      return { label: '반응 속도 개선 필요', color: badColor };
+    }
+    case 'gaze': {
+      const v = analytics.avgGazeReactionTime;
+      if (v <= 250) return { label: '시선 포착 빠름', color: goodColor };
+      if (v <= 450) return { label: '시선 포착 보통', color: midColor };
+      return { label: '시선 포착 지연', color: badColor };
+    }
+    case 'gazeAim': {
+      const v = analytics.gazeAimLatency;
+      if (v <= 300) return { label: '눈-손 딜레이 짧음', color: goodColor };
+      if (v <= 600) return { label: '눈-손 딜레이 보통', color: midColor };
+      return { label: '딜레이 개선 필요', color: badColor };
+    }
+    case 'sync': {
+      const v = analytics.synchronization;
+      if (v <= 120) return { label: '시선-마우스 잘 맞음', color: goodColor };
+      if (v <= 200) return { label: '동기화 보통', color: midColor };
+      return { label: '동기화 개선 필요', color: badColor };
+    }
+    case 'coverage': {
+      const gazeCov = coverage?.gaze ?? 0;
+      const mouseCov = coverage?.mouse ?? 0;
+      const avgCov = (gazeCov + mouseCov) / 2;
+      if (avgCov >= 90) return { label: '데이터 커버 우수', color: goodColor };
+      if (avgCov >= 70) return { label: '데이터 커버 보통', color: midColor };
+      return { label: '데이터 커버 부족', color: badColor };
+    }
+    default:
+      return { label: '', color: '#d8ddf3' };
+  }
 };
 
 // --- Zoom Control Component ---
@@ -1150,6 +1214,19 @@ const DetailedResultsPage = () => {
             <p className="card-label">Hit Rate (Accuracy)</p>
             <p className="card-value">{accuracyPct.toFixed(1)}%</p>
             <p className="card-meta">{analytics.targetsHit} / {analytics.totalTargets} targets hit</p>
+            {(() => {
+              const level = metricDetailLevel('accuracy', analytics);
+              return (
+                <>
+                  <span className="card-level" style={level}>{level.label}</span>
+                  <div className="detail-metric-tooltip">
+                    <Info size={14} />
+                    <span>{metricTooltips.accuracy}</span>
+                    <span className="card-level" style={level}>{level.label}</span>
+                  </div>
+                </>
+              );
+            })()}
           </div>
 
           {/* 2. Avg Reaction Time */}
@@ -1157,6 +1234,19 @@ const DetailedResultsPage = () => {
             <p className="card-label">Avg Reaction Time</p>
             <p className="card-value">{analytics.avgReactionTime.toFixed(0)} ms</p>
             <p className="card-meta">Mouse click latency</p>
+            {(() => {
+              const level = metricDetailLevel('reaction', analytics);
+              return (
+                <>
+                  <span className="card-level" style={level}>{level.label}</span>
+                  <div className="detail-metric-tooltip">
+                    <Info size={14} />
+                    <span>{metricTooltips.reaction}</span>
+                    <span className="card-level" style={level}>{level.label}</span>
+                  </div>
+                </>
+              );
+            })()}
           </div>
 
           {/* 3. Gaze Reaction */}
@@ -1164,6 +1254,19 @@ const DetailedResultsPage = () => {
             <p className="card-label">Gaze Reaction</p>
             <p className="card-value">{analytics.avgGazeReactionTime.toFixed(0)} ms</p>
             <p className="card-meta">Time to first look at target</p>
+            {(() => {
+              const level = metricDetailLevel('gaze', analytics);
+              return (
+                <>
+                  <span className="card-level" style={level}>{level.label}</span>
+                  <div className="detail-metric-tooltip">
+                    <Info size={14} />
+                    <span>{metricTooltips.gaze}</span>
+                    <span className="card-level" style={level}>{level.label}</span>
+                  </div>
+                </>
+              );
+            })()}
           </div>
 
           {/* 4. Gaze-Aim Latency */}
@@ -1171,6 +1274,19 @@ const DetailedResultsPage = () => {
             <p className="card-label">Gaze-Aim Latency</p>
             <p className="card-value">{analytics.gazeAimLatency.toFixed(0)} ms</p>
             <p className="card-meta">Eye vs Hand delay</p>
+            {(() => {
+              const level = metricDetailLevel('gazeAim', analytics);
+              return (
+                <>
+                  <span className="card-level" style={level}>{level.label}</span>
+                  <div className="detail-metric-tooltip">
+                    <Info size={14} />
+                    <span>{metricTooltips.gazeAim}</span>
+                    <span className="card-level" style={level}>{level.label}</span>
+                  </div>
+                </>
+              );
+            })()}
           </div>
 
            {/* 5. Synchronization */}
@@ -1178,13 +1294,39 @@ const DetailedResultsPage = () => {
             <p className="card-label">Synchronization</p>
             <p className="card-value">{analytics.synchronization.toFixed(0)} px</p>
             <p className="card-meta">Avg distance: Gaze ↔ Mouse</p>
-          </div>
+            {(() => {
+              const level = metricDetailLevel('sync', analytics);
+              return (
+                <>
+                  <span className="card-level" style={level}>{level.label}</span>
+                  <div className="detail-metric-tooltip">
+                    <Info size={14} />
+                    <span>{metricTooltips.sync}</span>
+                    <span className="card-level" style={level}>{level.label}</span>
+                  </div>
+                </>
+              );
+            })()}
+           </div>
 
           {/* 6. Gaze Coverage */}
           <div className={`detail-card ${focusMetric === 'gaze' ? 'focused' : ''}`}>
             <p className="card-label">Gaze Samples</p>
             <p className="card-value">{coverage.gaze.toFixed(1)}%</p>
             <p className="card-meta">Tracking coverage</p>
+            {(() => {
+              const level = metricDetailLevel('coverage', analytics, coverage);
+              return (
+                <>
+                  <span className="card-level" style={level}>{level.label}</span>
+                  <div className="detail-metric-tooltip">
+                    <Info size={14} />
+                    <span>{metricTooltips.coverage}</span>
+                    <span className="card-level" style={level}>{level.label}</span>
+                  </div>
+                </>
+              );
+            })()}
           </div>
 
           {/* 7. Mouse Coverage */}
@@ -1192,6 +1334,19 @@ const DetailedResultsPage = () => {
             <p className="card-label">Mouse Samples</p>
             <p className="card-value">{coverage.mouse.toFixed(1)}%</p>
             <p className="card-meta">Input coverage</p>
+            {(() => {
+              const level = metricDetailLevel('coverage', analytics, coverage);
+              return (
+                <>
+                  <span className="card-level" style={level}>{level.label}</span>
+                  <div className="detail-metric-tooltip">
+                    <Info size={14} />
+                    <span>{metricTooltips.coverage}</span>
+                    <span className="card-level" style={level}>{level.label}</span>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
       </section>

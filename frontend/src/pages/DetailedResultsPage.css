@@ -25,7 +25,9 @@
   margin: 0;
   font-size: 2.4rem;
   background: linear-gradient(135deg, #7c9bff 0%, #9e7bff 100%);
+  background-clip: text;
   -webkit-background-clip: text;
+  color: transparent;
   -webkit-text-fill-color: transparent;
 }
 
@@ -111,6 +113,7 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
 .detail-card.focused {
@@ -140,6 +143,79 @@
   margin: 0.35rem 0 0;
   color: #9da5c5;
   font-size: 0.9rem;
+}
+
+.card-level {
+  display: inline-block;
+  margin-top: 0;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.detail-level-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 0.35rem;
+}
+
+.detail-percentile {
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+
+.card-percentile {
+  font-weight: 700;
+  font-size: 0.78rem;
+}
+
+.detail-separator {
+  color: #9da5c5;
+  opacity: 0.8;
+  font-size: 0.8rem;
+}
+
+.detail-metric-tooltip {
+  position: absolute;
+  left: 50%;
+  top: -12px;
+  transform: translate(-50%, -110%);
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(10, 12, 24, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #f2f4ff;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  transition: all 0.2s ease;
+  pointer-events: none;
+  z-index: 6;
+  max-width: 320px;
+  text-align: left;
+}
+
+.detail-card:hover .detail-metric-tooltip,
+.detail-card:focus-visible .detail-metric-tooltip {
+  opacity: 1;
+  transform: translate(-50%, -120%);
+}
+
+.detail-metric-tooltip::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 8px 8px 0 8px;
+  border-style: solid;
+  border-color: rgba(10, 12, 24, 0.95) transparent transparent transparent;
+  filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.25));
 }
 
 .section-header {
@@ -511,6 +587,7 @@
   inset: -8px 0 -8px 0;
   width: 100%;
   background: transparent;
+  appearance: none;
   -webkit-appearance: none;
 }
 

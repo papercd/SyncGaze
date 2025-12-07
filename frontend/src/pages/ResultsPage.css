@@ -18,10 +18,7 @@
 
 /* Header */
 .results-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1.5rem;
+  display: block;
   margin-bottom: 2rem;
   background: transparent;
   backdrop-filter: none;
@@ -33,6 +30,12 @@
   max-width: 100%;
   margin: 0;
   padding: 0;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .results-header h1 {
@@ -44,12 +47,57 @@
   background-clip: text;
 }
 
+.header-top {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.header-top .secondary-button {
+  font-size: 0.9rem;
+  padding: 10px 16px;
+}
+
 .header-meta {
-  margin: 0.35rem 0 0;
+  margin: 0;
   color: #aeb5ce;
   font-size: 1rem;
   display: flex;
   gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+  text-align: right;
+  margin-left: auto;
+  justify-content: flex-end;
+}
+
+.metrics-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.metrics-header__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  min-width: 240px;
+}
+
+.metrics-hint {
+  color: #9da5c5;
+  font-size: 0.85rem;
+  text-align: right;
+}
+
+.metrics-hint--link {
+  color: #7c9bff;
+  font-size: 0.82rem;
 }
 
 /* Main Content */
@@ -112,6 +160,7 @@
   transition: all 0.3s ease;
   min-height: 160px;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  position: relative;
 }
 
 .metric-card.actionable {
@@ -176,11 +225,88 @@
   font-weight: 600;
 }
 
+.metric-footer {
+  margin-top: auto;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
 .metric-desc {
   font-size: 0.85rem;
   color: #9da5c5;
   line-height: 1.4;
-  margin-top: auto;
+}
+
+.metric-tooltip {
+  position: absolute;
+  left: 50%;
+  top: -12px;
+  transform: translate(-50%, -110%);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(10, 12, 24, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #f2f4ff;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  transition: all 0.2s ease;
+  pointer-events: none;
+  z-index: 5;
+  max-width: 320px;
+  text-align: left;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.metric-card:hover .metric-tooltip,
+.metric-card:focus-visible .metric-tooltip {
+  opacity: 1;
+  transform: translate(-50%, -120%);
+}
+
+.metric-tooltip::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 8px 8px 0 8px;
+  border-style: solid;
+  border-color: rgba(10, 12, 24, 0.95) transparent transparent transparent;
+  filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.25));
+}
+
+.metric-level {
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.metric-percentile {
+  margin-top: 2px;
+  font-weight: 700;
+  color: inherit;
+  font-size: 0.82rem;
+}
+
+.metric-percentile-inline {
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.metric-percentile-badge {
+  position: left;
+  top: 0;
+  right: 0;
+  font-weight: 800;
+  font-size: 0.90rem;
 }
 
 /* Visualizations Section */

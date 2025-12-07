@@ -236,8 +236,21 @@ const DashboardPage = () => {
       <main className="dashboard-main">
         {/* Welcome Section - ✅ NOW CONDITIONAL */}
         <section className="welcome-section">
-          <h2>{isFirstTime ? t('dashboard.welcome.first') : t('dashboard.welcome.return')}</h2>
-          <p>{isFirstTime ? t('dashboard.welcome.first.desc') : t('dashboard.welcome.return.desc')}</p>
+          <div className="welcome-row">
+            <div className="welcome-copy">
+              <h2>{isFirstTime ? t('dashboard.welcome.first') : t('dashboard.welcome.return')}</h2>
+              <p>{isFirstTime ? t('dashboard.welcome.first.desc') : t('dashboard.welcome.return.desc')}</p>
+            </div>
+            {reactionRank && reactionRank <= 3 && (
+              <div className="stat-congrats welcome-congrats" data-rank={reactionRank}>
+                <p className="stat-congrats__title">축하합니다! 전체서버 {reactionRank}등 랭커 입니다!</p>
+                <p className="stat-congrats__meta">
+                  현재 #{reactionRank}위를 유지중
+                  {reactionRankSince ? ` (since ${new Date(reactionRankSince).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})` : ''}
+                </p>
+              </div>
+            )}
+          </div>
         </section>
 
         {/* Reaction Time (Best) - standalone row */}
@@ -261,19 +274,10 @@ const DashboardPage = () => {
                       <span className="medal-rank">#{reactionRank}</span>
                     </span>
                   )}
-                </div>
-                <p>{t('dashboard.reaction.label', 'Reaction Time (best)')}</p>
               </div>
+              <p>{t('dashboard.reaction.label', 'Reaction Time (best)')}</p>
+            </div>
 
-              {reactionRank && reactionRank <= 3 && (
-                <div className="stat-congrats" data-rank={reactionRank}>
-                  <p className="stat-congrats__title">축하합니다! 전체서버 {reactionRank}등 랭커 입니다!</p>
-                  <p className="stat-congrats__meta">
-                    현재 #{reactionRank}위를 유지중
-                    {reactionRankSince ? ` (since ${new Date(reactionRankSince).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})` : ''}
-                  </p>
-                </div>
-              )}
             </div>
           </div>
 

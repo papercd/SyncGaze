@@ -425,6 +425,11 @@ export const translations: Record<string, Record<Language, string>> = {
   'landing.cta.section.desc': { ko: '수많은 유저와 함께 퍼포먼스를 향상하세요', en: 'Join thousands of users improving their performance' },
   'landing.cta.section.primary.auth': { ko: '지금 시작하기', en: 'Start Training Now' },
   'landing.cta.section.primary.dashboard': { ko: '대시보드 가기', en: 'Go to Dashboard' },
+  'landing.cta.github': { ko: '이 프로젝트의 GitHub 저장소 보기', en: 'View the GitHub repository for this project' },
+  'landing.footer.githubLine': {
+    ko: '이 프로젝트의 GitHub 저장소를 확인하려면 여기를 클릭하세요.',
+    en: 'Click here to view this project on GitHub.',
+  },
   'landing.footer.copyright': { ko: '© 2025 SyncGaze. 모든 권리 보유.', en: '© 2025 SyncGaze. All rights reserved.' },
   'landing.footer.github': { ko: 'GitHub 프로젝트 보기 🔗', en: 'View Project on GitHub 🔗' },
 

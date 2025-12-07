@@ -199,6 +199,12 @@ const DashboardPage = () => {
     return { value: clamp, label, color };
   }, [bestGazeAimLatency]);
 
+  const reactionRankSinceText = useMemo(() => {
+    if (!reactionRankSince) return '';
+    const formatted = new Date(reactionRankSince).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return t('dashboard.reaction.since', '(since {date})').replace('{date}', formatted);
+  }, [reactionRankSince, t]);
+
   useEffect(() => {
     const fetchReactionRank = async () => {
       if (!user?.uid) {
@@ -243,10 +249,16 @@ const DashboardPage = () => {
             </div>
             {reactionRank && reactionRank <= 3 && (
               <div className="stat-congrats welcome-congrats" data-rank={reactionRank}>
-                <p className="stat-congrats__title">축하합니다! 전체서버 {reactionRank}등 랭커 입니다!</p>
+                <p className="stat-congrats__title">
+                  {t('dashboard.reaction.congratsTitle', '축하합니다! 전체서버 {rank}등 랭커 입니다!').replace(
+                    '{rank}',
+                    `${reactionRank}`,
+                  )}
+                </p>
                 <p className="stat-congrats__meta">
-                  현재 #{reactionRank}위를 유지중
-                  {reactionRankSince ? ` (since ${new Date(reactionRankSince).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})` : ''}
+                  {t('dashboard.reaction.congratsMeta', '현재 #{rank}위를 유지중 {since}')
+                    .replace('{rank}', `${reactionRank}`)
+                    .replace('{since}', reactionRankSinceText)}
                 </p>
               </div>
             )}
@@ -275,7 +287,7 @@ const DashboardPage = () => {
                     </span>
                   )}
               </div>
-              <p>{t('dashboard.reaction.label', 'Reaction Time (best)')}</p>
+                <p>{t('dashboard.reaction.label', 'Reaction Time (best)')}</p>
             </div>
 
             </div>

@@ -15,9 +15,10 @@ const SettingsPage = () => {
       <header className="settings-header">
         <div className="settings-header__content">
           <div>
-        
-            <h1>Training Settings</h1>
-            <p className="settings-subtitle">Tune your controls to feel comfortable before jumping back in.</p>
+            <h1>{t('settings.header.title', 'Training Settings')}</h1>
+            <p className="settings-subtitle">
+              {t('settings.header.subtitle', 'Tune your controls to feel comfortable before jumping back in.')}
+            </p>
           </div>
          
         </div>
@@ -28,10 +29,12 @@ const SettingsPage = () => {
           <div className="settings-card__header">
             <div>
               <p className="settings-kicker">Controls</p>
-              <h2>Control sensitivity</h2>
+              <h2>{t('settings.controls.title', 'Control sensitivity')}</h2>
               <p className="settings-description">
-                Use the slider to change how responsive mouse look feels inside training. Adjust while paused or here on
-                the settings page anytime.
+                {t(
+                  'settings.controls.desc',
+                  'Use the slider to change how responsive mouse look feels inside training. Adjust while paused or here on the settings page anytime.',
+                )}
               </p>
             </div>
           </div>

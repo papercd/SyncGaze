@@ -225,6 +225,16 @@ export const translations: Record<string, Record<Language, string>> = {
   'settings.survey.practice.no': { ko: '연습 도구는 사용하지 않음', en: 'Not using practice tools' },
   'settings.survey.selfAssessment': { ko: '자가 평가', en: 'Self rating' },
   'settings.survey.goal': { ko: '시즌 목표', en: 'Season goal' },
+  'settings.header.title': { ko: '트레이닝 설정', en: 'Training Settings' },
+  'settings.header.subtitle': {
+    ko: '편한 컨트롤 감도로 조정하고 다시 시작하세요.',
+    en: 'Tune your controls to feel comfortable before jumping back in.',
+  },
+  'settings.controls.title': { ko: '컨트롤 감도', en: 'Control sensitivity' },
+  'settings.controls.desc': {
+    ko: '슬라이더로 트레이닝 내 마우스 감도를 조절할 수 있습니다. 일시정지 중이거나 설정 페이지에서 언제든 바꿀 수 있어요.',
+    en: 'Use the slider to change how responsive mouse look feels inside training. Adjust while paused or here anytime.',
+  },
 
   // Tracker flow
   'trackerFlow.title': { ko: '연구 진행 현황', en: 'Study Progress' },
@@ -517,6 +527,12 @@ export const translations: Record<string, Record<Language, string>> = {
   'dashboard.stats.avgAccuracy': { ko: '평균 정확도', en: 'Avg Accuracy' },
   'dashboard.stats.avgReaction': { ko: '평균 반응속도', en: 'Avg Reaction Time' },
   'dashboard.stats.bestAccuracy': { ko: '최고 정확도', en: 'Best Accuracy' },
+  'dashboard.reaction.label': { ko: '반응 속도 (최고)', en: 'Reaction Time (best)' },
+  'dashboard.reaction.gazeLabel': { ko: '시선 반응 (최고)', en: 'Avg Gaze Reaction (best)' },
+  'dashboard.reaction.gazeAimLabel': { ko: '눈-손 지연 (최고)', en: 'Gaze-Aim Latency (best)' },
+  'dashboard.reaction.congratsTitle': { ko: '축하합니다! 전체서버 {rank}등 랭커 입니다!', en: 'Congrats! You are #{rank} globally!' },
+  'dashboard.reaction.congratsMeta': { ko: '현재 #{rank}위를 유지중 {since}', en: 'Currently holding #{rank} {since}' },
+  'dashboard.reaction.since': { ko: '(since {date})', en: '(since {date})' },
   'dashboard.action.train': { ko: '트레이닝 시작', en: 'Start training' },
   'dashboard.action.flow': { ko: '트래커 플로우', en: 'Tracker flow' },
   'dashboard.action.leaderboard': { ko: '리더보드', en: 'Leaderboard' },

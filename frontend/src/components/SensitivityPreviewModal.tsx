@@ -5,7 +5,7 @@ import { PerspectiveCamera } from '@react-three/drei';
 import { Environment } from './Environment';
 import { Crosshair } from './Crosshair';
 import { usePointerLock } from '../hooks/usePointerLock';
-import { useControlSettings, DEFAULT_SENSITIVITY } from '../state/controlSettingsContext';
+import { useControlSettings, DEFAULT_SENSITIVITY, MIN_SENSITIVITY, MAX_SENSITIVITY } from '../state/controlSettingsContext';
 import { useMouseLook } from '../hooks/useMouseLook';
 
 interface SensitivityPreviewModalProps {
@@ -47,7 +47,34 @@ const describeSensitivity = (value: number) => {
 export const SensitivityPreviewModal: React.FC<SensitivityPreviewModalProps> = ({ onClose }) => {
   const previewRef = useRef<HTMLDivElement | null>(null);
   const { isLocked, requestPointerLock, exitPointerLock } = usePointerLock(previewRef);
-  const { controlSensitivity } = useControlSettings();
+  const { controlSensitivity, setControlSensitivity } = useControlSettings();
+
+  const formatSensitivity = (value: number) => value.toFixed(4);
+
+  const MIN_RATIO = MIN_SENSITIVITY / DEFAULT_SENSITIVITY;
+  const MAX_RATIO = MAX_SENSITIVITY / DEFAULT_SENSITIVITY;
+
+  const sensitivityToSliderValue = (sensitivity: number) => {
+    const ratio = sensitivity / DEFAULT_SENSITIVITY;
+
+    if (ratio <= 1) {
+      const normalized = -Math.log(ratio) / Math.log(MIN_RATIO);
+      return (normalized + 1) * 50;
+    }
+
+    const normalized = Math.log(ratio) / Math.log(MAX_RATIO);
+    return (normalized + 1) * 50;
+  };
+
+  const sliderValueToSensitivity = (value: number) => {
+    const normalized = value / 50 - 1;
+    const ratio =
+      normalized < 0
+        ? Math.exp(-normalized * Math.log(MIN_RATIO))
+        : Math.exp(normalized * Math.log(MAX_RATIO));
+
+    return ratio * DEFAULT_SENSITIVITY;
+  };
 
   const ratioLabel = useMemo(
     () => `${(controlSensitivity / DEFAULT_SENSITIVITY).toFixed(2)}×`,
@@ -55,6 +82,10 @@ export const SensitivityPreviewModal: React.FC<SensitivityPreviewModalProps> = (
   );
   const descriptor = useMemo(
     () => describeSensitivity(controlSensitivity),
+    [controlSensitivity]
+  );
+  const sliderValue = useMemo(
+    () => sensitivityToSliderValue(controlSensitivity),
     [controlSensitivity]
   );
 
@@ -65,6 +96,10 @@ export const SensitivityPreviewModal: React.FC<SensitivityPreviewModalProps> = (
   const handleClose = () => {
     exitPointerLock();
     onClose();
+  };
+
+  const handleSliderChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setControlSensitivity(sliderValueToSensitivity(Number(event.target.value)));
   };
 
   return (
@@ -78,18 +113,41 @@ export const SensitivityPreviewModal: React.FC<SensitivityPreviewModalProps> = (
               Click start to lock your cursor, then move the mouse to look around. Press Esc to release.
             </p>
           </div>
-          <div className="sensitivity-preview-meta">
-            <div className="sensitivity-chip">
-              <span className="sensitivity-chip__value">{controlSensitivity.toFixed(4)}</span>
-              <span className="sensitivity-chip__detail">{ratioLabel} • {descriptor}</span>
-            </div>
-            <button className="sensitivity-preview-close" onClick={handleClose}>
-              Close
-            </button>
-          </div>
+          <button className="sensitivity-preview-close" onClick={handleClose}>
+            Close
+          </button>
         </div>
 
         <div className="sensitivity-preview-body">
+          <div className="sensitivity-preview-slider">
+            <div className="sensitivity-preview-slider__label">
+              <span>Mouse look speed</span>
+              <span className="sensitivity-preview-slider__value">
+                {formatSensitivity(controlSensitivity)} · {ratioLabel} · {descriptor}
+              </span>
+            </div>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              step={0.1}
+              value={sliderValue}
+              onChange={handleSliderChange}
+              list="previewSensitivityMarks"
+              aria-label="Adjust mouse look speed for preview"
+            />
+            <datalist id="previewSensitivityMarks">
+              <option value={0} label="Min" />
+              <option value={50} label="Default" />
+              <option value={100} label="Max" />
+            </datalist>
+            <div className="sensitivity-preview-scale">
+              <span>Slower</span>
+              <span>Default</span>
+              <span>Faster</span>
+            </div>
+          </div>
+
           <div className="sensitivity-preview-instructions">
             <div>
               <p className="sensitivity-preview-status">

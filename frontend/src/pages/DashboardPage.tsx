@@ -141,6 +141,19 @@ const DashboardPage = () => {
     return best;
   }, [recentSessions]);
 
+  const bestGazeAimLatency = useMemo(() => {
+    if (!recentSessions.length) return null as { session: TrainingSessionSummary; latency: number } | null;
+    let best: { session: TrainingSessionSummary; latency: number } | null = null;
+    recentSessions.forEach(session => {
+      const analytics = calculatePerformanceAnalytics(session.rawData);
+      const latency = analytics.gazeAimLatency;
+      if (!best || (latency > 0 && latency < best.latency)) {
+        best = { session, latency };
+      }
+    });
+    return best;
+  }, [recentSessions]);
+
   const reactionPercentile = useMemo(() => {
     if (!bestReactionSession) return null;
     const rt = bestReactionSession.avgReactionTime;
@@ -171,6 +184,20 @@ const DashboardPage = () => {
     const color = clamp <= 25 ? '#66d9ff' : clamp <= 60 ? '#f1c40f' : '#ff6b6b';
     return { value: clamp, label, color };
   }, [bestGazeReaction]);
+
+  const gazeAimPercentile = useMemo(() => {
+    if (!bestGazeAimLatency) return null;
+    const v = bestGazeAimLatency.latency;
+    let value = 60;
+    if (v <= 250) value = 15;
+    else if (v <= 400) value = 35;
+    else if (v <= 600) value = 60;
+    else value = 85;
+    const clamp = Math.min(99, Math.max(1, Math.round(value)));
+    const label = `상위 ${clamp}%`;
+    const color = clamp <= 25 ? '#66d9ff' : clamp <= 60 ? '#f1c40f' : '#ff6b6b';
+    return { value: clamp, label, color };
+  }, [bestGazeAimLatency]);
 
   useEffect(() => {
     const fetchReactionRank = async () => {
@@ -264,6 +291,23 @@ const DashboardPage = () => {
                 )}
               </div>
               <p>{t('dashboard.reaction.gazeLabel', 'Avg Gaze Reaction (best)')}</p>
+            </div>
+          </div>
+
+          <div className="stat-card reaction-stat">
+            <div className ="stat-icon">
+              <MousePointerClick size={32} strokeWidth={2.5}/>   
+            </div>
+            <div className="stat-info">
+              <div className="stat-top-row">
+                <h3>{bestGazeAimLatency ? `${bestGazeAimLatency.latency.toFixed(0)}ms` : '--'}</h3>
+                {gazeAimPercentile && (
+                  <span className="stat-pill" style={{ color: gazeAimPercentile.color, borderColor: gazeAimPercentile.color }}>
+                    {gazeAimPercentile.label}
+                  </span>
+                )}
+              </div>
+              <p>{t('dashboard.reaction.gazeAimLabel', 'Gaze-Aim Latency (best)')}</p>
             </div>
           </div>
         </section>

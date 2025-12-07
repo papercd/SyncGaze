@@ -1,0 +1,219 @@
+.sensitivity-preview-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 8, 20, 0.7);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  z-index: 2000;
+}
+
+.sensitivity-preview-panel {
+  width: min(1100px, 95vw);
+  height: min(720px, 92vh);
+  background: radial-gradient(circle at 20% 20%, rgba(124, 155, 255, 0.08), transparent 40%),
+    radial-gradient(circle at 80% 10%, rgba(143, 123, 255, 0.08), transparent 35%),
+    rgba(8, 11, 26, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sensitivity-preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.sensitivity-preview-kicker {
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #7c9bff;
+  font-weight: 700;
+  margin: 0 0 0.35rem 0;
+  font-size: 0.85rem;
+}
+
+.sensitivity-preview-header h3 {
+  margin: 0;
+  color: #fff;
+  font-size: 1.4rem;
+}
+
+.sensitivity-preview-description {
+  margin: 0.4rem 0 0 0;
+  color: #a9b4d4;
+  max-width: 720px;
+}
+
+.sensitivity-preview-meta {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.sensitivity-chip {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0.6rem 0.9rem;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  min-width: 160px;
+  color: #e9edff;
+}
+
+.sensitivity-chip__value {
+  font-weight: 800;
+  font-size: 1.05rem;
+}
+
+.sensitivity-chip__detail {
+  color: #b7c1e4;
+  font-size: 0.9rem;
+}
+
+.sensitivity-preview-close {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #e9edff;
+  padding: 0.55rem 0.95rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 700;
+  transition: all 0.2s ease;
+}
+
+.sensitivity-preview-close:hover {
+  border-color: #7c9bff;
+  background: rgba(124, 155, 255, 0.12);
+}
+
+.sensitivity-preview-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem 1.5rem;
+  height: 100%;
+}
+
+.sensitivity-preview-instructions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.sensitivity-preview-status {
+  margin: 0;
+  color: #e9edff;
+  font-weight: 700;
+}
+
+.sensitivity-preview-help {
+  margin: 0.2rem 0 0 0;
+  color: #a9b4d4;
+}
+
+.sensitivity-preview-actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.sensitivity-preview-primary {
+  background: linear-gradient(135deg, #7c9bff 0%, #8f7bff 100%);
+  color: #0b1021;
+  border: none;
+  padding: 0.65rem 1.2rem;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 800;
+  box-shadow: 0 12px 30px rgba(124, 155, 255, 0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sensitivity-preview-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 34px rgba(124, 155, 255, 0.45);
+}
+
+.sensitivity-preview-secondary {
+  background: rgba(255, 255, 255, 0.06);
+  color: #e9edff;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 0.65rem 1rem;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.sensitivity-preview-stage {
+  position: relative;
+  flex: 1;
+  min-height: 420px;
+  background: #050814;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+}
+
+.sensitivity-preview-canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.sensitivity-preview-overlay-card {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+  color: #e9edff;
+  text-align: center;
+  max-width: 360px;
+  z-index: 20;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+.sensitivity-preview-overlay-title {
+  margin: 0 0 0.25rem 0;
+  font-weight: 800;
+}
+
+.sensitivity-preview-overlay-sub {
+  margin: 0;
+  color: #c2c8df;
+}
+
+@media (max-width: 768px) {
+  .sensitivity-preview-panel {
+    height: 90vh;
+  }
+
+  .sensitivity-preview-header {
+    flex-direction: column;
+  }
+
+  .sensitivity-preview-meta {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .sensitivity-preview-instructions {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

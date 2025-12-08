@@ -2,12 +2,15 @@ import AppRouter from './AppRouter';
 
 import { AuthProvider } from './state/authContext';
 import { LanguageProvider } from './state/languageContext';
+import { SoundSettingsProvider } from './state/soundSettingsContext';
 
 const App = () => {
   return (
     <LanguageProvider>
       <AuthProvider>
-        <AppRouter />
+        <SoundSettingsProvider>
+          <AppRouter />
+        </SoundSettingsProvider>
       </AuthProvider>
     </LanguageProvider>
   );

@@ -290,22 +290,6 @@ const DashboardPage = () => {
       <main className="dashboard-main">
         {/* Welcome Section - ✅ NOW CONDITIONAL */}
         <section className="welcome-section">
-          <div className="welcome-header">
-            <h2>{isFirstTime ? t('dashboard.welcome.first') : t('dashboard.welcome.return')}</h2>
-            {bestPredictedSession && (
-              <span className="sg-rank-badge">
-                <Award size={16} className="sg-rank-icon" />
-                SG Rank {Math.round(bestPredictedSession.score)}
-                {bestPredictedSession.session.date
-                  ? ` · ${new Date(bestPredictedSession.session.date).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                    })}`
-                  : ''}
-              </span>
-            )}
-          </div>
-          <p>{isFirstTime ? t('dashboard.welcome.first.desc') : t('dashboard.welcome.return.desc')}</p>
           <div className="welcome-row">
             <div className="welcome-copy">
               <h2>{isFirstTime ? t('dashboard.welcome.first') : t('dashboard.welcome.return')}</h2>

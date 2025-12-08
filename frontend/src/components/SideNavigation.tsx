@@ -4,6 +4,7 @@ import { Home, Crosshair, Wrench, BarChart3, Trophy, Settings, PanelLeftClose, P
 import LanguageToggle from './LanguageToggle';
 import './SideNavigation.css';
 import { useState } from 'react';
+import { useTranslation } from '../state/languageContext';
 
 interface NavItem {
   path: string;
@@ -17,6 +18,7 @@ const SideNavigation = () => {
   const location = useLocation();
   const { user } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
+  const { t } = useTranslation();
 
   const navItems: NavItem[] = [
     { path: '/dashboard', icon: Home, label: 'Dashboard', protected: true },
@@ -62,7 +64,18 @@ const SideNavigation = () => {
         
         {/* Language Toggle at bottom of nav items */}
         <div className="nav-items-spacer"></div>
-        {!collapsed && <LanguageToggle variant="sidebar" />}
+        {!collapsed && (
+          <div className="nav-bottom-actions">
+            <LanguageToggle variant="sidebar" />
+            <button
+              type="button"
+              className="sidebar-utility-button"
+              onClick={() => navigate('/about')}
+            >
+              {t('landing.cta.aboutUs', 'About Us')}
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="side-nav-footer">

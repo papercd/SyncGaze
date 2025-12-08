@@ -36,8 +36,8 @@ export const GameController = forwardRef<GameControllerRef, GameControllerProps>
   const wasLockedRef = useRef<boolean>(false);
 
 
-  const { controlSensitivity } = useControlSettings();
-  const { getMouseData, clearMouseData } = useMouseLook(controlSensitivity, isLocked);
+  const { controlSensitivity, invertYAxis } = useControlSettings();
+  const { getMouseData, clearMouseData } = useMouseLook(controlSensitivity, isLocked, invertYAxis);
 
   // ADD THIS ENTIRE useEffect:
   useEffect(() => {

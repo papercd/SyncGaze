@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { CS2Physics } from '../utils/cs2Physics';
+import { useControlSettings } from '../state/controlSettingsContext';
 
 interface CameraControllerProps {
   isActive: boolean;
@@ -16,10 +17,10 @@ export const CameraController: React.FC<CameraControllerProps> = ({
   onPhysicsUpdate
 }) => {
   const { camera } = useThree();
+  const { controlSensitivity, invertYAxis } = useControlSettings();
   const keysPressed = useRef<{ [key: string]: boolean }>({});
   const physics = useRef(new CS2Physics(initialPosition)); 
   const euler = useRef(new THREE.Euler(0, 0, 0, 'YXZ'));
-  const mouseSensitivity = 0.002;
 
   useEffect(() => {
     if (!isActive) return;
@@ -35,8 +36,9 @@ export const CameraController: React.FC<CameraControllerProps> = ({
     const handleMouseMove = (e: MouseEvent) => {
       // CS2-style mouse look
       euler.current.setFromQuaternion(camera.quaternion);
-      euler.current.y -= e.movementX * mouseSensitivity;
-      euler.current.x -= e.movementY * mouseSensitivity;
+      euler.current.y -= e.movementX * controlSensitivity;
+      const pitchDelta = e.movementY * controlSensitivity * (invertYAxis ? 1 : -1);
+      euler.current.x += pitchDelta;
       
       // Clamp pitch
       const maxPitch = Math.PI / 2 - 0.01;
@@ -54,7 +56,7 @@ export const CameraController: React.FC<CameraControllerProps> = ({
       window.removeEventListener('keyup', handleKeyUp);
       document.removeEventListener('mousemove', handleMouseMove);
     };
-  }, [isActive, camera]);
+  }, [isActive, camera, controlSensitivity, invertYAxis]);
 
   useFrame((state, delta) => {
     if (!isActive) return;

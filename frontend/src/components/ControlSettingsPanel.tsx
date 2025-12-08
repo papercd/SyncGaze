@@ -59,7 +59,7 @@ const ControlSettingsPanel: React.FC<ControlSettingsPanelProps> = ({
   compact = false,
   onOpenPreview
 }) => {
-  const { controlSensitivity, setControlSensitivity, resetSettings } = useControlSettings();
+  const { controlSensitivity, invertYAxis, setControlSensitivity, setInvertYAxis, resetSettings } = useControlSettings();
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setControlSensitivity(sliderValueToSensitivity(Number(event.target.value)));
@@ -109,6 +109,22 @@ const ControlSettingsPanel: React.FC<ControlSettingsPanelProps> = ({
           <span>Faster</span>
         </div>
         <div className="control-settings-footnote">Default: {formatSensitivity(DEFAULT_SENSITIVITY)}</div>
+      </div>
+
+      <div className="control-settings-toggle">
+        <div>
+          <h4>Invert Y-Axis</h4>
+          <p>Flip vertical look so pushing the mouse forward aims downward.</p>
+        </div>
+        <label className="switch">
+          <input
+            type="checkbox"
+            checked={invertYAxis}
+            onChange={(event) => setInvertYAxis(event.target.checked)}
+            aria-label="Invert Y axis"
+          />
+          <span className="slider" />
+        </label>
       </div>
 
       {(showReset || onOpenPreview) && (

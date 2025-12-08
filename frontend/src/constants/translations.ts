@@ -6,6 +6,19 @@ export const translations: Record<string, Record<Language, string>> = {
   'language.english': { ko: '영어', en: 'English' },
   'language.switch': { ko: 'English', en: '한국어' },
 
+  // Navigation
+  'nav.dashboard': { ko: '대시보드', en: 'Dashboard' },
+  'nav.calibration': { ko: '트레이닝', en: 'Train' },
+  'nav.sessions': { ko: '세션 기록', en: 'Your sessions' },
+  'nav.report': { ko: '리포트', en: 'Report' },
+  'nav.leaderboard': { ko: '리더보드', en: 'Leaderboard' },
+  'nav.howto': { ko: '사용 가이드', en: 'How-to guide' },
+  'nav.settings': { ko: '설정', en: 'Settings' },
+  'nav.collapse': { ko: '내비게이션 접기', en: 'Collapse navigation' },
+  'nav.expand': { ko: '내비게이션 펼치기', en: 'Expand navigation' },
+  'nav.accountSummary': { ko: '계정 정보 및 세션 요약 보기', en: 'View account info and session summary' },
+  'nav.accountMeta': { ko: '계정 정보 요약 보기', en: 'See account summary' },
+
   // Shared session prompts
   'session.exit.title': { ko: '대시보드로 돌아가시겠어요?', en: 'Return to dashboard?' },
   'session.exit.desc': {
@@ -448,6 +461,11 @@ export const translations: Record<string, Record<Language, string>> = {
   'consent.opensource': { ko: '본 프로젝트는 오픈소스로 공개되어 있습니다.', en: 'This project is open source.' },
   'consent.visitRepo': { ko: 'GitHub Repository 방문하기 🔗', en: 'Visit GitHub repository 🔗' },
 
+  // Policy pages
+  'policy.eyebrow': { ko: '프라이버시 및 약관', en: 'Privacy & Legal' },
+  'policy.backToAuth': { ko: '로그인/회원가입으로 돌아가기', en: 'Back to sign in / sign up' },
+  'policy.viewTerms': { ko: '연구 참여 이용약관 보기', en: 'View research participation terms' },
+
   // Thank you page
   'thankYou.title': { ko: '참여해 주셔서 감사합니다', en: 'Thank you for participating' },
   'thankYou.lead': {
@@ -680,7 +698,9 @@ export const translations: Record<string, Record<Language, string>> = {
   'dashboard.reaction.gazeAimLabel': { ko: '눈-손 지연 (최고)', en: 'Gaze-Aim Latency (best)' },
   'dashboard.reaction.congratsTitle': { ko: '축하합니다! 전체서버 {rank}등 랭커 입니다!', en: 'Congrats! You are #{rank} globally!' },
   'dashboard.reaction.congratsMeta': { ko: '현재 #{rank}위를 유지중 {since}', en: 'Currently holding #{rank} {since}' },
+  'dashboard.reaction.congratsMetaSg': { ko: '현재 SG Rank #{rank}위를 유지중 {since}', en: 'Currently holding SG Rank #{rank} {since}' },
   'dashboard.reaction.since': { ko: '(since {date})', en: '(since {date})' },
+  'dashboard.percentile.label': { ko: '상위 {percentile}%', en: 'Top {percentile}%' },
   'dashboard.action.train': { ko: '트레이닝 시작', en: 'Start training' },
   'dashboard.action.flow': { ko: '트래커 플로우', en: 'Tracker flow' },
   'dashboard.action.leaderboard': { ko: '리더보드', en: 'Leaderboard' },
@@ -889,6 +909,30 @@ export const translations: Record<string, Record<Language, string>> = {
     'calibration.confirm.title': { ko: '캘리브레이션 완료', en: 'Calibration complete' },
     'calibration.confirm.desc': { ko: '이제 정확도 측정 단계로 진행합니다.', en: 'Proceed to accuracy validation.' },
     'calibration.confirm.action': { ko: '정확도 측정 시작', en: 'Start validation' },
+    'calibration.validation.measuring': { ko: '정확도 측정 중... 화면 중앙의 파란 점을 3초간 응시하세요.', en: 'Measuring accuracy... Please stare at the blue dot in the center for 3 seconds.' },
+    'calibration.validation.averageError': { ko: '측정된 평균 오차', en: 'Measured average error' },
+    'calibration.validation.stability': { ko: '시선 안정성 (Avg. StdDev)', en: 'Gaze stability (Avg. StdDev)' },
+    'calibration.validation.retry': { ko: '오차가 크게 측정되었습니다. 정확한 측정을 위해 재보정을 진행해 주세요.', en: 'Error is high. Please recalibrate for accurate measurement.' },
+    'calibration.validation.pass': { ko: '목표 정확도 기준을 충족했습니다. 다음 단계로 이동할 수 있습니다.', en: 'Accuracy meets the target. You can proceed to the next step.' },
+    'calibration.validation.recalibrate': { ko: '재보정', en: 'Recalibrate' },
+    'calibration.validation.proceed': { ko: '트레이닝으로 진행', en: 'Proceed to training' },
+    'calibration.webcam.eyebrow': { ko: '캘리브레이션 준비', en: 'Calibration prep' },
+    'calibration.webcam.title': { ko: '웹캠 상태 및 추적 품질 설정', en: 'Webcam status & tracking quality' },
+    'calibration.webcam.lead': { ko: '화면 좌측 상단에 표시되는 카메라 영상을 확인하고, 얼굴 특징점이 안정적으로 감지될 때까지 조명을 조정해 주세요.', en: 'Check the camera preview on the top-left and adjust lighting until facial landmarks are detected stably.' },
+    'calibration.webcam.environment': { ko: '환경 설정 가이드', en: 'Environment setup guide' },
+    'calibration.webcam.tip.front': { ko: '정면을 바라보고, 모니터와 눈의 거리를 50~70cm 정도로 유지합니다.', en: 'Face forward and keep 50–70cm between your eyes and the monitor.' },
+    'calibration.webcam.tip.light': { ko: '얼굴 전체가 보이도록 주변 조명을 밝히고, 역광이나 강한 그림자를 피합니다.', en: 'Light your full face and avoid backlight or harsh shadows.' },
+    'calibration.webcam.tip.landmarks': { ko: '웹캠 프리뷰에 초록색 박스와 얼굴 특징점이 표시되면 인식이 완료된 것입니다.', en: 'Recognition is ready when the preview shows a green box and facial landmarks.' },
+    'calibration.webcam.qualityTitle': { ko: '시선 추적 품질', en: 'Eye-tracking quality' },
+    'calibration.webcam.quality.low': { ko: '낮음', en: 'Low' },
+    'calibration.webcam.quality.lowDesc': { ko: '저사양 PC · 640×480 · 30fps', en: 'Low spec PC · 640×480 · 30fps' },
+    'calibration.webcam.quality.medium': { ko: '중간', en: 'Medium' },
+    'calibration.webcam.quality.mediumDesc': { ko: '권장 설정 · 1280×720 · 60fps', en: 'Recommended · 1280×720 · 60fps' },
+    'calibration.webcam.quality.high': { ko: '높음', en: 'High' },
+    'calibration.webcam.quality.highDesc': { ko: '기본값 · 1920×1080 · 60fps', en: 'Default · 1920×1080 · 60fps' },
+    'calibration.webcam.status.ready': { ko: '얼굴이 안정적으로 인식되었습니다. 캘리브레이션을 진행하세요.', en: 'Face detected stably. Proceed with calibration.' },
+    'calibration.webcam.status.pending': { ko: '얼굴을 인식하는 중입니다... 조명과 자세를 조정해 주세요.', en: 'Detecting your face... adjust lighting and posture.' },
+    'calibration.webcam.confirm': { ko: '인식 완료, 캘리브레이션 시작', en: 'Detection complete, start calibration' },
 
   // Training page
   'training.overlay.title': { ko: '트레이닝 준비 완료?', en: 'Ready to Train?' },

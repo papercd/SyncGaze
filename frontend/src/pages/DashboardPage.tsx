@@ -29,7 +29,7 @@ const DashboardPage = () => {
   const navigate = useNavigate();
   const { recentSessions, setActiveSessionId, calibrationResult, resetState, isAnonymousSession } = useTrackingSession();
   const { user, signOut: signOutUser } = useAuth();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const [sessionReportMap, setSessionReportMap] = useState<Record<string, string>>({});
   const [isLoadingReports, setIsLoadingReports] = useState(false);
   const hasRealSession = recentSessions.some(session => !session.id.startsWith('mock-'));
@@ -170,11 +170,19 @@ const DashboardPage = () => {
 
   const percentileColor = (percentile: number) => (percentile <= 25 ? '#66d9ff' : percentile <= 60 ? '#f1c40f' : '#ff6b6b');
 
+  const formatPercentileLabel = (percentile: number) => {
+    const template = t(
+      'dashboard.percentile.label',
+      language === 'ko' ? '상위 {percentile}%' : 'Top {percentile}%',
+    );
+    return template.replace('{percentile}', `${percentile}`);
+  };
+
   const mapToPercentile = (value: number, buckets: { max: number; percentile: number }[], fallback: number) => {
     const found = buckets.find(bucket => value <= bucket.max);
     const pct = found ? found.percentile : fallback;
     const clamp = Math.min(99, Math.max(1, Math.round(pct)));
-    return { value: clamp, label: `상위 ${clamp}%`, color: percentileColor(clamp) };
+    return { value: clamp, label: formatPercentileLabel(clamp), color: percentileColor(clamp) };
   };
 
   // 하드코딩 버킷 (리더보드 Top 200 분포 기준으로 수동 추정)
@@ -192,7 +200,7 @@ const DashboardPage = () => {
       { max: 1400, percentile: 70 },
     ];
     return mapToPercentile(bestReactionSession.avgReactionTime, buckets, 90);
-  }, [bestReactionSession]);
+  }, [bestReactionSession, language, t]);
 
   const gazePercentile = useMemo(() => {
     if (!bestGazeReaction) return null;
@@ -204,7 +212,7 @@ const DashboardPage = () => {
       { max: 400, percentile: 72 },
     ];
     return mapToPercentile(bestGazeReaction.gaze, buckets, 90);
-  }, [bestGazeReaction]);
+  }, [bestGazeReaction, language, t]);
 
   const gazeAimPercentile = useMemo(() => {
     if (!bestGazeAimLatency) return null;
@@ -217,13 +225,16 @@ const DashboardPage = () => {
       { max: 720, percentile: 88 },
     ];
     return mapToPercentile(bestGazeAimLatency.latency, buckets, 96);
-  }, [bestGazeAimLatency]);
+  }, [bestGazeAimLatency, language, t]);
 
   const sgRankSinceText = useMemo(() => {
     if (!sgRankSince) return '';
-    const formatted = new Date(sgRankSince).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const formatted = new Date(sgRankSince).toLocaleDateString(language === 'ko' ? 'ko-KR' : 'en-US', {
+      month: 'short',
+      day: 'numeric',
+    });
     return t('dashboard.reaction.since', '(since {date})').replace('{date}', formatted);
-  }, [sgRankSince, t]);
+  }, [sgRankSince, t, language]);
 
   useEffect(() => {
     const fetchSgRank = async () => {

@@ -1,4 +1,5 @@
 import { ChangeEvent } from 'react';
+import { useTranslation } from '../../../../state/languageContext';
 
 type EligibilityField = 'ageCheck' | 'webcamCheck';
 
@@ -14,6 +15,11 @@ const defaultLabels: Record<EligibilityField, string> = {
 };
 
 const EligibilityChecklist = ({ values, onToggle, labelOverrides }: EligibilityChecklistProps) => {
+  const { t } = useTranslation();
+  const translatedLabels: Record<EligibilityField, string> = {
+    ageCheck: t('survey.eligibility.age', defaultLabels.ageCheck),
+    webcamCheck: t('survey.eligibility.webcam', defaultLabels.webcamCheck),
+  };
   const fields: EligibilityField[] = ['ageCheck', 'webcamCheck'];
 
   const handleChange = (field: EligibilityField) => (event: ChangeEvent<HTMLInputElement>) => {
@@ -25,7 +31,7 @@ const EligibilityChecklist = ({ values, onToggle, labelOverrides }: EligibilityC
       {fields.map(field => (
         <label key={field} className="checkbox-row">
           <input type="checkbox" checked={values[field]} onChange={handleChange(field)} />
-          {labelOverrides?.[field] ?? defaultLabels[field]}
+          {labelOverrides?.[field] ?? translatedLabels[field]}
         </label>
       ))}
     </>

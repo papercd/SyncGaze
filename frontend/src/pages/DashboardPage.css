@@ -418,11 +418,17 @@
 }
 
 .table-actions-group {
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
-  gap: 1.4rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(110px, 1fr));
+  gap: 0.6rem;
   margin: 0 auto;
+  min-width: 230px;
+}
+
+.table-actions-group .view-button,
+.table-actions-group .report-button {
+  width: 100%;
+  justify-content: center;
 }
 
 .accuracy-badge {

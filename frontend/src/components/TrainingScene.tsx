@@ -17,6 +17,7 @@ import { useTrackingData, TrackingDataRecord } from '../hooks/useTrackingData';
 import { LiveGaze } from '../types/calibration';
 import { useWebgazer } from '../hooks/tracking/useWebgazer';
 import ControlSettingsPanel from './ControlSettingsPanel';
+import { useWeaponSettings } from '../state/weaponSettingsContext';
 
 interface TrainingSceneProps {
   onComplete?: (score: number, targetsHit: number, rawData: TrackingDataRecord[]) => void;
@@ -30,6 +31,7 @@ export const TrainingScene: React.FC<TrainingSceneProps> = ({ onComplete, onExit
   const scoreRef = useRef(0); // ADD THIS
   const [timeRemaining, setTimeRemaining] = useState(60);
   const [liveGaze, setLiveGaze] = useState<LiveGaze>({ x: null, y: null });
+  const { currentWeapon } = useWeaponSettings();
   
   // Use WebGazer context (only for gaze data, not calibration)
   const { isReady: isWebGazerReady } = useWebgazer();
@@ -471,6 +473,7 @@ export const TrainingScene: React.FC<TrainingSceneProps> = ({ onComplete, onExit
           scale={1}
           velocity={velocity}
           physics={physicsRef.current}
+          modelPath={currentWeapon.modelPath}
         />
 
         <Environment />

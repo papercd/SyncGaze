@@ -1,12 +1,12 @@
 import './SettingsPage.css';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import ControlSettingsPanel from '../components/ControlSettingsPanel';
 import { useTranslation } from '../state/languageContext';
 import { SensitivityPreviewModal } from '../components/SensitivityPreviewModal';
+import CrosshairSettingsPanel from '../components/CrosshairSettingsPanel';
+import WeaponSettingsPanel from '../components/WeaponSettingsPanel';
 
 const SettingsPage = () => {
-  const navigate = useNavigate();
   const { t } = useTranslation();
   const [showSensitivityPreview, setShowSensitivityPreview] = useState(false);
 
@@ -42,6 +42,38 @@ const SettingsPage = () => {
             showReset
             onOpenPreview={() => setShowSensitivityPreview(true)}
           />
+        </section>
+
+        <section className="settings-card">
+          <div className="settings-card__header">
+            <div>
+              <p className="settings-kicker">HUD</p>
+              <h2>{t('settings.crosshair.title', 'Crosshair')}</h2>
+              <p className="settings-description">
+                {t(
+                  'settings.crosshair.desc',
+                  'Pick your preferred color and tune the lines so the crosshair matches your FPS habits.',
+                )}
+              </p>
+            </div>
+          </div>
+          <CrosshairSettingsPanel />
+        </section>
+
+        <section className="settings-card">
+          <div className="settings-card__header">
+            <div>
+              <p className="settings-kicker">Equipment</p>
+              <h2>{t('settings.weapon.title', 'Weapon')}</h2>
+              <p className="settings-description">
+                {t(
+                  'settings.weapon.desc',
+                  'Pick the style you like to swap weapon animation and model.',
+                )}
+              </p>
+            </div>
+          </div>
+          <WeaponSettingsPanel />
         </section>
       </main>
       {showSensitivityPreview && (

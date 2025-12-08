@@ -4,6 +4,7 @@ import ControlSettingsPanel from '../components/ControlSettingsPanel';
 import { useTranslation } from '../state/languageContext';
 import { SensitivityPreviewModal } from '../components/SensitivityPreviewModal';
 import CrosshairSettingsPanel from '../components/CrosshairSettingsPanel';
+import WeaponSettingsPanel from '../components/WeaponSettingsPanel';
 
 const SettingsPage = () => {
   const { t } = useTranslation();
@@ -57,6 +58,22 @@ const SettingsPage = () => {
             </div>
           </div>
           <CrosshairSettingsPanel />
+        </section>
+
+        <section className="settings-card">
+          <div className="settings-card__header">
+            <div>
+              <p className="settings-kicker">Equipment</p>
+              <h2>{t('settings.weapon.title', 'Weapon')}</h2>
+              <p className="settings-description">
+                {t(
+                  'settings.weapon.desc',
+                  'Pick the style you like to swap weapon animation and model.',
+                )}
+              </p>
+            </div>
+          </div>
+          <WeaponSettingsPanel />
         </section>
       </main>
       {showSensitivityPreview && (

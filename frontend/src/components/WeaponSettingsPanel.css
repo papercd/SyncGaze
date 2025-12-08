@@ -1,0 +1,103 @@
+.weapon-settings {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.weapon-settings__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.9rem;
+}
+
+.weapon-card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 0.9rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.1s ease;
+}
+
+.weapon-card input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.weapon-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.weapon-card__title {
+  color: #fff;
+  font-weight: 700;
+}
+
+.weapon-card__desc {
+  margin: 0;
+  color: #cdd2f7;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  min-height: 2.6em;
+}
+
+.weapon-card__path {
+  font-family: monospace;
+  color: #9ea5d6;
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+.weapon-card__badge {
+  background: rgba(102, 126, 234, 0.2);
+  border: 1px solid rgba(102, 126, 234, 0.5);
+  color: #dbe2ff;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.weapon-card:hover {
+  border-color: rgba(102, 126, 234, 0.5);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+  transform: translateY(-1px);
+}
+
+.weapon-card--active {
+  border-color: rgba(102, 126, 234, 0.7);
+  box-shadow: 0 10px 24px rgba(102, 126, 234, 0.35);
+}
+
+.weapon-settings__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.weapon-settings__reset {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  padding: 0.55rem 1rem;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 700;
+}
+
+.weapon-settings__reset:hover {
+  border-color: #667eea;
+  background: rgba(102, 126, 234, 0.1);
+}

@@ -267,6 +267,19 @@ export const translations: Record<string, Record<Language, string>> = {
   'settings.crosshair.gap': { ko: '간격', en: 'Gap' },
   'settings.crosshair.customColor': { ko: '사용자 지정 색상', en: 'Custom color' },
   'settings.crosshair.reset': { ko: '기본값으로 초기화', en: 'Reset to default' },
+  'settings.weapon.title': { ko: '무기', en: 'Weapon' },
+  'settings.weapon.desc': {
+    ko: '손에 익은 스타일을 골라서 무기 애니메이션과 모델을 바꿔보세요.',
+    en: 'Pick the style you like to swap weapon animation and model.',
+  },
+  'settings.weapon.reset': { ko: '기본 무기로 초기화', en: 'Reset to default' },
+  'settings.weapon.option.standard': { ko: '스탠다드', en: 'Standard' },
+  'settings.weapon.option.standard.desc': { ko: '기본형 글록 모델', en: 'Baseline Glock model.' },
+  'settings.weapon.option.tactical': { ko: '택티컬', en: 'Tactical' },
+  'settings.weapon.option.tactical.desc': { ko: '보강된 슬라이드와 경량 부품', en: 'Reinforced slide with lighter parts.' },
+  'settings.weapon.option.heavy': { ko: '헤비', en: 'Heavy' },
+  'settings.weapon.option.heavy.desc': { ko: '무거운 리코일 감과 강한 실루엣', en: 'Heavier recoil feel and bold silhouette.' },
+  'common.selected': { ko: '선택됨', en: 'Selected' },
 
   // Tracker flow
   'trackerFlow.title': { ko: '연구 진행 현황', en: 'Study Progress' },

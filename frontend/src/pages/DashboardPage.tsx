@@ -22,10 +22,11 @@ const DashboardPage = () => {
   const [isLoadingReports, setIsLoadingReports] = useState(false);
   const hasRealSession = recentSessions.some(session => !session.id.startsWith('mock-'));
   const isNewUser = isAnonymousSession || !hasRealSession;
-  const [reactionRank, setReactionRank] = useState<number | null>(null);
-  const [reactionRankSince, setReactionRankSince] = useState<string | null>(null);
+  const [sgRank, setSgRank] = useState<number | null>(null);
+  const [sgRankSince, setSgRankSince] = useState<string | null>(null);
   const [predictedScores, setPredictedScores] = useState<Record<string, number | null>>({});
   const [isLoadingPredictions, setIsLoadingPredictions] = useState(false);
+  const SG_RANK_FETCH_LIMIT = 200;
 
   useEffect(() => {
     const loadReports = async () => {
@@ -155,84 +156,123 @@ const DashboardPage = () => {
     return best;
   }, [recentSessions]);
 
+  const percentileColor = (percentile: number) => (percentile <= 25 ? '#66d9ff' : percentile <= 60 ? '#f1c40f' : '#ff6b6b');
+
+  const mapToPercentile = (value: number, buckets: { max: number; percentile: number }[], fallback: number) => {
+    const found = buckets.find(bucket => value <= bucket.max);
+    const pct = found ? found.percentile : fallback;
+    const clamp = Math.min(99, Math.max(1, Math.round(pct)));
+    return { value: clamp, label: `상위 ${clamp}%`, color: percentileColor(clamp) };
+  };
+
+  // 하드코딩 버킷 (리더보드 Top 200 분포 기준으로 수동 추정)
   const reactionPercentile = useMemo(() => {
     if (!bestReactionSession) return null;
-    const rt = bestReactionSession.avgReactionTime;
-    // Same buckets as ResultsPage
-    let value = 50;
-    if (rt <= 200) value = 10;
-    else if (rt <= 250) value = 25;
-    else if (rt <= 300) value = 50;
-    else if (rt <= 350) value = 70;
-    else value = 90;
-    const clamp = Math.min(99, Math.max(1, Math.round(value)));
-    const label = `상위 ${clamp}%`;
-    const color = clamp <= 25 ? '#66d9ff' : clamp <= 60 ? '#f1c40f' : '#ff6b6b';
-    return { value: clamp, label, color };
+    const buckets = [
+      { max: 300, percentile: 8 },
+      { max: 400, percentile: 14 },
+      { max: 500, percentile: 18 },
+      { max: 600, percentile: 24 },
+      { max: 700, percentile: 28 },
+      { max: 800, percentile: 32 },
+      { max: 900, percentile: 40 },
+      { max: 1100, percentile: 55 },
+      { max: 1400, percentile: 70 },
+    ];
+    return mapToPercentile(bestReactionSession.avgReactionTime, buckets, 90);
   }, [bestReactionSession]);
 
   const gazePercentile = useMemo(() => {
     if (!bestGazeReaction) return null;
-    const v = bestGazeReaction.gaze;
-    let value = 45;
-    if (v <= 200) value = 12;
-    else if (v <= 250) value = 25;
-    else if (v <= 350) value = 45;
-    else if (v <= 450) value = 65;
-    else value = 88;
-    const clamp = Math.min(99, Math.max(1, Math.round(value)));
-    const label = `상위 ${clamp}%`;
-    const color = clamp <= 25 ? '#66d9ff' : clamp <= 60 ? '#f1c40f' : '#ff6b6b';
-    return { value: clamp, label, color };
+    const buckets = [
+      { max: 180, percentile: 10 },
+      { max: 220, percentile: 22 },
+      { max: 270, percentile: 40 },
+      { max: 330, percentile: 58 },
+      { max: 400, percentile: 72 },
+    ];
+    return mapToPercentile(bestGazeReaction.gaze, buckets, 90);
   }, [bestGazeReaction]);
 
   const gazeAimPercentile = useMemo(() => {
     if (!bestGazeAimLatency) return null;
-    const v = bestGazeAimLatency.latency;
-    let value = 60;
-    if (v <= 250) value = 15;
-    else if (v <= 400) value = 35;
-    else if (v <= 600) value = 60;
-    else value = 85;
-    const clamp = Math.min(99, Math.max(1, Math.round(value)));
-    const label = `상위 ${clamp}%`;
-    const color = clamp <= 25 ? '#66d9ff' : clamp <= 60 ? '#f1c40f' : '#ff6b6b';
-    return { value: clamp, label, color };
+    const buckets = [
+      { max: 220, percentile: 10 },
+      { max: 300, percentile: 20 },
+      { max: 380, percentile: 38 },
+      { max: 480, percentile: 55 },
+      { max: 600, percentile: 72 },
+      { max: 720, percentile: 88 },
+    ];
+    return mapToPercentile(bestGazeAimLatency.latency, buckets, 96);
   }, [bestGazeAimLatency]);
 
-  const reactionRankSinceText = useMemo(() => {
-    if (!reactionRankSince) return '';
-    const formatted = new Date(reactionRankSince).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const sgRankSinceText = useMemo(() => {
+    if (!sgRankSince) return '';
+    const formatted = new Date(sgRankSince).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     return t('dashboard.reaction.since', '(since {date})').replace('{date}', formatted);
-  }, [reactionRankSince, t]);
+  }, [sgRankSince, t]);
 
   useEffect(() => {
-    const fetchReactionRank = async () => {
+    const fetchSgRank = async () => {
       if (!user?.uid) {
-        setReactionRank(null);
-        setReactionRankSince(null);
+        setSgRank(null);
+        setSgRankSince(null);
         return;
       }
       try {
         const ref = collection(db, 'leaderboardEntries');
-        const q = query(ref, orderBy('avgReactionTime', 'asc'), limit(200));
+        const q = query(ref, orderBy('score', 'desc'), limit(SG_RANK_FETCH_LIMIT));
         const snapshot = await getDocs(q);
-        const data = snapshot.docs.map(doc => doc.data() as LeaderboardEntry);
-        const foundIndex = data.findIndex(entry => entry.uid === user.uid);
-        if (foundIndex >= 0) {
-          const entry = data[foundIndex];
-          setReactionRank(foundIndex + 1);
-          setReactionRankSince(entry.sessionDate ?? null);
-        } else {
-          setReactionRank(null);
-          setReactionRankSince(null);
-        }
+        const entries = snapshot.docs.map(doc => doc.data() as LeaderboardEntry);
+
+        const withPredictedScores = await Promise.all(
+          entries.map(async entry => {
+            const stub: TrainingSessionSummary = {
+              id: entry.sessionId,
+              date: entry.sessionDate,
+              duration: entry.duration ?? 0,
+              score: entry.score,
+              predictedScore: null,
+              accuracy: entry.accuracy,
+              targetsHit: entry.targetsHit,
+              totalTargets: entry.totalTargets,
+              avgReactionTime: entry.avgReactionTime,
+              gazeAccuracy: entry.gazeAccuracy,
+              mouseAccuracy: entry.mouseAccuracy,
+              controlSensitivity: undefined,
+              screenSize: null,
+              csvData: '',
+              rawData: [],
+            };
+
+            try {
+              const res = await predictScore(stub);
+              return { entry, predictedScore: res.predictedScore ?? entry.score };
+            } catch (err) {
+              console.warn('Failed to predict SG score for leaderboard entry', entry.sessionId, err);
+              return { entry, predictedScore: entry.score };
+            }
+          }),
+        );
+
+        const sortedBySgScore = withPredictedScores
+          .map(item => ({ ...item.entry, sgScore: item.predictedScore }))
+          .sort((a, b) => (b.sgScore ?? -Infinity) - (a.sgScore ?? -Infinity));
+
+        const foundIndex = sortedBySgScore.findIndex(entry => entry.uid === user.uid);
+        const isInTop50 = foundIndex >= 0 && foundIndex < 50;
+
+        setSgRank(isInTop50 ? foundIndex + 1 : null);
+        setSgRankSince(isInTop50 ? sortedBySgScore[foundIndex].sessionDate ?? null : null);
       } catch (error) {
-        console.error('Failed to fetch reaction leaderboard', error);
+        console.error('Failed to fetch SG leaderboard', error);
+        setSgRank(null);
+        setSgRankSince(null);
       }
     };
 
-    fetchReactionRank();
+    fetchSgRank();
   }, [user?.uid]);
 
   useEffect(() => {
@@ -281,6 +321,32 @@ const DashboardPage = () => {
     return best;
   }, [recentSessions, predictedScores]);
 
+  const bestSgScore = useMemo(() => {
+    if (!recentSessions.length) return null;
+    return recentSessions.reduce((max, session) => {
+      const predicted = predictedScores[session.id];
+      const score = typeof predicted === 'number' ? predicted : Number(session.score) || 0;
+      return Math.max(max, score);
+    }, 0);
+  }, [recentSessions, predictedScores]);
+
+  const hasTopSgRank = typeof sgRank === 'number' && sgRank <= 50;
+  const rankerBoxTitle = hasTopSgRank
+    ? t('dashboard.reaction.congratsTitle', '축하합니다! SG Rank 서버 {rank}등!').replace('{rank}', `${sgRank}`)
+    : bestSgScore != null
+      ? t('dashboard.reaction.bestScoreTitle', '내 최고 SG Score {score}점').replace(
+          '{score}',
+          bestSgScore.toFixed(1),
+        )
+      : t('dashboard.reaction.rankerPendingTitle', 'SG 랭킹 대기중');
+  const rankerBoxMeta = hasTopSgRank
+    ? t('dashboard.reaction.congratsMetaSg', '현재 SG Rank #{rank}위를 유지중 {since}')
+        .replace('{rank}', `${sgRank}`)
+        .replace('{since}', sgRankSinceText)
+    : bestSgScore != null
+      ? t('dashboard.reaction.bestScoreMeta', 'Top 50 진입까지 조금만 더!').replace('{score}', bestSgScore.toFixed(1))
+      : t('dashboard.reaction.rankerPendingMeta', '첫 세션을 완료하면 순위가 집계됩니다.');
+
   return (
     <div className="dashboard-page">
       {/* Header */}
@@ -295,21 +361,13 @@ const DashboardPage = () => {
               <h2>{isFirstTime ? t('dashboard.welcome.first') : t('dashboard.welcome.return')}</h2>
               <p>{isFirstTime ? t('dashboard.welcome.first.desc') : t('dashboard.welcome.return.desc')}</p>
             </div>
-            {reactionRank && reactionRank <= 3 && (
-              <div className="stat-congrats welcome-congrats" data-rank={reactionRank}>
-                <p className="stat-congrats__title">
-                  {t('dashboard.reaction.congratsTitle', '축하합니다! 전체서버 {rank}등 랭커 입니다!').replace(
-                    '{rank}',
-                    `${reactionRank}`,
-                  )}
-                </p>
-                <p className="stat-congrats__meta">
-                  {t('dashboard.reaction.congratsMeta', '현재 #{rank}위를 유지중 {since}')
-                    .replace('{rank}', `${reactionRank}`)
-                    .replace('{since}', reactionRankSinceText)}
-                </p>
-              </div>
-            )}
+            <div
+              className={`stat-congrats welcome-congrats ranker-box ${!hasTopSgRank ? 'ranker-box--pending' : ''}`}
+              data-rank={sgRank ?? undefined}
+            >
+              <p className="stat-congrats__title">{rankerBoxTitle}</p>
+              <p className="stat-congrats__meta">{rankerBoxMeta}</p>
+            </div>
           </div>
         </section>
 
@@ -328,10 +386,10 @@ const DashboardPage = () => {
                       {reactionPercentile.label}
                     </span>
                   )}
-                  {reactionRank && reactionRank <= 3 && (
-                    <span className="stat-medal" data-rank={reactionRank}>
-                      <Award size={18} color={reactionRank === 1 ? '#d4af37' : reactionRank === 2 ? '#c0c0c0' : '#cd7f32'} />
-                      <span className="medal-rank">#{reactionRank}</span>
+                  {sgRank && sgRank <= 3 && (
+                    <span className="stat-medal" data-rank={sgRank}>
+                      <Award size={18} color={sgRank === 1 ? '#d4af37' : sgRank === 2 ? '#c0c0c0' : '#cd7f32'} />
+                      <span className="medal-rank">#{sgRank}</span>
                     </span>
                   )}
               </div>

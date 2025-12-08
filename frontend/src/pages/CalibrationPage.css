@@ -222,8 +222,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 2000;
+  z-index: 5000;
   padding: 1.5rem;
+  pointer-events: auto;
 }
 
 .exit-modal {
@@ -234,6 +235,9 @@
   max-width: 420px;
   width: 100%;
   box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+  z-index: 4001;  /* 추가 */
+  position: relative;  /* 추가 */
+  pointer-events: auto;
 }
 
 .exit-modal h3 {
@@ -302,6 +306,7 @@
   height: 100%;
   position: relative;
   z-index: 3000; /* Keep point targets above header/webcam overlays */
+  pointer-events: none; 
 }
 
 .calibration-dot {
@@ -313,6 +318,7 @@
   box-shadow: 0 0 20px rgba(102, 126, 234, 0.6);
   transition: all 0.3s ease;
   animation: pulse 2s infinite;
+  pointer-events: auto;
 }
 
 .calibration-dot:hover {
@@ -323,6 +329,7 @@
 .calibration-grid .calibration-dot {
   position: absolute;
   z-index: 1; /* Stacking context handled by parent */
+  pointer-events: auto;
 }
 
 #webgazerVideoContainer {
@@ -631,6 +638,7 @@
   text-align: center;
   overflow: hidden;
   z-index: 3000; /* Keep moving target above header/webcam overlays */
+  pointer-events: none;
 }
 
 .pursuit-overlay {
@@ -646,6 +654,7 @@
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
   max-width: min(90vw, 720px);
   width: fit-content;
+  pointer-events: none;
 }
 
 .pursuit-message {
@@ -665,6 +674,7 @@
   box-shadow: 0 0 15px rgba(40, 167, 69, 0.7);
   transform: translate(-50%, -50%);
   z-index: 1; /* Parent stacking context ensures it stays on top */
+  pointer-events: none;
 }
 
 .pursuit-dot.on-target {

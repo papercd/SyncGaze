@@ -786,17 +786,17 @@
 }
 
 .detailed-results-page .viz-preview--chart {
-  max-height: 340px;
-  overflow: hidden;
+  max-height: none;
+  overflow: visible;
   cursor: zoom-in;
 }
 
 .detailed-results-page .viz-preview--chart .chart-scroll-wrapper {
-  max-height: 300px;
+  max-height: none;
 }
 
 .detailed-results-page .viz-preview--chart .chart-svg {
-  max-height: 260px;
+  max-height: none;
 }
 
 .detailed-results-page .viz-preview--heatmap {

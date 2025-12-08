@@ -341,8 +341,8 @@ const PerformanceLineChart = ({
     return <div className="chart-empty">No data selected to display.</div>;
   }
 
-  const width = 720; 
-  const height = 360;
+  const width = 700; 
+  const height = 320;
   const basePadding = 56;
   
   // X축 최대값: 시리즈가 없으면 duration 기준

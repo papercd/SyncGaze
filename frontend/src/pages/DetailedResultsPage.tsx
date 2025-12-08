@@ -1,6 +1,6 @@
-import type { WheelEvent } from 'react';
+import type { CSSProperties, PointerEvent as ReactPointerEvent, WheelEvent } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Info, Maximize2 } from 'lucide-react';
+import { Info, Maximize2, Target } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import './DetailedResultsPage.css';
 import {
@@ -9,9 +9,11 @@ import {
   TrainingSessionSummary,
   useTrackingSession,
 } from '../state/trackingSessionContext';
+import { useTranslation } from '../state/languageContext';
 import { loadStoredCalibration, loadStoredSession, persistLatestSession } from '../utils/resultsStorage';
 import { calculatePerformanceAnalytics, generateErrorTimeSeries } from '../utils/analytics';
 import type { PerformanceAnalytics } from '../utils/analytics';
+import { predictScore } from '../services/predictionService';
 
 // UPDATED: Added 'trends' and 'heatmap' to focus metrics
 type FocusMetric = 'accuracy' | 'targets' | 'reaction' | 'gaze' | 'mouse' | 'trends' | 'heatmap';
@@ -71,6 +73,51 @@ type ReplayFrame = TrainingDataPoint & {
   displayMouseY: number | null;
 };
 
+// --- Shared drag-to-pan helper ---
+const useDragToScroll = (enabled: boolean) => {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const start = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 });
+
+  const handlePointerDown = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!enabled || event.button !== 0) return;
+    const el = ref.current;
+    if (!el) return;
+    event.preventDefault();
+    start.current = { x: event.clientX, y: event.clientY, scrollLeft: el.scrollLeft, scrollTop: el.scrollTop };
+    setDragging(true);
+    el.setPointerCapture?.(event.pointerId);
+  }, [enabled]);
+
+  const handlePointerMove = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!enabled || !dragging) return;
+    const el = ref.current;
+    if (!el) return;
+    const { x, y, scrollLeft, scrollTop } = start.current;
+    el.scrollLeft = scrollLeft - (event.clientX - x);
+    el.scrollTop = scrollTop - (event.clientY - y);
+  }, [dragging, enabled]);
+
+  const endDrag = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!dragging) return;
+    setDragging(false);
+    const el = ref.current;
+    if (el?.hasPointerCapture?.(event.pointerId)) {
+      el.releasePointerCapture(event.pointerId);
+    }
+  }, [dragging]);
+
+  return {
+    ref,
+    dragging,
+    handlePointerDown,
+    handlePointerMove,
+    handlePointerUp: endDrag,
+    handlePointerLeave: endDrag,
+    handlePointerCancel: endDrag,
+  };
+};
+
 const metricTooltips: Record<string, string> = {
   accuracy: '명중률은 교전 성공률과 직접 연결됩니다. 높은 명중률은 라운드 승률을 끌어올립니다.',
   reaction: '반응 속도가 빠를수록 첫 발 이점을 확보해 피킹/트레이드에서 유리합니다.',
@@ -78,6 +125,31 @@ const metricTooltips: Record<string, string> = {
   gazeAim: '눈-손 딜레이가 짧을수록 시선과 사격이 한몸처럼 맞물려 교전 시간이 줄어듭니다.',
   sync: '시선-마우스 동기화는 시선이 향한 곳으로 총구가 따라가는 정도로, 플릭·트래킹 일관성을 높입니다.',
   coverage: '높은 커버리지는 더 신뢰도 높은 데이터와 정확한 분석을 보장합니다.',
+};
+
+type RankLevel = {
+  key: 'trainee' | 'green' | 'blue' | 'indigo' | 'purple';
+  labelKo: string;
+  labelEn: string;
+  min: number;
+  max: number;
+  color: string;
+};
+
+const rankLevels: RankLevel[] = [
+  { key: 'trainee', labelKo: '훈련병', labelEn: 'Grey Trainee', min: 0, max: 19.9, color: '#9E9E9E' },
+  { key: 'green', labelKo: '연습 사수', labelEn: 'Green Shooter', min: 20, max: 39.9, color: '#4CAF50' },
+  { key: 'blue', labelKo: '초급 사수', labelEn: 'Blue Shooter', min: 40, max: 59.9, color: '#2196F3' },
+  { key: 'indigo', labelKo: '중급 사수', labelEn: 'Indigo Shooter', min: 60, max: 79.9, color: '#3F51B5' },
+  { key: 'purple', labelKo: '고급 사수', labelEn: 'Purple Marksman', min: 80, max: 100, color: '#9C27B0' },
+];
+
+const getRankLevel = (score: number | null): RankLevel => {
+  if (score === null || Number.isNaN(score)) {
+    return rankLevels[0];
+  }
+  const clamped = Math.min(100, Math.max(0, score));
+  return rankLevels.find(level => clamped >= level.min && clamped <= level.max) ?? rankLevels[rankLevels.length - 1];
 };
 
 const metricDetailLevel = (
@@ -250,6 +322,7 @@ const PerformanceLineChart = ({
   yAxisLabel = 'Error (px)',
   constrainHeight = false,
   tickDensityMultiplier = 1,
+  enablePan = false,
 }: {
   series: SeriesConfig[];
   duration: number;
@@ -259,6 +332,7 @@ const PerformanceLineChart = ({
   yAxisLabel?: string;
   constrainHeight?: boolean;
   tickDensityMultiplier?: number;
+  enablePan?: boolean;
 }) => {
   const activeSeries = series.filter(s => s.points.some(p => p.value !== null));
 
@@ -305,25 +379,44 @@ const PerformanceLineChart = ({
   const yScale = (value: number) =>
     height - paddingBottom - (value / yMax) * (height - paddingTop - paddingBottom);
 
+  const canPan = enablePan && zoomLevel > 1;
+  const {
+    ref: panRef,
+    dragging,
+    handlePointerDown,
+    handlePointerMove,
+    handlePointerUp,
+    handlePointerLeave,
+    handlePointerCancel,
+  } = useDragToScroll(canPan);
+
+  const wrapperStyle: CSSProperties = constrainHeight
+    ? {
+        overflow: 'auto',
+        maxWidth: '100%',
+        maxHeight: '70vh',
+        height: '100%',
+        flex: 1,
+        minHeight: 360,
+        cursor: canPan ? (dragging ? 'grabbing' : 'grab') : undefined,
+      }
+    : {
+        overflowX: 'auto',
+        overflowY: 'visible',
+        maxWidth: '100%',
+        cursor: canPan ? (dragging ? 'grabbing' : 'grab') : undefined,
+      };
+
   return (
     <div
       className="chart-scroll-wrapper"
-      style={
-        constrainHeight
-          ? {
-              overflow: 'auto',
-              maxWidth: '100%',
-              maxHeight: '100%',
-              height: '100%',
-              flex: 1,
-              minHeight: '100%',
-            }
-          : {
-              overflowX: 'auto',
-              overflowY: 'visible',
-              maxWidth: '100%',
-            }
-      }
+      ref={panRef}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerLeave={handlePointerLeave}
+      onPointerCancel={handlePointerCancel}
+      style={wrapperStyle}
     >
       <div
         style={{
@@ -491,11 +584,14 @@ const calculateHitIntervals = (data: TrainingDataPoint[]): HitIntervals => {
 const DetailedResultsPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { language } = useTranslation();
   const focusMetric = (location.state as { focusMetric?: FocusMetric } | null)?.focusMetric;
   const { activeSession, calibrationResult } = useTrackingSession();
 
   const [sessionData, setSessionData] = useState<TrainingSessionSummary | null>(activeSession);
   const [calibration, setCalibration] = useState<CalibrationResult | null>(calibrationResult);
+  const [predictedScore, setPredictedScore] = useState<number | null>(null);
+  const [isPredictingScore, setIsPredictingScore] = useState(false);
 
   const [replayTargetId, setReplayTargetId] = useState<string | null>(null);
   const [replayTargetIndex, setReplayTargetIndex] = useState<number | null>(null);
@@ -516,6 +612,7 @@ const DetailedResultsPage = () => {
 
   const [activeModal, setActiveModal] = useState<'trends' | 'rolling' | 'velocity' | 'heatmap' | null>(null);
   const [modalZoom, setModalZoom] = useState(1);
+  const modalHeatmapPan = useDragToScroll(activeModal === 'heatmap' && modalZoom > 1);
 
   const [rollingVisibility, setRollingVisibility] = useState<Record<string, boolean>>({
     'rolling-accuracy': true,
@@ -595,6 +692,47 @@ const DetailedResultsPage = () => {
       }
     }
   }, [calibrationResult]);
+
+  // 세션이 바뀔 때 예측 점수를 초기화 (목업 값 표시 방지)
+  useEffect(() => {
+    setPredictedScore(null);
+  }, [sessionData?.id]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const runPrediction = async () => {
+      if (!sessionData) {
+        setPredictedScore(null);
+        return;
+      }
+
+      // 이전 값 제거 후 새 예측 시작해 초기 75 노출 방지
+      setPredictedScore(null);
+      setIsPredictingScore(true);
+      try {
+        const result = await predictScore(sessionData);
+        if (!cancelled) {
+          setPredictedScore(result.predictedScore ?? null);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.warn('Failed to predict score on detail page:', error);
+          setPredictedScore(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsPredictingScore(false);
+        }
+      }
+    };
+
+    runPrediction();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionData]);
 
   // ResultsPage와 동일한 Analytics 사용
   const analytics = useMemo(() => sessionData ? calculatePerformanceAnalytics(sessionData.rawData) : null, [sessionData]);
@@ -1162,6 +1300,34 @@ const DetailedResultsPage = () => {
     ? (analytics.targetsHit / analytics.totalTargets) * 100 
     : 0;
 
+  const rankLevel = useMemo(() => getRankLevel(predictedScore), [predictedScore]);
+  const rankLabel = useMemo(
+    () => (language === 'ko' ? rankLevel.labelKo : rankLevel.labelEn),
+    [language, rankLevel],
+  );
+  const rankRangeText = useMemo(
+    () =>
+      rankLevels
+        .map(level => {
+          const label = language === 'ko' ? level.labelKo : level.labelEn;
+          return `${label}: ${level.min}-${level.max}`;
+        })
+        .join(' • '),
+    [language],
+  );
+
+  const predictionFactors = useMemo(
+    () => {
+      if (!sessionData) return [];
+      return [
+        { label: '명중률', value: `${sessionData.accuracy.toFixed(1)}%`, desc: '타겟 명중률 반영' },
+        { label: '트래킹', value: `${sessionData.mouseAccuracy.toFixed(1)}%`, desc: '마우스-타겟 정렬도' },
+        { label: '반응', value: `${sessionData.avgReactionTime.toFixed(0)} ms`, desc: '평균 클릭 속도' },
+      ];
+    },
+    [sessionData],
+  );
+
   const renderModalContent = () => {
     if (!activeModal) return null;
 
@@ -1180,6 +1346,7 @@ const DetailedResultsPage = () => {
             duration={sessionData.duration}
             hitTimes={hitTimes}
             zoomLevel={modalZoom}
+            enablePan
             showHitMarkers={visibleMetrics['hit-moment']}
             constrainHeight
             tickDensityMultiplier={2}
@@ -1193,6 +1360,7 @@ const DetailedResultsPage = () => {
             duration={sessionData.duration}
             hitTimes={rollingVisibility['rolling-hits'] ? rollingPerformance.hitTimes : []}
             zoomLevel={modalZoom}
+            enablePan
             showHitMarkers={rollingVisibility['rolling-hits']}
             yAxisLabel={`Last ${rollingWindowSeconds}s window`}
             constrainHeight
@@ -1207,6 +1375,7 @@ const DetailedResultsPage = () => {
             duration={sessionData.duration}
             hitTimes={velocityVisibility['velocity-hits'] ? velocityReaction.hitTimes : []}
             zoomLevel={modalZoom}
+            enablePan
             showHitMarkers={velocityVisibility['velocity-hits']}
             yAxisLabel="Speed (px/s) · Reaction (ms)"
             constrainHeight
@@ -1216,7 +1385,23 @@ const DetailedResultsPage = () => {
       }
       return (
         <div className="heatmap-wrapper" style={{ border: '1px solid #333', borderRadius: '12px', overflow: 'hidden', backgroundColor: '#1a1d24' }}>
-          <div style={{ width: '100%', overflow: 'auto', maxHeight: '70vh', backgroundColor: '#1a1d24' }}>
+          <div
+            style={{
+              width: '100%',
+              overflow: 'auto',
+              maxHeight: '70vh',
+              backgroundColor: '#1a1d24',
+              cursor: activeModal === 'heatmap' && modalZoom > 1
+                ? (modalHeatmapPan.dragging ? 'grabbing' : 'grab')
+                : undefined,
+            }}
+            ref={modalHeatmapPan.ref}
+            onPointerDown={modalHeatmapPan.handlePointerDown}
+            onPointerMove={modalHeatmapPan.handlePointerMove}
+            onPointerUp={modalHeatmapPan.handlePointerUp}
+            onPointerLeave={modalHeatmapPan.handlePointerLeave}
+            onPointerCancel={modalHeatmapPan.handlePointerCancel}
+          >
             <div
               className="heatmap-container"
               ref={modalHeatmapContainerRef}
@@ -1265,7 +1450,7 @@ const DetailedResultsPage = () => {
             </div>
           </div>
           <div className="viz-modal__body" onWheel={handleModalWheel}>
-            <p className="viz-modal__hint">마우스 스크롤로 확대/축소할 수 있어요.</p>
+            <p className="viz-modal__hint">마우스 스크롤로 확대/축소하고, 그래프를 드래그해 이동할 수 있어요.</p>
             <div className="viz-modal__content">{modalBody}</div>
           </div>
         </div>
@@ -1289,6 +1474,73 @@ const DetailedResultsPage = () => {
         </div>
       </header>
 
+      <section className="detail-section training-results">
+        <div className="prediction-card detail-card bordered">
+          <div className="prediction-top">
+            <div className="prediction-left rank-tooltip-container">
+              <div className="rank-left-row">
+                <div className="rank-stack">
+                  <div className="rank-medal" style={{ ['--rank-color' as string]: rankLevel.color }}>
+                    <Target size={32} />
+                  </div>
+                  <div className="rank-row rank-row--stacked">
+                    <span
+                      className="rank-name"
+                      style={{ color: rankLevel.color }}
+                      title={`${rankLabel}: ${rankLevel.min}-${rankLevel.max}`}
+                    >
+                      {rankLabel}
+                    </span>
+                  </div>
+                </div>
+                <div className="prediction-left__body">
+                  <div className="title-wrap">
+                    <p className="card-label">Training Results</p>
+                  </div>
+                  <div className="score-row">
+                    <span className="card-value">
+                      {predictedScore != null ? predictedScore.toFixed(1) : '점수 없음'}
+                    </span>
+                    <span className="score-scale">/ 100</span>
+                    {isPredictingScore && <span className="chip">예측 중</span>}
+                  </div>
+                  <p className="card-meta">리포트 생성에 사용되는 예측 점수와 랭크입니다.</p>
+                </div>
+              </div>
+              <div className="rank-tooltip">
+                <strong className="rank-tooltip-title">점수대별 랭크</strong>
+                <ul>
+                  {rankLevels.map(level => {
+                    const label = language === 'ko' ? level.labelKo : level.labelEn;
+                    return (
+                      <li key={level.key}>
+                        <span style={{ color: level.color, fontWeight: 700 }}>{label}</span>{' '}
+                        <span className="rank-range">({level.min}-{level.max})</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            </div>
+            <div className="prediction-right">
+              <span className="inline-note">
+                객체를 <span className="inline-emph">{analytics.avgGazeReactionTime.toFixed(0)}ms</span>에 보고,
+                <span className="inline-emph">{analytics.gazeAimLatency.toFixed(0)}ms</span> 동안 마우스를 움직여,
+                <span className="inline-emph">{analytics.avgReactionTime.toFixed(0)}ms</span>에 쐈어요.
+              </span>
+              <div className="prediction-inline-factors condensed">
+                {predictionFactors.map(factor => (
+                  <span key={factor.label} className="inline-factor">
+                    <span className="factor-label">{factor.label}</span>
+                    <strong>{factor.value}</strong>
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section className="detail-section">
         <div className="section-header">
           <h2>Detailed Visualizations</h2>
@@ -1297,7 +1549,11 @@ const DetailedResultsPage = () => {
         
         <div className="viz-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
           
-          <div className={`viz-card detail-card bordered ${focusMetric === 'trends' ? 'focused' : ''}`} style={{ padding: '20px' }}>
+          <div
+            className={`viz-card viz-card--accent detail-card bordered ${focusMetric === 'trends' ? 'focused' : ''}`}
+            data-tone="trends"
+            style={{ padding: '20px' }}
+          >
             <div className="viz-card__header">
               <div className="viz-card__title">
                 <h3>Performance Trends</h3>
@@ -1344,6 +1600,11 @@ const DetailedResultsPage = () => {
                 </button>
               </div>
             </div>
+            <div className="viz-card__meta">
+              <span className="viz-pill">세션 {sessionData.duration}s</span>
+              <span className="viz-pill">타겟 {analytics.totalTargets}개</span>
+              <span className="viz-pill">히트 {analytics.targetsHit}회</span>
+            </div>
             
             <div style={{ marginTop: '16px', cursor: 'zoom-in' }} onClick={() => openModal('trends')}>
               <PerformanceLineChart
@@ -1356,7 +1617,7 @@ const DetailedResultsPage = () => {
             </div>
           </div>
 
-          <div className="viz-card detail-card bordered" style={{ padding: '20px' }}>
+          <div className="viz-card viz-card--accent detail-card bordered" data-tone="rolling" style={{ padding: '20px' }}>
             <div className="viz-card__header">
               <div className="viz-card__title">
                 <h3>Rolling Performance</h3>
@@ -1402,6 +1663,11 @@ const DetailedResultsPage = () => {
                 </button>
               </div>
             </div>
+            <div className="viz-card__meta">
+              <span className="viz-pill">{rollingWindowSeconds}s 롤링 윈도우</span>
+              <span className="viz-pill">히트 {rollingPerformance.hitTimes.length}회</span>
+              <span className="viz-pill">세션 {sessionData.duration}s</span>
+            </div>
             <div style={{ marginTop: '16px', cursor: 'zoom-in' }} onClick={() => openModal('rolling')}>
               <PerformanceLineChart
                 series={filteredRollingSeries}
@@ -1414,7 +1680,7 @@ const DetailedResultsPage = () => {
             </div>
           </div>
 
-          <div className="viz-card detail-card bordered" style={{ padding: '20px' }}>
+          <div className="viz-card viz-card--accent detail-card bordered" data-tone="velocity" style={{ padding: '20px' }}>
             <div className="viz-card__header">
               <div className="viz-card__title">
                 <h3>Velocity & Reaction</h3>
@@ -1460,6 +1726,11 @@ const DetailedResultsPage = () => {
                 </button>
               </div>
             </div>
+            <div className="viz-card__meta">
+              <span className="viz-pill">평균 반응 {Math.round(analytics.avgReactionTime)} ms</span>
+              <span className="viz-pill">시선 반응 {Math.round(analytics.avgGazeReactionTime)} ms</span>
+              <span className="viz-pill">속도·반응 비교</span>
+            </div>
             <div style={{ marginTop: '16px', cursor: 'zoom-in' }} onClick={() => openModal('velocity')}>
               <PerformanceLineChart
                 series={filteredVelocitySeries}
@@ -1473,7 +1744,11 @@ const DetailedResultsPage = () => {
           </div>
 
           {/* Heatmap (UPDATED: Added conditional class for 'heatmap' focus) */}
-          <div className={`viz-card detail-card bordered ${focusMetric === 'heatmap' ? 'focused' : ''}`} style={{ padding: '20px' }}>
+          <div
+            className={`viz-card viz-card--accent detail-card bordered ${focusMetric === 'heatmap' ? 'focused' : ''}`}
+            data-tone="heatmap"
+            style={{ padding: '20px' }}
+          >
              <div className="viz-card__header">
               <div className="viz-card__title">
                 <h3>Gaze Heatmap</h3>
@@ -1492,6 +1767,11 @@ const DetailedResultsPage = () => {
                   <span>팝업으로 보기</span>
                 </button>
               </div>
+            </div>
+            <div className="viz-card__meta">
+              <span className="viz-pill">시선 커버 {coverage.gaze.toFixed(0)}%</span>
+              <span className="viz-pill">입력 커버 {coverage.mouse.toFixed(0)}%</span>
+              <span className="viz-pill">포인트 {heatmapPoints.length}개</span>
             </div>
             <div className="heatmap-wrapper" style={{ marginTop: '16px', border: '1px solid #333', borderRadius: '8px', overflow: 'hidden', cursor: 'zoom-in' }} onClick={() => openModal('heatmap')}>
               <div style={{ width: '100%', overflow: 'auto', maxHeight: '400px', backgroundColor: '#1a1d24' }}>
@@ -1542,8 +1822,6 @@ const DetailedResultsPage = () => {
                 <>
                   <div className="detail-level-row">
                     <span className="detail-percentile" style={{ color: level.color }}>{percentile.label}</span>
-                    <span className="detail-separator">•</span>
-                    <span className="card-level" style={level}>{level.label}</span>
                   </div>
                   <div className="detail-metric-tooltip">
                     <Info size={14} />
@@ -1568,8 +1846,6 @@ const DetailedResultsPage = () => {
                 <>
                   <div className="detail-level-row">
                     <span className="detail-percentile" style={{ color: level.color }}>{percentile.label}</span>
-                    <span className="detail-separator">•</span>
-                    <span className="card-level" style={level}>{level.label}</span>
                   </div>
                   <div className="detail-metric-tooltip">
                     <Info size={14} />
@@ -1594,8 +1870,6 @@ const DetailedResultsPage = () => {
                 <>
                   <div className="detail-level-row">
                     <span className="detail-percentile" style={{ color: level.color }}>{percentile.label}</span>
-                    <span className="detail-separator">•</span>
-                    <span className="card-level" style={level}>{level.label}</span>
                   </div>
                   <div className="detail-metric-tooltip">
                     <Info size={14} />
@@ -1620,8 +1894,6 @@ const DetailedResultsPage = () => {
                 <>
                   <div className="detail-level-row">
                     <span className="detail-percentile" style={{ color: level.color }}>{percentile.label}</span>
-                    <span className="detail-separator">•</span>
-                    <span className="card-level" style={level}>{level.label}</span>
                   </div>
                   <div className="detail-metric-tooltip">
                     <Info size={14} />
@@ -1646,8 +1918,6 @@ const DetailedResultsPage = () => {
                 <>
                   <div className="detail-level-row">
                     <span className="detail-percentile" style={{ color: level.color }}>{percentile.label}</span>
-                    <span className="detail-separator">•</span>
-                    <span className="card-level" style={level}>{level.label}</span>
                   </div>
                   <div className="detail-metric-tooltip">
                     <Info size={14} />
@@ -1672,8 +1942,6 @@ const DetailedResultsPage = () => {
                 <>
                   <div className="detail-level-row">
                     <span className="detail-percentile" style={{ color: level.color }}>{percentile.label}</span>
-                    <span className="detail-separator">•</span>
-                    <span className="card-level" style={level}>{level.label}</span>
                   </div>
                   <div className="detail-metric-tooltip">
                     <Info size={14} />
@@ -1698,8 +1966,6 @@ const DetailedResultsPage = () => {
                 <>
                   <div className="detail-level-row">
                     <span className="detail-percentile" style={{ color: level.color }}>{percentile.label}</span>
-                    <span className="detail-separator">•</span>
-                    <span className="card-level" style={level}>{level.label}</span>
                   </div>
                   <div className="detail-metric-tooltip">
                     <Info size={14} />

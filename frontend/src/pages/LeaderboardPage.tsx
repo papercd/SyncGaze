@@ -5,6 +5,8 @@ import './LeaderboardPage.css';
 import { db } from '../lib/firebase';
 import { useTranslation } from '../state/languageContext';
 import type { LeaderboardEntry } from '../utils/remoteSessions';
+import { predictScore } from '../services/predictionService';
+import type { TrainingSessionSummary } from '../state/trackingSessionContext';
 
 interface RankedEntry extends LeaderboardEntry {
   rank: number;
@@ -14,6 +16,7 @@ type SortKey =
   | 'rank'
   | 'label'
   | 'score'
+  | 'sgRankScore'
   | 'accuracy'
   | 'avgReactionTime'
   | 'gazeAimLatency'
@@ -26,6 +29,7 @@ const SORT_LABEL_KEYS: Record<SortKey, string> = {
   rank: 'leaderboard.column.rank',
   label: 'leaderboard.column.player',
   score: 'leaderboard.column.score',
+  sgRankScore: 'SG Rank',
   accuracy: 'leaderboard.column.accuracy',
   avgReactionTime: 'leaderboard.column.avgReactionTime',
   gazeAimLatency: 'leaderboard.column.gazeAimLatency',
@@ -37,8 +41,11 @@ const LIMIT_OPTIONS = [10, 50];
 
 type LeaderboardMetric = 'accuracy' | 'avgReactionTime' | 'gazeAimLatency' | 'score';
 
-const METRIC_CONFIG: Record<LeaderboardMetric, { key: SortKey; direction: SortDirection; labelKey: string; fallback: string }> = {
+type MetricConfig = { key: SortKey; direction: SortDirection; labelKey: string; fallback: string };
+
+const METRIC_CONFIG: Record<LeaderboardMetric | 'sgRankScore', MetricConfig> = {
   score: { key: 'score', direction: 'desc', labelKey: 'leaderboard.metric.score', fallback: 'Score' },
+  sgRankScore: { key: 'score', direction: 'desc', labelKey: 'leaderboard.metric.sgRankScore', fallback: 'SG Rank' },
   accuracy: { key: 'accuracy', direction: 'desc', labelKey: 'leaderboard.metric.accuracy', fallback: 'Accuracy' },
   avgReactionTime: {
     key: 'avgReactionTime',
@@ -61,10 +68,12 @@ const LeaderboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState<number>(LIMIT_OPTIONS[0]);
-  const [leaderboardMetric, setLeaderboardMetric] = useState<LeaderboardMetric>('accuracy');
+  const [leaderboardMetric, setLeaderboardMetric] = useState<LeaderboardMetric | 'sgRankScore'>('accuracy');
   const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: SortDirection }>(
     METRIC_CONFIG.accuracy,
   );
+  const [predictedScores, setPredictedScores] = useState<Record<string, number | null>>({});
+  const [isPredicting, setIsPredicting] = useState(false);
 
   const formatDate = useCallback(
     (value: string) => {
@@ -99,6 +108,56 @@ const LeaderboardPage = () => {
   }, [leaderboardMetric, visibleCount, t]);
 
   useEffect(() => {
+    const runPredictions = async () => {
+      if (!entries.length) {
+        setPredictedScores({});
+        return;
+      }
+      setIsPredicting(true);
+      try {
+        const results = await Promise.all(
+          entries.map(async entry => {
+            // LeaderboardEntry는 rawData가 없으므로 최소 정보로 세션 객체를 구성
+            const sessionStub: TrainingSessionSummary = {
+              id: entry.sessionId,
+              date: entry.sessionDate,
+              duration: entry.duration ?? 0,
+              score: entry.score,
+              predictedScore: null,
+              accuracy: entry.accuracy,
+              targetsHit: entry.targetsHit,
+              totalTargets: entry.totalTargets,
+              avgReactionTime: entry.avgReactionTime,
+              gazeAccuracy: entry.gazeAccuracy,
+              mouseAccuracy: entry.mouseAccuracy,
+              controlSensitivity: undefined,
+              screenSize: null,
+              csvData: '',
+              rawData: [],
+            };
+            try {
+              const res = await predictScore(sessionStub);
+              return { key: `${entry.uid}-${entry.sessionId}`, score: res.predictedScore ?? null };
+            } catch (err) {
+              console.warn('Prediction failed for leaderboard entry', entry.sessionId, err);
+              return { key: `${entry.uid}-${entry.sessionId}`, score: null };
+            }
+          }),
+        );
+        const map = results.reduce<Record<string, number | null>>((acc, curr) => {
+          acc[curr.key] = curr.score;
+          return acc;
+        }, {});
+        setPredictedScores(map);
+      } finally {
+        setIsPredicting(false);
+      }
+    };
+
+    runPredictions();
+  }, [entries]);
+
+  useEffect(() => {
     setSortConfig(METRIC_CONFIG[leaderboardMetric]);
   }, [leaderboardMetric]);
 
@@ -112,6 +171,10 @@ const LeaderboardPage = () => {
           '{value}',
           entry.score.toLocaleString(),
         );
+      case 'sgRankScore': {
+        const val = predictedScores[`${entry.uid}-${entry.sessionId}`];
+        return val != null ? val.toFixed(1) : isPredicting ? '...' : '--';
+      }
       case 'accuracy':
         return t('leaderboard.card.accuracy', `${entry.accuracy.toFixed(1)}%`).replace(
           '{value}',
@@ -131,6 +194,10 @@ const LeaderboardPage = () => {
       switch (leaderboardMetric) {
         case 'score':
           return entry.score;
+        case 'sgRankScore': {
+          const val = predictedScores[`${entry.uid}-${entry.sessionId}`];
+          return typeof val === 'number' ? val : -Infinity;
+        }
         case 'accuracy':
           return entry.accuracy;
         case 'avgReactionTime':
@@ -141,7 +208,7 @@ const LeaderboardPage = () => {
           return 0;
       }
     },
-    [leaderboardMetric],
+    [leaderboardMetric, predictedScores],
   );
 
   const rankedEntries = useMemo<RankedEntry[]>(() => {
@@ -175,6 +242,13 @@ const LeaderboardPage = () => {
         }
         case 'score':
           return (a.score - b.score) * directionMultiplier;
+        case 'sgRankScore': {
+          const aVal = predictedScores[`${a.uid}-${a.sessionId}`];
+          const bVal = predictedScores[`${b.uid}-${b.sessionId}`];
+          const safeA = typeof aVal === 'number' ? aVal : -Infinity;
+          const safeB = typeof bVal === 'number' ? bVal : -Infinity;
+          return (safeA - safeB) * directionMultiplier;
+        }
         case 'accuracy':
           return (a.accuracy - b.accuracy) * directionMultiplier;
         case 'avgReactionTime':
@@ -228,6 +302,14 @@ const LeaderboardPage = () => {
     .replace('{label}', sortLabel)
     .replace('{direction}', sortDirectionLabel);
 
+  const scoreRankMap = useMemo<Record<string, number>>(() => {
+    const sortedByScore = [...entries].sort((a, b) => b.score - a.score);
+    return sortedByScore.reduce<Record<string, number>>((acc, entry, idx) => {
+      acc[`${entry.uid}-${entry.sessionId}`] = idx + 1;
+      return acc;
+    }, {});
+  }, [entries]);
+
   return (
     <div className="leaderboard-page">
       <header className="leaderboard-header">
@@ -252,7 +334,7 @@ const LeaderboardPage = () => {
               <button
                 key={key}
                 className={`chip-button ${leaderboardMetric === key ? 'active' : ''}`}
-                onClick={() => setLeaderboardMetric(key as LeaderboardMetric)}
+                onClick={() => setLeaderboardMetric(key as LeaderboardMetric | 'sgRankScore')}
               >
                 {t(config.labelKey, config.fallback)}
               </button>
@@ -352,6 +434,7 @@ const LeaderboardPage = () => {
                       <th scope="col">{getSortLabel('rank', getSortLabelText('rank'))}</th>
                       <th scope="col">{getSortLabel('label', getSortLabelText('label'))}</th>
                       <th scope="col">{getSortLabel('score', getSortLabelText('score'))}</th>
+                      <th scope="col">{getSortLabel('sgRankScore', getSortLabelText('sgRankScore'))}</th>
                       <th scope="col">{getSortLabel('accuracy', getSortLabelText('accuracy'))}</th>
                       <th scope="col">{getSortLabel('avgReactionTime', getSortLabelText('avgReactionTime'))}</th>
                       <th scope="col">{getSortLabel('gazeAimLatency', getSortLabelText('gazeAimLatency'))}</th>
@@ -378,6 +461,13 @@ const LeaderboardPage = () => {
                             </div>
                           </td>
                           <td>{entry.score.toLocaleString()}</td>
+                          <td>
+                            {predictedScores[`${entry.uid}-${entry.sessionId}`] != null
+                              ? predictedScores[`${entry.uid}-${entry.sessionId}`]?.toFixed(1)
+                              : isPredicting
+                                ? '...'
+                                : '--'}
+                          </td>
                           <td>{entry.accuracy.toFixed(1)}%</td>
                           <td>{entry.avgReactionTime.toFixed(0)}ms</td>
                           <td>{entry.gazeAimLatency.toFixed(0)}ms</td>

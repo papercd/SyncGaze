@@ -42,10 +42,9 @@ const ReportPage = () => {
         return;
       }
 
-      // If session already has a score, just reflect it locally
+      // 먼저 저장된 값을 보여주고, 최신 값을 위해 API를 호출한다.
       if (activeSession.predictedScore != null) {
         setPredictedScore(activeSession.predictedScore);
-        return;
       }
 
       setIsPredicting(true);
@@ -102,11 +101,14 @@ const ReportPage = () => {
     setError(null);
 
     try {
+      // 항상 최신 예측값을 요청하고, 실패 시 기존 값으로 fallback
       let resolvedPredictedScore = predictedScore ?? activeSession.predictedScore ?? null;
-      if (resolvedPredictedScore == null) {
+      try {
         const prediction = await predictScore(activeSession);
-        resolvedPredictedScore = prediction.predictedScore ?? null;
+        resolvedPredictedScore = prediction.predictedScore ?? resolvedPredictedScore;
         setPredictedScore(resolvedPredictedScore);
+      } catch (predictionError) {
+        console.warn('Prediction request failed during report generation', predictionError);
       }
 
       const report = await generatePerformanceReport({

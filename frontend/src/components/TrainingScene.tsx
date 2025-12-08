@@ -18,6 +18,10 @@ import { LiveGaze } from '../types/calibration';
 import { useWebgazer } from '../hooks/tracking/useWebgazer';
 import ControlSettingsPanel from './ControlSettingsPanel';
 import { useWeaponSettings } from '../state/weaponSettingsContext';
+// 기존 imports 아래에 추가
+import { SoundManager } from '../utils/soundManager';
+import { useSoundSettings } from '../state/soundSettingsContext';
+import SoundSettingsPanel from './SoundSettingsPanel';
 
 interface TrainingSceneProps {
   onComplete?: (score: number, targetsHit: number, rawData: TrackingDataRecord[]) => void;
@@ -32,6 +36,7 @@ export const TrainingScene: React.FC<TrainingSceneProps> = ({ onComplete, onExit
   const [timeRemaining, setTimeRemaining] = useState(60);
   const [liveGaze, setLiveGaze] = useState<LiveGaze>({ x: null, y: null });
   const { currentWeapon } = useWeaponSettings();
+  const { masterVolume, sfxVolume, muted } = useSoundSettings();
   
   // Use WebGazer context (only for gaze data, not calibration)
   const { isReady: isWebGazerReady } = useWebgazer();
@@ -108,6 +113,8 @@ export const TrainingScene: React.FC<TrainingSceneProps> = ({ onComplete, onExit
     screenY: number;
   } | null>(null);
 
+  const soundManagerRef = useRef<SoundManager | null>(null);
+
   // Auto-start training on mount
   useEffect(() => {
     clearData();
@@ -118,7 +125,27 @@ export const TrainingScene: React.FC<TrainingSceneProps> = ({ onComplete, onExit
   }, []); // Only run once on mount
 
 
+   // 🔊 Initialize SoundManager
+  useEffect(() => {
+    const soundManager = new SoundManager();
+    soundManager.loadWeaponSounds().catch(err => {
+      console.warn('⚠️ Failed to load weapon sounds:', err);
+    });
+    soundManagerRef.current = soundManager;
+    
+    return () => {
+      soundManager.dispose();
+    };
+  }, []);
  
+    // SoundManager에 볼륨 설정 동기화
+  useEffect(() => {
+    if (soundManagerRef.current) {
+      soundManagerRef.current.setMasterVolume(masterVolume);
+      soundManagerRef.current.setSfxVolume(sfxVolume);
+      soundManagerRef.current.setMuted(muted);
+    }
+  }, [masterVolume, sfxVolume, muted]);
 
 
   // Timer - calculate based on elapsed time
@@ -213,6 +240,7 @@ export const TrainingScene: React.FC<TrainingSceneProps> = ({ onComplete, onExit
   }, []);
 
   const handleTriggerPull = useCallback(() => {
+    soundManagerRef.current?.playFire();
     weaponAnimRef.current?.triggerFire(1.0);
   }, []);
 
@@ -417,7 +445,18 @@ export const TrainingScene: React.FC<TrainingSceneProps> = ({ onComplete, onExit
               )}
             </div>
 
-            <ControlSettingsPanel compact showReset />
+             {/* 🔄 Settings Grid - Side by Side */}
+          <div className="pause-settings-grid">
+            <div className="pause-settings-section">
+              <h3 className="pause-settings-title">Control Settings</h3>
+              <ControlSettingsPanel compact showReset />
+            </div>
+            
+            <div className="pause-settings-section">
+              <h3 className="pause-settings-title">Sound Settings</h3>
+              <SoundSettingsPanel compact showReset />
+            </div>
+          </div>
 
             <p className="pause-hint">Press Esc at any time to pause training.</p>
           </div>

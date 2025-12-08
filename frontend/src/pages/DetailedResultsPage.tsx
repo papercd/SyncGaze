@@ -1528,9 +1528,7 @@ const DetailedResultsPage = () => {
                     <span className="score-scale">/ 100</span>
                     {isPredictingScore && <span className="chip">{t('detailed.training.predicting', '예측 중')}</span>}
                   </div>
-                  <p className="card-meta">
-                    {t('detailed.training.desc', '리포트 생성에 사용되는 예측 점수와 랭크입니다.')}
-                  </p>
+                  <p className="card-meta">SyncGaze만의 에임 점수와 랭크에요.</p>
                 </div>
               </div>
               <div className="rank-tooltip">

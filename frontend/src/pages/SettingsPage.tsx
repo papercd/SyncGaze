@@ -5,7 +5,7 @@ import { useTranslation } from '../state/languageContext';
 import { SensitivityPreviewModal } from '../components/SensitivityPreviewModal';
 import CrosshairSettingsPanel from '../components/CrosshairSettingsPanel';
 import WeaponSettingsPanel from '../components/WeaponSettingsPanel';
-
+import SoundSettingsPanel from '../components/SoundSettingsPanel';
 const SettingsPage = () => {
   const { t } = useTranslation();
   const [showSensitivityPreview, setShowSensitivityPreview] = useState(false);
@@ -42,6 +42,20 @@ const SettingsPage = () => {
             showReset
             onOpenPreview={() => setShowSensitivityPreview(true)}
           />
+        </section>
+
+              {/* 🔊 Sound Settings 섹션 추가 */}
+        <section className="settings-card">
+          <div className="settings-card__header">
+            <div>
+              <p className="settings-kicker">Audio</p>
+              <h2>Sound settings</h2>
+              <p className="settings-description">
+                Adjust volume levels for gunfire and other sound effects during training.
+              </p>
+            </div>
+          </div>
+          <SoundSettingsPanel showReset />
         </section>
 
         <section className="settings-card">

@@ -1,4 +1,6 @@
-.control-settings-panel {
+/* src/components/SoundSettingsPanel.css */
+
+.sound-settings-panel {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 14px;
@@ -10,31 +12,41 @@
   height: 100%; /* 전체 높이 채우기 */
 }
 
-
-.control-settings-panel--compact {
+.sound-settings-panel--compact {
   padding: 1.25rem;
   border-radius: 12px;
 }
 
-.control-settings-header {
+.sound-settings-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: auto; /* 버튼을 하단으로 밀기 */
+}
+
+/* Header */
+.sound-settings-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
 }
 
-.control-settings-header h3 {
+.sound-settings-header h3 {
   margin: 0;
   font-size: 1.2rem;
 }
 
-.control-settings-header p {
+.sound-settings-header p {
   margin: 0.25rem 0 0 0;
   color: #cdd2f7;
   font-size: 0.95rem;
 }
 
-.control-settings-value {
+/* Value Display */
+.sound-settings-value {
   background: rgba(102, 126, 234, 0.15);
   border: 1px solid rgba(102, 126, 234, 0.4);
   color: #dbe2ff;
@@ -47,58 +59,51 @@
   gap: 0.1rem;
 }
 
-.control-settings-value-primary {
+.sound-settings-value-primary {
   font-size: 1.05rem;
   line-height: 1.2;
 }
 
-.control-settings-value-subtext {
-  color: #cdd2f7;
-  font-size: 0.85rem;
-  font-weight: 600;
-  opacity: 0.9;
-}
-
-.control-settings-slider {
+/* Slider Section */
+.sound-settings-slider {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
-.control-settings-slider label {
+.sound-settings-slider label {
   color: #cdd2f7;
   font-weight: 600;
   font-size: 0.95rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.control-settings-slider input[type="range"] {
+.sound-volume-indicator {
+  color: #fff;
+  font-size: 0.9rem;
+}
+
+.sound-settings-slider input[type="range"] {
   width: 100%;
   accent-color: #667eea;
 }
 
-.control-settings-scale {
+.sound-settings-slider input[type="range"]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sound-settings-scale {
   display: flex;
   justify-content: space-between;
   color: #9ea5d6;
   font-size: 0.85rem;
 }
 
-.control-settings-footnote {
-  color: #9ea5d6;
-  font-size: 0.85rem;
-  text-align: right;
-}
-
-.control-settings-actions {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-  margin-top: auto; /* 버튼을 하단으로 밀기 */
-}
-
-.control-settings-toggle {
+/* Toggle Section */
+.sound-settings-toggle {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -109,18 +114,19 @@
   background: rgba(255, 255, 255, 0.04);
 }
 
-.control-settings-toggle h4 {
+.sound-settings-toggle h4 {
   margin: 0;
   font-size: 1rem;
   color: #fff;
 }
 
-.control-settings-toggle p {
+.sound-settings-toggle p {
   margin: 0.25rem 0 0;
   color: #cdd2f7;
   font-size: 0.9rem;
 }
 
+/* Toggle Switch (same as ControlSettingsPanel) */
 .switch {
   position: relative;
   display: inline-block;
@@ -172,7 +178,16 @@
   transform: translateX(22px);
 }
 
-.control-reset {
+/* Actions */
+.sound-settings-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.sound-reset {
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.2);
   color: #fff;
@@ -182,25 +197,7 @@
   transition: all 0.2s ease;
 }
 
-.control-reset:hover {
+.sound-reset:hover {
   border-color: #667eea;
   background: rgba(102, 126, 234, 0.1);
-}
-
-.control-test {
-  background: linear-gradient(135deg, #667eea 0%, #8f7bff 100%);
-  color: #0b1021;
-  border: none;
-  padding: 0.55rem 1.2rem;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 700;
-  letter-spacing: 0.2px;
-  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.35);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.control-test:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 10px 28px rgba(102, 126, 234, 0.45);
 }

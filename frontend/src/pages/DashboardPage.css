@@ -75,6 +75,13 @@
   margin-bottom: 3rem;
 }
 
+.welcome-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
 .welcome-section h2 {
   font-size: 2.5rem;
   margin-bottom: 0.5rem;
@@ -82,6 +89,20 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+.sg-rank-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  padding: 0.45rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.35));
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
 }
 
 .welcome-section p {
@@ -327,7 +348,7 @@
   text-align: left;
 }
 
-.sessions-table thead th:nth-child(n + 2):nth-child(-n + 5) {
+.sessions-table thead th:nth-child(n + 2):nth-child(-n + 6) {
   text-align: center;
 }
 
@@ -355,7 +376,7 @@
   font-weight: 500;
 }
 
-.sessions-table tbody td:nth-child(n + 2):nth-child(-n + 5) {
+.sessions-table tbody td:nth-child(n + 2):nth-child(-n + 6) {
   text-align: center;
 }
 

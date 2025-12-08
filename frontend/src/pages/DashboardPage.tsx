@@ -6,6 +6,7 @@ import { useTrackingSession, TrainingSessionSummary } from '../state/trackingSes
 import { useAuth } from '../state/authContext';
 import { useTranslation } from '../state/languageContext';
 import { getUserReports } from '../services/reportService';
+import { predictScore } from '../services/predictionService';
 import { collection, getDocs, limit, orderBy, query } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import type { LeaderboardEntry } from '../utils/remoteSessions';
@@ -23,6 +24,8 @@ const DashboardPage = () => {
   const isNewUser = isAnonymousSession || !hasRealSession;
   const [reactionRank, setReactionRank] = useState<number | null>(null);
   const [reactionRankSince, setReactionRankSince] = useState<string | null>(null);
+  const [predictedScores, setPredictedScores] = useState<Record<string, number | null>>({});
+  const [isLoadingPredictions, setIsLoadingPredictions] = useState(false);
 
   useEffect(() => {
     const loadReports = async () => {
@@ -201,6 +204,7 @@ const DashboardPage = () => {
     const fetchReactionRank = async () => {
       if (!user?.uid) {
         setReactionRank(null);
+        setReactionRankSince(null);
         return;
       }
       try {
@@ -225,6 +229,52 @@ const DashboardPage = () => {
     fetchReactionRank();
   }, [user?.uid]);
 
+  useEffect(() => {
+    const fetchPredictions = async () => {
+      if (!recentSessions.length) {
+        setPredictedScores({});
+        return;
+      }
+      setIsLoadingPredictions(true);
+      try {
+        const results = await Promise.all(
+          recentSessions.map(async session => {
+            try {
+              const res = await predictScore(session);
+              return { id: session.id, score: res.predictedScore ?? null };
+            } catch (error) {
+              console.warn('Failed to predict score for session', session.id, error);
+              return { id: session.id, score: null };
+            }
+          }),
+        );
+        const map = results.reduce<Record<string, number | null>>((acc, curr) => {
+          acc[curr.id] = curr.score;
+          return acc;
+        }, {});
+        setPredictedScores(map);
+      } finally {
+        setIsLoadingPredictions(false);
+      }
+    };
+
+    fetchPredictions();
+  }, [recentSessions]);
+
+  const bestPredictedSession = useMemo(() => {
+    if (!recentSessions.length) return null as { session: TrainingSessionSummary; score: number } | null;
+    let best: { session: TrainingSessionSummary; score: number } | null = null;
+    recentSessions.forEach(session => {
+      const score = predictedScores[session.id];
+      if (typeof score === 'number') {
+        if (!best || score > best.score) {
+          best = { session, score };
+        }
+      }
+    });
+    return best;
+  }, [recentSessions, predictedScores]);
+
   return (
     <div className="dashboard-page">
       {/* Header */}
@@ -234,7 +284,20 @@ const DashboardPage = () => {
       <main className="dashboard-main">
         {/* Welcome Section - ✅ NOW CONDITIONAL */}
         <section className="welcome-section">
-          <h2>{isFirstTime ? t('dashboard.welcome.first') : t('dashboard.welcome.return')}</h2>
+          <div className="welcome-header">
+            <h2>{isFirstTime ? t('dashboard.welcome.first') : t('dashboard.welcome.return')}</h2>
+            {bestPredictedSession && (
+              <span className="sg-rank-badge">
+                SG Rank {Math.round(bestPredictedSession.score)}
+                {bestPredictedSession.session.date
+                  ? ` · ${new Date(bestPredictedSession.session.date).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                    })}`
+                  : ''}
+              </span>
+            )}
+          </div>
           <p>{isFirstTime ? t('dashboard.welcome.first.desc') : t('dashboard.welcome.return.desc')}</p>
         </section>
 
@@ -396,6 +459,7 @@ const DashboardPage = () => {
                     <th scope="col">{t('dashboard.table.accuracy')}</th>
                     <th scope="col">{t('dashboard.table.targets')}</th>
                     <th scope="col">{t('dashboard.table.reaction')}</th>
+                    <th scope="col">SG Rank</th>
                     <th scope="col">{t('dashboard.table.actions')}</th>
                   </tr>
                 </thead>
@@ -417,6 +481,13 @@ const DashboardPage = () => {
                         {session.targetsHit}/{session.totalTargets}
                       </td>
                       <td>{session.avgReactionTime.toFixed(2)}ms</td>
+                      <td className="table-sg-rank">
+                        {typeof predictedScores[session.id] === 'number'
+                          ? Math.round(predictedScores[session.id] ?? 0)
+                          : isLoadingPredictions
+                            ? '...'
+                            : '--'}
+                      </td>
                       <td className="table-actions">
                         <div className="table-actions-group">
                           <button className="view-button" onClick={() => handleViewResults(session.id)}>

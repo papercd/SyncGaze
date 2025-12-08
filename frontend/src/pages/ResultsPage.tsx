@@ -501,10 +501,9 @@ const ResultsPage = () => {
       }
 
       if (sessionData.predictedScore != null) {
+        // 먼저 저장된 값을 보여주되, 최신 값을 위해 API도 호출
         setPredictedScore(sessionData.predictedScore);
-        return;
       }
-
       setIsPredictingScore(true);
       try {
         const result = await predictScore(sessionData);

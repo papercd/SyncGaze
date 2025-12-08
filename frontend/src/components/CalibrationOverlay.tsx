@@ -11,6 +11,9 @@ import {
   DWELL_RADIUS_PX 
 } from '../constants/calibration';
 
+// Keep calibration overlays above header/video overlays
+const CALIBRATION_OVERLAY_Z_INDEX = 3000;
+
 /**
  * 3-Stage Calibration Component
  * Stage 1: Smooth pursuit (circular motion)
@@ -42,7 +45,7 @@ export const ValidationOverlay: React.FC<ValidationOverlayProps> = ({
         width: '100vw',
         height: '100vh',
         backgroundColor: 'rgba(0, 0, 0, 0.95)',
-        zIndex: 1000,
+        zIndex: CALIBRATION_OVERLAY_Z_INDEX,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -78,7 +81,7 @@ export const ValidationOverlay: React.FC<ValidationOverlayProps> = ({
       width: '100vw',
       height: '100vh',
       backgroundColor: 'rgba(0, 0, 0, 0.95)',
-      zIndex: 1000,
+      zIndex: CALIBRATION_OVERLAY_Z_INDEX,
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
@@ -331,7 +334,7 @@ export const CalibrationOverlay: React.FC<CalibrationProps> = ({ onComplete, liv
           width: '100vw',
           height: '100vh',
           backgroundColor: 'rgba(0, 0, 0, 0.95)',
-          zIndex: 1000,
+          zIndex: CALIBRATION_OVERLAY_Z_INDEX,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
@@ -403,7 +406,7 @@ export const CalibrationOverlay: React.FC<CalibrationProps> = ({ onComplete, liv
           width: '100vw',
           height: '100vh',
           backgroundColor: 'rgba(0, 0, 0, 0.95)',
-          zIndex: 1000
+          zIndex: CALIBRATION_OVERLAY_Z_INDEX
         }}>
           {/* Instructions */}
           <div style={{

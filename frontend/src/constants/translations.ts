@@ -564,6 +564,8 @@ export const translations: Record<string, Record<Language, string>> = {
   'dashboard.action.train': { ko: '트레이닝 시작', en: 'Start training' },
   'dashboard.action.flow': { ko: '트래커 플로우', en: 'Tracker flow' },
   'dashboard.action.leaderboard': { ko: '리더보드', en: 'Leaderboard' },
+  'dashboard.action.howTo': { ko: 'How-to 가이드', en: 'How-to guide' },
+  'dashboard.action.settings': { ko: '세팅', en: 'Settings' },
   'dashboard.recent.title': { ko: '최근 트레이닝 세션', en: 'Recent Training Sessions' },
   'dashboard.recent.empty': { ko: '아직 세션이 없습니다. 첫 세션을 시작하세요!', en: 'No training sessions yet. Start your first session to see results!' },
   'dashboard.table.date': { ko: '날짜', en: 'Date' },
@@ -575,6 +577,151 @@ export const translations: Record<string, Record<Language, string>> = {
   'dashboard.table.view': { ko: '자세히 보기', en: 'View Details' },
   'dashboard.table.report.create': { ko: '리포트 생성하기', en: 'Create Report' },
   'dashboard.table.report.viewExisting': { ko: '리포트 확인하기', en: 'View Report' },
+
+  // How-to page
+  'howTo.kicker': { ko: '사용 가이드', en: 'How-to' },
+  'howTo.title': { ko: 'SyncGaze 사용법 한눈에 보기', en: 'How to use SyncGaze at a glance' },
+  'howTo.subtitle': {
+    ko: '캘리브레이션부터 리포트까지, 처음 사용자도 3분 만에 흐름을 이해할 수 있도록 정리했어요.',
+    en: 'From calibration to reports, a three-minute walkthrough for first-time users.',
+  },
+  'howTo.cta.start': { ko: '바로 캘리브레이션', en: 'Start calibration' },
+  'howTo.cta.settings': { ko: '컨트롤 설정 보기', en: 'Open control settings' },
+  'howTo.cta.dashboard': { ko: '대시보드로 돌아가기', en: 'Back to dashboard' },
+  'howTo.requirements.camera': { ko: '웹캠 허용', en: 'Allow webcam' },
+  'howTo.requirements.light': { ko: '정면 조명', en: 'Front lighting' },
+  'howTo.requirements.space': { ko: '마우스 패드 공간', en: 'Room for your mouse' },
+  'howTo.flow.label': { ko: '핵심 흐름', en: 'Core flow' },
+  'howTo.flow.note': {
+    ko: '각 단계는 3분 내외로 끝납니다. 정확한 시선 유지와 일정한 클릭 리듬을 신경 써 주세요.',
+    en: 'Each step takes about three minutes—focus on steady gaze and consistent click rhythm.',
+  },
+  'howTo.steps.title': { ko: '사용 흐름 한눈에 보기', en: 'See the flow in one place' },
+  'howTo.steps.subtitle': {
+    ko: '준비 - 캘리브레이션 - 트레이닝 - 결과 확인까지 필요한 포인트만 담았습니다.',
+    en: 'Essentials across setup, calibration, training, and review.',
+  },
+  'howTo.step.label': { ko: 'STEP', en: 'STEP' },
+  'howTo.step.setup.title': { ko: '환경 준비', en: 'Set up your space' },
+  'howTo.step.setup.desc': {
+    ko: '웹캠, 조명, 입력 장치를 점검해 깔끔한 캘리브레이션을 준비하세요.',
+    en: 'Check webcam, lighting, and inputs so calibration starts clean.',
+  },
+  'howTo.step.setup.item1': {
+    ko: '웹캠 권한을 허용하고 얼굴이 화면 중앙에 오도록 맞춰 주세요.',
+    en: 'Allow webcam access and keep your face centered in frame.',
+  },
+  'howTo.step.setup.item2': {
+    ko: '정면에서 은은한 조명이 비치도록 하고 역광은 피하세요.',
+    en: 'Use soft front lighting and avoid backlight.',
+  },
+  'howTo.step.setup.item3': {
+    ko: '마우스 패드 공간을 확보하고 DPI/감도를 평소와 동일하게 맞추세요.',
+    en: 'Secure mousepad space and keep DPI/sensitivity at your usual value.',
+  },
+  'howTo.step.calibration.title': { ko: '캘리브레이션', en: 'Calibration' },
+  'howTo.step.calibration.desc': {
+    ko: '화면의 점을 따라가며 클릭해 시선 좌표를 보정합니다.',
+    en: 'Follow the dots and click to align your gaze coordinates.',
+  },
+  'howTo.step.calibration.item1': {
+    ko: '점이 이동할 때마다 3회씩 정확히 클릭합니다.',
+    en: 'Click each point three times as it moves.',
+  },
+  'howTo.step.calibration.item2': {
+    ko: '머리를 고정하고 눈만 움직여 정확도를 높이세요.',
+    en: 'Keep your head steady and move only your eyes for accuracy.',
+  },
+  'howTo.step.calibration.item3': {
+    ko: '검증 단계에서 오차가 크면 조명/자세를 다시 확인하세요.',
+    en: 'If validation error is high, recheck lighting and posture.',
+  },
+  'howTo.step.training.title': { ko: '트레이닝 플레이', en: 'Training play' },
+  'howTo.step.training.desc': {
+    ko: '가이드에 따라 타겟을 바라보고 클릭하며 반응 속도를 높입니다.',
+    en: 'Look at each target first, then click to sharpen reactions.',
+  },
+  'howTo.step.training.item1': {
+    ko: '타겟이 나타나면 시선을 먼저 고정하고 클릭하세요.',
+    en: 'Lock your gaze on the target before clicking.',
+  },
+  'howTo.step.training.item2': {
+    ko: '한 세션은 짧게 진행하고 필요하면 중간에 휴식하세요.',
+    en: 'Keep sessions short and add brief breaks as needed.',
+  },
+  'howTo.step.training.item3': {
+    ko: '예상보다 느리면 감도나 조명을 다시 점검해 보세요.',
+    en: 'If reactions feel slow, revisit sensitivity and lighting.',
+  },
+  'howTo.step.review.title': { ko: '결과 확인 및 리포트', en: 'Review results & reports' },
+  'howTo.step.review.desc': {
+    ko: '대시보드와 리포트에서 정확도와 반응 속도를 비교해 보세요.',
+    en: 'Use dashboard and reports to compare accuracy and reaction times.',
+  },
+  'howTo.step.review.item1': {
+    ko: '최근 세션 카드에서 자세히 보기를 눌러 세부 지표를 확인합니다.',
+    en: 'Open recent sessions to inspect detailed metrics.',
+  },
+  'howTo.step.review.item2': {
+    ko: '리포트 버튼으로 공유용 리포트를 생성하거나 열람하세요.',
+    en: 'Use the report button to create or open shareable reports.',
+  },
+  'howTo.step.review.item3': {
+    ko: '세팅을 바꿨다면 다음 세션 결과와 비교해 최적값을 찾으세요.',
+    en: 'After changing settings, compare the next session to find the best fit.',
+  },
+  'howTo.tips.title': { ko: '좋은 결과를 위한 팁', en: 'Tips for better results' },
+  'howTo.tips.subtitle': {
+    ko: '작은 습관과 환경 조정이 정확도와 반응 속도를 크게 끌어올립니다.',
+    en: 'Small habits and setup tweaks lift accuracy and reaction time.',
+  },
+  'howTo.tip.environment': { ko: '환경 체크', en: 'Environment' },
+  'howTo.tip.distance': {
+    ko: '눈과 화면 거리를 50~70cm로 유지하고, 화면 밝기는 70% 이상으로 설정하세요.',
+    en: 'Keep 50–70cm from the screen and set brightness above 70%.',
+  },
+  'howTo.tip.light': {
+    ko: '정면 조명을 유지하고 안경 반사가 있으면 조명을 살짝 옆으로 이동하세요.',
+    en: 'Use front lighting; shift lights sideways if glasses reflect.',
+  },
+  'howTo.tip.controls': { ko: '컨트롤', en: 'Controls' },
+  'howTo.tip.sensitivity': {
+    ko: '감도는 평소 플레이 값과 동일하게 두고, 변동 시 다음 세션에서 결과를 비교하세요.',
+    en: 'Match in-game sensitivity; when you change it, compare the next session results.',
+  },
+  'howTo.tip.breaks': {
+    ko: '짧은 세션 후 1분 정도 눈 휴식을 취하면 집중력이 유지됩니다.',
+    en: 'After short sessions, rest your eyes for a minute to stay sharp.',
+  },
+  'howTo.tip.reports': { ko: '데이터 활용', en: 'Data use' },
+  'howTo.tip.review': {
+    ko: '세션별 리포트를 저장해 조명/자세/감도 변경 전후를 비교해 보세요.',
+    en: 'Save per-session reports to compare lighting, posture, or sensitivity changes.',
+  },
+  'howTo.tip.share': {
+    ko: '협업이나 코칭이 필요하면 리포트 링크를 공유해 피드백을 받아보세요.',
+    en: 'Share report links for coaching or feedback when you need collaboration.',
+  },
+  'howTo.faq.title': { ko: '자주 묻는 질문', en: 'Frequently asked questions' },
+  'howTo.faq.subtitle': {
+    ko: '간단한 해결 방법을 먼저 확인해 보세요. 문제가 지속되면 우리 팀에 문의해 주세요.',
+    en: 'Try these quick fixes first; reach out if issues persist.',
+  },
+  'howTo.faq.q1.title': { ko: '카메라 인식이 잘 안 될 때는?', en: "Camera isn't recognized?" },
+  'howTo.faq.q1.answer': {
+    ko: '브라우저의 카메라 접근 허용을 다시 확인하고, 밝은 조명에서 얼굴이 프레임 중앙에 오도록 조정해 주세요.',
+    en: 'Check browser camera permissions and center your face under bright, even light.',
+  },
+  'howTo.faq.q2.title': { ko: '정확도가 낮게 나올 때는?', en: 'Accuracy looks low?' },
+  'howTo.faq.q2.answer': {
+    ko: '캘리브레이션을 다시 실행하고, 점을 클릭할 때 머리를 고정한 채 눈만 움직였는지 확인하세요. 조명과 화면 밝기도 70% 이상으로 유지해 주세요.',
+    en: 'Run calibration again while keeping your head still. Move only your eyes and keep lighting and brightness above 70%.',
+  },
+  'howTo.faq.q3.title': { ko: '세션을 공유하거나 보관하려면?', en: 'How do I share or keep a session?' },
+  'howTo.faq.q3.answer': {
+    ko: '대시보드 > 리포트에서 세션을 선택해 리포트를 생성하세요. PDF처럼 링크를 공유하거나 다시 열람할 수 있습니다.',
+    en: 'Open Dashboard > Report, pick a session, and create a report. Share the link or open it later like a PDF.',
+  },
 
   // Calibration page
   'calibration.loader.title': { ko: '시선 추적 초기화 중...', en: 'Loading Eye Tracking...' },

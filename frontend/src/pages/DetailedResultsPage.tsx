@@ -118,15 +118,6 @@ const useDragToScroll = (enabled: boolean) => {
   };
 };
 
-const metricTooltips: Record<string, string> = {
-  accuracy: '명중률은 교전 성공률과 직접 연결됩니다. 높은 명중률은 라운드 승률을 끌어올립니다.',
-  reaction: '반응 속도가 빠를수록 첫 발 이점을 확보해 피킹/트레이드에서 유리합니다.',
-  gaze: '시선 반응은 목표 포착 속도를 의미하며, 인게임 정보 수집과 트래킹 정확도를 좌우합니다.',
-  gazeAim: '눈-손 딜레이가 짧을수록 시선과 사격이 한몸처럼 맞물려 교전 시간이 줄어듭니다.',
-  sync: '시선-마우스 동기화는 시선이 향한 곳으로 총구가 따라가는 정도로, 플릭·트래킹 일관성을 높입니다.',
-  coverage: '높은 커버리지는 더 신뢰도 높은 데이터와 정확한 분석을 보장합니다.',
-};
-
 type RankLevel = {
   key: 'trainee' | 'green' | 'blue' | 'indigo' | 'purple';
   labelKo: string;
@@ -152,121 +143,69 @@ const getRankLevel = (score: number | null): RankLevel => {
   return rankLevels.find(level => clamped >= level.min && clamped <= level.max) ?? rankLevels[rankLevels.length - 1];
 };
 
-const metricDetailLevel = (
-  key: 'accuracy' | 'reaction' | 'gaze' | 'gazeAim' | 'sync' | 'coverage',
-  analytics: PerformanceAnalytics,
-  coverage?: { gaze: number; mouse: number },
-) => {
-  const badColor = '#ff6b6b';
-  const midColor = '#f1c40f';
-  const goodColor = '#66d9ff';
-
-  switch (key) {
-    case 'accuracy': {
-      const ratio = analytics.totalTargets > 0 ? analytics.targetsHit / analytics.totalTargets : 0;
-      if (ratio >= 0.8) return { label: '상위권 명중률', color: goodColor };
-      if (ratio >= 0.5) return { label: '보통 명중률', color: midColor };
-      return { label: '명중률 개선 필요', color: badColor };
-    }
-    case 'reaction': {
-      const v = analytics.avgReactionTime;
-      if (v <= 300) return { label: '반응 속도 우수', color: goodColor };
-      if (v <= 600) return { label: '평균 반응 속도', color: midColor };
-      return { label: '반응 속도 개선 필요', color: badColor };
-    }
-    case 'gaze': {
-      const v = analytics.avgGazeReactionTime;
-      if (v <= 250) return { label: '시선 포착 빠름', color: goodColor };
-      if (v <= 450) return { label: '시선 포착 보통', color: midColor };
-      return { label: '시선 포착 지연', color: badColor };
-    }
-    case 'gazeAim': {
-      const v = analytics.gazeAimLatency;
-      if (v <= 300) return { label: '눈-손 딜레이 짧음', color: goodColor };
-      if (v <= 600) return { label: '눈-손 딜레이 보통', color: midColor };
-      return { label: '딜레이 개선 필요', color: badColor };
-    }
-    case 'sync': {
-      const v = analytics.synchronization;
-      if (v <= 120) return { label: '시선-마우스 잘 맞음', color: goodColor };
-      if (v <= 200) return { label: '동기화 보통', color: midColor };
-      return { label: '동기화 개선 필요', color: badColor };
-    }
-    case 'coverage': {
-      const gazeCov = coverage?.gaze ?? 0;
-      const mouseCov = coverage?.mouse ?? 0;
-      const avgCov = (gazeCov + mouseCov) / 2;
-      if (avgCov >= 90) return { label: '데이터 커버 우수', color: goodColor };
-      if (avgCov >= 70) return { label: '데이터 커버 보통', color: midColor };
-      return { label: '데이터 커버 부족', color: badColor };
-    }
-    default:
-      return { label: '', color: '#d8ddf3' };
-  }
-};
-
 type DetailMetricKey = 'accuracy' | 'reaction' | 'gaze' | 'gazeAim' | 'sync' | 'coverage';
 type MetricPercentile = { value: number; label: string };
 
 const clampPercentile = (value: number): number => Math.min(99, Math.max(1, Math.round(value)));
-const formatPercentileLabel = (value: number) => `상위 ${clampPercentile(value)}%`;
+const formatPercentileLabel = (value: number, formatter: (pct: number) => string) => formatter(clampPercentile(value));
 
 const metricPercentile = (
   key: DetailMetricKey,
   analytics: PerformanceAnalytics,
+  formatter: (pct: number) => string,
   coverage?: { gaze: number; mouse: number }
 ): MetricPercentile => {
   switch (key) {
     case 'accuracy': {
       const ratio = analytics.totalTargets > 0 ? analytics.targetsHit / analytics.totalTargets : 0;
-      if (ratio >= 0.9) return { value: 10, label: formatPercentileLabel(10) };
-      if (ratio >= 0.8) return { value: 20, label: formatPercentileLabel(20) };
-      if (ratio >= 0.65) return { value: 40, label: formatPercentileLabel(40) };
-      if (ratio >= 0.5) return { value: 60, label: formatPercentileLabel(60) };
-      return { value: 85, label: formatPercentileLabel(85) };
+      if (ratio >= 0.9) return { value: 10, label: formatPercentileLabel(10, formatter) };
+      if (ratio >= 0.8) return { value: 20, label: formatPercentileLabel(20, formatter) };
+      if (ratio >= 0.65) return { value: 40, label: formatPercentileLabel(40, formatter) };
+      if (ratio >= 0.5) return { value: 60, label: formatPercentileLabel(60, formatter) };
+      return { value: 85, label: formatPercentileLabel(85, formatter) };
     }
     case 'reaction': {
       const v = analytics.avgReactionTime;
-      if (v <= 200) return { value: 10, label: formatPercentileLabel(10) };
-      if (v <= 250) return { value: 25, label: formatPercentileLabel(25) };
-      if (v <= 300) return { value: 50, label: formatPercentileLabel(50) };
-      if (v <= 350) return { value: 70, label: formatPercentileLabel(70) };
-      return { value: 90, label: formatPercentileLabel(90) };
+      if (v <= 200) return { value: 10, label: formatPercentileLabel(10, formatter) };
+      if (v <= 250) return { value: 25, label: formatPercentileLabel(25, formatter) };
+      if (v <= 300) return { value: 50, label: formatPercentileLabel(50, formatter) };
+      if (v <= 350) return { value: 70, label: formatPercentileLabel(70, formatter) };
+      return { value: 90, label: formatPercentileLabel(90, formatter) };
     }
     case 'gaze': {
       const v = analytics.avgGazeReactionTime;
-      if (v <= 200) return { value: 12, label: formatPercentileLabel(12) };
-      if (v <= 250) return { value: 25, label: formatPercentileLabel(25) };
-      if (v <= 350) return { value: 45, label: formatPercentileLabel(45) };
-      if (v <= 450) return { value: 65, label: formatPercentileLabel(65) };
-      return { value: 88, label: formatPercentileLabel(88) };
+      if (v <= 200) return { value: 12, label: formatPercentileLabel(12, formatter) };
+      if (v <= 250) return { value: 25, label: formatPercentileLabel(25, formatter) };
+      if (v <= 350) return { value: 45, label: formatPercentileLabel(45, formatter) };
+      if (v <= 450) return { value: 65, label: formatPercentileLabel(65, formatter) };
+      return { value: 88, label: formatPercentileLabel(88, formatter) };
     }
     case 'gazeAim': {
       const v = analytics.gazeAimLatency;
-      if (v <= 250) return { value: 15, label: formatPercentileLabel(15) };
-      if (v <= 400) return { value: 35, label: formatPercentileLabel(35) };
-      if (v <= 600) return { value: 60, label: formatPercentileLabel(60) };
-      return { value: 85, label: formatPercentileLabel(85) };
+      if (v <= 250) return { value: 15, label: formatPercentileLabel(15, formatter) };
+      if (v <= 400) return { value: 35, label: formatPercentileLabel(35, formatter) };
+      if (v <= 600) return { value: 60, label: formatPercentileLabel(60, formatter) };
+      return { value: 85, label: formatPercentileLabel(85, formatter) };
     }
     case 'sync': {
       const v = analytics.synchronization;
-      if (v <= 90) return { value: 15, label: formatPercentileLabel(15) };
-      if (v <= 140) return { value: 35, label: formatPercentileLabel(35) };
-      if (v <= 200) return { value: 60, label: formatPercentileLabel(60) };
-      return { value: 85, label: formatPercentileLabel(85) };
+      if (v <= 90) return { value: 15, label: formatPercentileLabel(15, formatter) };
+      if (v <= 140) return { value: 35, label: formatPercentileLabel(35, formatter) };
+      if (v <= 200) return { value: 60, label: formatPercentileLabel(60, formatter) };
+      return { value: 85, label: formatPercentileLabel(85, formatter) };
     }
     case 'coverage': {
       const gazeCov = coverage?.gaze ?? 0;
       const mouseCov = coverage?.mouse ?? 0;
       const avgCov = (gazeCov + mouseCov) / 2;
-      if (avgCov >= 95) return { value: 12, label: formatPercentileLabel(12) };
-      if (avgCov >= 85) return { value: 28, label: formatPercentileLabel(28) };
-      if (avgCov >= 70) return { value: 48, label: formatPercentileLabel(48) };
-      if (avgCov >= 55) return { value: 68, label: formatPercentileLabel(68) };
-      return { value: 88, label: formatPercentileLabel(88) };
+      if (avgCov >= 95) return { value: 12, label: formatPercentileLabel(12, formatter) };
+      if (avgCov >= 85) return { value: 28, label: formatPercentileLabel(28, formatter) };
+      if (avgCov >= 70) return { value: 48, label: formatPercentileLabel(48, formatter) };
+      if (avgCov >= 55) return { value: 68, label: formatPercentileLabel(68, formatter) };
+      return { value: 88, label: formatPercentileLabel(88, formatter) };
     }
     default:
-      return { value: 50, label: formatPercentileLabel(50) };
+      return { value: 50, label: formatPercentileLabel(50, formatter) };
   }
 };
 
@@ -647,6 +586,80 @@ const DetailedResultsPage = () => {
     });
     return text;
   };
+  const formatPercentile = useCallback(
+    (value: number) =>
+      t('detailed.percentile.label', language === 'ko' ? '상위 {percentile}%' : 'Top {percentile}%').replace(
+        '{percentile}',
+        `${clampPercentile(value)}`,
+      ),
+    [language, t],
+  );
+  const metricTooltips = useMemo(
+    () => ({
+      accuracy: t('detailed.metrics.tooltip.accuracy', 'Hits show decisiveness and tempo.'),
+      reaction: t('detailed.metrics.tooltip.reaction', 'Faster reactions secure the first-shot edge.'),
+      gaze: t('detailed.metrics.tooltip.gaze', 'Gaze reaction shows how fast you acquire targets.'),
+      gazeAim: t('detailed.metrics.tooltip.gazeAim', 'Shorter gaze-aim latency keeps aim and shots synced.'),
+      sync: t('detailed.metrics.tooltip.sync', 'Gaze-mouse sync reflects aiming consistency.'),
+      coverage: t('detailed.metrics.tooltip.coverage', 'Higher coverage yields more reliable data and analysis.'),
+    }),
+    [language, t],
+  );
+  const getMetricDetailLevel = useCallback(
+    (
+      key: DetailMetricKey,
+      analytics: PerformanceAnalytics,
+      coverage?: { gaze: number; mouse: number },
+    ) => {
+      const badColor = '#ff6b6b';
+      const midColor = '#f1c40f';
+      const goodColor = '#66d9ff';
+
+      switch (key) {
+        case 'accuracy': {
+          const ratio = analytics.totalTargets > 0 ? analytics.targetsHit / analytics.totalTargets : 0;
+          if (ratio >= 0.8) return { label: t('results.level.targets.top', 'High hit rate'), color: goodColor };
+          if (ratio >= 0.5) return { label: t('results.level.targets.mid', 'Average hit rate'), color: midColor };
+          return { label: t('results.level.targets.low', 'Needs hit rate improvement'), color: badColor };
+        }
+        case 'reaction': {
+          const v = analytics.avgReactionTime;
+          if (v <= 300) return { label: t('results.level.reaction.top', 'Excellent reaction time'), color: goodColor };
+          if (v <= 600) return { label: t('results.level.reaction.mid', 'Average reaction time'), color: midColor };
+          return { label: t('results.level.reaction.low', 'Needs reaction improvement'), color: badColor };
+        }
+        case 'gaze': {
+          const v = analytics.avgGazeReactionTime;
+          if (v <= 250) return { label: t('results.level.gaze.top', 'Fast gaze acquisition'), color: goodColor };
+          if (v <= 450) return { label: t('results.level.gaze.mid', 'Average gaze acquisition'), color: midColor };
+          return { label: t('results.level.gaze.low', 'Slow gaze acquisition'), color: badColor };
+        }
+        case 'gazeAim': {
+          const v = analytics.gazeAimLatency;
+          if (v <= 300) return { label: t('results.level.gazeAim.top', 'Short gaze-hand delay'), color: goodColor };
+          if (v <= 600) return { label: t('results.level.gazeAim.mid', 'Average gaze-hand delay'), color: midColor };
+          return { label: t('results.level.gazeAim.low', 'Needs latency improvement'), color: badColor };
+        }
+        case 'sync': {
+          const v = analytics.synchronization;
+          if (v <= 120) return { label: t('results.level.sync.top', 'Great gaze-mouse sync'), color: goodColor };
+          if (v <= 200) return { label: t('results.level.sync.mid', 'Average sync'), color: midColor };
+          return { label: t('results.level.sync.low', 'Needs sync improvement'), color: badColor };
+        }
+        case 'coverage': {
+          const gazeCov = coverage?.gaze ?? 0;
+          const mouseCov = coverage?.mouse ?? 0;
+          const avgCov = (gazeCov + mouseCov) / 2;
+          if (avgCov >= 90) return { label: t('results.level.coverage.top', 'Great data coverage'), color: goodColor };
+          if (avgCov >= 70) return { label: t('results.level.coverage.mid', 'Average data coverage'), color: midColor };
+          return { label: t('results.level.coverage.low', 'Insufficient data coverage'), color: badColor };
+        }
+        default:
+          return { label: '', color: '#d8ddf3' };
+      }
+    },
+    [t],
+  );
 
   const heatmapCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const heatmapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -1325,6 +1338,10 @@ const DetailedResultsPage = () => {
         .join(' • '),
     [language],
   );
+  const sgRankSubtitle = useMemo(
+    () => t('detailed.training.subtitle', 'Your SyncGaze aim score and rank.'),
+    [language, t],
+  );
 
   const predictionFactors = useMemo(
     () => {
@@ -1528,7 +1545,7 @@ const DetailedResultsPage = () => {
                     <span className="score-scale">/ 100</span>
                     {isPredictingScore && <span className="chip">{t('detailed.training.predicting', '예측 중')}</span>}
                   </div>
-                  <p className="card-meta">SyncGaze만의 에임 점수와 랭크에요.</p>
+                  <p className="card-meta">{sgRankSubtitle}</p>
                 </div>
               </div>
               <div className="rank-tooltip">
@@ -1859,8 +1876,8 @@ const DetailedResultsPage = () => {
               )}
             </p>
             {(() => {
-              const level = metricDetailLevel('accuracy', analytics);
-              const percentile = metricPercentile('accuracy', analytics);
+              const level = getMetricDetailLevel('accuracy', analytics);
+              const percentile = metricPercentile('accuracy', analytics, formatPercentile);
               return (
                 <>
                   <div className="detail-level-row">
@@ -1869,7 +1886,7 @@ const DetailedResultsPage = () => {
                   <div className="detail-metric-tooltip">
                     <Info size={14} />
                     <span>{metricTooltips.accuracy}</span>
-                    <span className="card-level" style={level}>{level.label}</span>
+                    <span className="card-level" style={{ color: level.color }}>{level.label}</span>
                     <span className="card-percentile" style={{ color: level.color }}>{percentile.label}</span>
                   </div>
                 </>
@@ -1883,8 +1900,8 @@ const DetailedResultsPage = () => {
             <p className="card-value">{analytics.avgReactionTime.toFixed(0)} ms</p>
             <p className="card-meta">{t('detailed.metrics.reactionDesc', 'Mouse click latency')}</p>
             {(() => {
-              const level = metricDetailLevel('reaction', analytics);
-              const percentile = metricPercentile('reaction', analytics);
+              const level = getMetricDetailLevel('reaction', analytics);
+              const percentile = metricPercentile('reaction', analytics, formatPercentile);
               return (
                 <>
                   <div className="detail-level-row">
@@ -1893,7 +1910,7 @@ const DetailedResultsPage = () => {
                   <div className="detail-metric-tooltip">
                     <Info size={14} />
                     <span>{metricTooltips.reaction}</span>
-                    <span className="card-level" style={level}>{level.label}</span>
+                    <span className="card-level" style={{ color: level.color }}>{level.label}</span>
                     <span className="card-percentile" style={{ color: level.color }}>{percentile.label}</span>
                   </div>
                 </>
@@ -1907,8 +1924,8 @@ const DetailedResultsPage = () => {
             <p className="card-value">{analytics.avgGazeReactionTime.toFixed(0)} ms</p>
             <p className="card-meta">{t('detailed.metrics.gazeDesc', 'Time to first look at target')}</p>
             {(() => {
-              const level = metricDetailLevel('gaze', analytics);
-              const percentile = metricPercentile('gaze', analytics);
+              const level = getMetricDetailLevel('gaze', analytics);
+              const percentile = metricPercentile('gaze', analytics, formatPercentile);
               return (
                 <>
                   <div className="detail-level-row">
@@ -1917,7 +1934,7 @@ const DetailedResultsPage = () => {
                   <div className="detail-metric-tooltip">
                     <Info size={14} />
                     <span>{metricTooltips.gaze}</span>
-                    <span className="card-level" style={level}>{level.label}</span>
+                    <span className="card-level" style={{ color: level.color }}>{level.label}</span>
                     <span className="card-percentile" style={{ color: level.color }}>{percentile.label}</span>
                   </div>
                 </>
@@ -1931,8 +1948,8 @@ const DetailedResultsPage = () => {
             <p className="card-value">{analytics.gazeAimLatency.toFixed(0)} ms</p>
             <p className="card-meta">{t('detailed.metrics.gazeAimDesc', 'Eye vs Hand delay')}</p>
             {(() => {
-              const level = metricDetailLevel('gazeAim', analytics);
-              const percentile = metricPercentile('gazeAim', analytics);
+              const level = getMetricDetailLevel('gazeAim', analytics);
+              const percentile = metricPercentile('gazeAim', analytics, formatPercentile);
               return (
                 <>
                   <div className="detail-level-row">
@@ -1941,7 +1958,7 @@ const DetailedResultsPage = () => {
                   <div className="detail-metric-tooltip">
                     <Info size={14} />
                     <span>{metricTooltips.gazeAim}</span>
-                    <span className="card-level" style={level}>{level.label}</span>
+                    <span className="card-level" style={{ color: level.color }}>{level.label}</span>
                     <span className="card-percentile" style={{ color: level.color }}>{percentile.label}</span>
                   </div>
                 </>
@@ -1955,8 +1972,8 @@ const DetailedResultsPage = () => {
             <p className="card-value">{analytics.synchronization.toFixed(0)} px</p>
             <p className="card-meta">{t('detailed.metrics.syncDesc', 'Avg distance: Gaze ↔ Mouse')}</p>
             {(() => {
-              const level = metricDetailLevel('sync', analytics);
-              const percentile = metricPercentile('sync', analytics);
+              const level = getMetricDetailLevel('sync', analytics);
+              const percentile = metricPercentile('sync', analytics, formatPercentile);
               return (
                 <>
                   <div className="detail-level-row">
@@ -1965,7 +1982,7 @@ const DetailedResultsPage = () => {
                   <div className="detail-metric-tooltip">
                     <Info size={14} />
                     <span>{metricTooltips.sync}</span>
-                    <span className="card-level" style={level}>{level.label}</span>
+                    <span className="card-level" style={{ color: level.color }}>{level.label}</span>
                     <span className="card-percentile" style={{ color: level.color }}>{percentile.label}</span>
                   </div>
                 </>
@@ -1979,8 +1996,8 @@ const DetailedResultsPage = () => {
             <p className="card-value">{coverage.gaze.toFixed(1)}%</p>
             <p className="card-meta">{t('detailed.metrics.gazeSamplesDesc', 'Tracking coverage')}</p>
             {(() => {
-              const level = metricDetailLevel('coverage', analytics, coverage);
-              const percentile = metricPercentile('coverage', analytics, coverage);
+              const level = getMetricDetailLevel('coverage', analytics, coverage);
+              const percentile = metricPercentile('coverage', analytics, formatPercentile, coverage);
               return (
                 <>
                   <div className="detail-level-row">
@@ -1989,7 +2006,7 @@ const DetailedResultsPage = () => {
                   <div className="detail-metric-tooltip">
                     <Info size={14} />
                     <span>{metricTooltips.coverage}</span>
-                    <span className="card-level" style={level}>{level.label}</span>
+                    <span className="card-level" style={{ color: level.color }}>{level.label}</span>
                     <span className="card-percentile" style={{ color: level.color }}>{percentile.label}</span>
                   </div>
                 </>
@@ -2003,8 +2020,8 @@ const DetailedResultsPage = () => {
             <p className="card-value">{coverage.mouse.toFixed(1)}%</p>
             <p className="card-meta">{t('detailed.metrics.mouseSamplesDesc', 'Input coverage')}</p>
             {(() => {
-              const level = metricDetailLevel('coverage', analytics, coverage);
-              const percentile = metricPercentile('coverage', analytics, coverage);
+              const level = getMetricDetailLevel('coverage', analytics, coverage);
+              const percentile = metricPercentile('coverage', analytics, formatPercentile, coverage);
               return (
                 <>
                   <div className="detail-level-row">

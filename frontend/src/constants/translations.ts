@@ -188,6 +188,7 @@ export const translations: Record<string, Record<Language, string>> = {
   'detailed.training.noScore': { ko: '점수 없음', en: 'No score' },
   'detailed.training.predicting': { ko: '예측 중', en: 'Predicting' },
   'detailed.training.desc': { ko: '리포트 생성에 사용되는 예측 점수와 랭크입니다.', en: 'Predicted score and rank used for reporting.' },
+  'detailed.training.subtitle': { ko: 'SyncGaze만의 에임 점수와 랭크에요.', en: 'Your SyncGaze aim score and rank.' },
   'detailed.training.rankTitle': { ko: '점수대별 랭크', en: 'Rank by score range' },
   'detailed.training.inlineNote': {
     ko: '객체를 {gazeMs}ms에 보고, {aimMs}ms 동안 마우스를 움직여, {clickMs}ms에 쐈어요.',
@@ -214,6 +215,7 @@ export const translations: Record<string, Record<Language, string>> = {
   'detailed.metrics.mouseSamples': { ko: '마우스 샘플', en: 'Mouse Samples' },
   'detailed.metrics.mouseSamplesDesc': { ko: '입력 커버리지', en: 'Input coverage' },
   'detailed.metrics.hitRateMeta': { ko: '{hits} / {total} 타겟 명중', en: '{hits} / {total} targets hit' },
+  'detailed.percentile.label': { ko: '상위 {percentile}%', en: 'Top {percentile}%' },
 
   'detailed.data.framesWithTargets': { ko: '타겟 데이터 프레임', en: 'Frames with Target Data' },
   'detailed.data.framesWithTargetsDesc': { ko: '타겟 좌표가 함께 기록된 프레임', en: 'Frames that include target coordinates' },
@@ -1172,6 +1174,7 @@ export const translations: Record<string, Record<Language, string>> = {
   'results.tooltip.gazeAimLatency': { ko: '눈-손 딜레이가 짧을수록 조준과 발사가 맞물립니다.', en: 'Shorter gaze-aim latency keeps aim and shots synced.' },
   'results.tooltip.hitError': { ko: '히트 시점 오차(px)가 작을수록 미세 조준이 안정적입니다.', en: 'Smaller hit error means steadier micro-aim.' },
   'results.tooltip.sync': { ko: '시선-마우스 동기화는 조준 일관성을 나타냅니다.', en: 'Gaze-mouse sync reflects aiming consistency.' },
+  'results.tooltip.coverage': { ko: '높은 커버리지는 더 신뢰도 높은 데이터와 정확한 분석을 보장합니다.', en: 'Higher coverage yields more reliable data and analysis.' },
   'results.level.targets.top': { ko: '상위권 명중률', en: 'High hit rate' },
   'results.level.targets.mid': { ko: '보통 명중률', en: 'Average hit rate' },
   'results.level.targets.low': { ko: '명중률 개선 필요', en: 'Needs hit rate improvement' },
@@ -1190,8 +1193,11 @@ export const translations: Record<string, Record<Language, string>> = {
   'results.level.sync.top': { ko: '시선-마우스 잘 맞음', en: 'Great gaze-mouse sync' },
   'results.level.sync.mid': { ko: '동기화 보통', en: 'Average sync' },
   'results.level.sync.low': { ko: '동기화 개선 필요', en: 'Needs sync improvement' },
+  'results.level.coverage.top': { ko: '데이터 커버 우수', en: 'Great data coverage' },
+  'results.level.coverage.mid': { ko: '데이터 커버 보통', en: 'Average data coverage' },
+  'results.level.coverage.low': { ko: '데이터 커버 부족', en: 'Insufficient data coverage' },
   'results.sgRank.title': { ko: 'SG 랭크', en: 'SG Rank' },
-  'results.sgRank.subtitle': { ko: 'SyncGaze만의 에임 점수와 랭크예요.', en: 'Your SyncGaze aim score and rank.' },
+  'results.sgRank.subtitle': { ko: 'SyncGaze만의 에임 점수와 랭크에요.', en: 'Your SyncGaze aim score and rank.' },
   'results.sgRank.tooltip': { ko: '점수대별 랭크', en: 'Rank by score range' },
   'results.sgRank.note': {
     ko: '객체를 {gazeMs}ms에 보고, {aimMs}ms 동안 마우스를 움직여, {clickMs}ms에 쐈어요.',
@@ -1205,6 +1211,20 @@ export const translations: Record<string, Record<Language, string>> = {
   'results.sgRank.factor.tracking.desc': { ko: '마우스-타겟 정렬도', en: 'Mouse-to-target alignment' },
   'results.sgRank.factor.reaction.label': { ko: '반응', en: 'Reaction' },
   'results.sgRank.factor.reaction.desc': { ko: '평균 클릭 속도', en: 'Average click speed' },
+
+  // Detailed metrics hover tooltips
+  'detailed.metrics.tooltip.accuracy': { ko: '명중 수는 결정력과 전투 페이스를 보여줍니다.', en: 'Hits show decisiveness and tempo.' },
+  'detailed.metrics.tooltip.reaction': { ko: '반응 시간이 짧을수록 첫 발 이점을 가져갑니다.', en: 'Faster reactions secure the first-shot edge.' },
+  'detailed.metrics.tooltip.gaze': { ko: '시선 반응은 목표 포착 속도를 의미합니다.', en: 'Gaze reaction shows how fast you acquire targets.' },
+  'detailed.metrics.tooltip.gazeAim': {
+    ko: '눈-손 딜레이가 짧을수록 조준과 발사가 맞물립니다.',
+    en: 'Shorter gaze-aim latency keeps aim and shots synced.',
+  },
+  'detailed.metrics.tooltip.sync': { ko: '시선-마우스 동기화는 조준 일관성을 나타냅니다.', en: 'Gaze-mouse sync reflects aiming consistency.' },
+  'detailed.metrics.tooltip.coverage': {
+    ko: '높은 커버리지는 더 신뢰도 높은 데이터와 정확한 분석을 보장합니다.',
+    en: 'Higher coverage yields more reliable data and analysis.',
+  },
 
   // Charts and tables
   'chart.performance.empty': {

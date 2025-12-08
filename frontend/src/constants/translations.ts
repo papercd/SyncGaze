@@ -529,7 +529,7 @@ export const translations: Record<string, Record<Language, string>> = {
   'account.actions.summary': { ko: '세션 요약 보기', en: 'View session summary' },
   'account.actions.delete': { ko: '계정 탈퇴', en: 'Delete account' },
   'account.actions.signout': { ko: '로그아웃', en: 'Sign out' },
-  'account.delete.warning': { ko: '계정 삭제 기능은 관리자에게 문의하세요.', en: 'For account deletion, please contact an administrator.' },
+  'account.delete.warning': { ko: '계정 삭제 기능은 관리자에게 문의하세요. syncgaze25@gmail.com', en: 'For account deletion, please contact an administrator. syncgaze25@gmail.com' },
   'account.attendance': { ko: '출석 확인 기능은 준비 중입니다.', en: 'Attendance is coming soon.' },
   'account.summary': { ko: '세션 요약 기능은 준비 중입니다.', en: 'Session summary is coming soon.' },
 

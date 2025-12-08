@@ -279,6 +279,7 @@ export const translations: Record<string, Record<Language, string>> = {
   'settings.weapon.option.tactical.desc': { ko: '보강된 슬라이드와 경량 부품', en: 'Reinforced slide with lighter parts.' },
   'settings.weapon.option.heavy': { ko: '헤비', en: 'Heavy' },
   'settings.weapon.option.heavy.desc': { ko: '무거운 리코일 감과 강한 실루엣', en: 'Heavier recoil feel and bold silhouette.' },
+  'settings.weapon.preview': { ko: '미리보기', en: 'Preview' },
   'common.selected': { ko: '선택됨', en: 'Selected' },
 
   // Tracker flow

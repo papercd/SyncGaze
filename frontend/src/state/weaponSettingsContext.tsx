@@ -7,6 +7,8 @@ export interface WeaponOption {
   labelKey: string;
   descriptionKey: string;
   modelPath: string;
+  previewScale?: number;
+  previewYOffset?: number;
 }
 
 export const WEAPON_OPTIONS: WeaponOption[] = [
@@ -15,18 +17,24 @@ export const WEAPON_OPTIONS: WeaponOption[] = [
     labelKey: 'settings.weapon.option.standard',
     descriptionKey: 'settings.weapon.option.standard.desc',
     modelPath: '/glock/glock.glb',
+    previewScale: 1.1,
+    previewYOffset: -0.35,
   },
   {
     id: 'tactical',
     labelKey: 'settings.weapon.option.tactical',
     descriptionKey: 'settings.weapon.option.tactical.desc',
     modelPath: '/glock/second_glock.glb',
+    previewScale: 5.0,
+    previewYOffset: 1.5,
   },
   {
     id: 'heavy',
     labelKey: 'settings.weapon.option.heavy',
     descriptionKey: 'settings.weapon.option.heavy.desc',
     modelPath: '/glock/third_glock.glb',
+    previewScale: 5.0,
+    previewYOffset: 1.5,
   },
 ];
 

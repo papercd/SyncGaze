@@ -38,7 +38,7 @@ type TrendPeriod = '7days' | '30days';
 
 const SessionsHistoryPage = () => {
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const { recentSessions, setActiveSessionId } = useTrackingSession();
   const { user } = useAuth();
 
@@ -265,7 +265,9 @@ const SessionsHistoryPage = () => {
 
   const formatDate = (date: string) => {
     const dateObj = new Date(date);
-    return dateObj.toLocaleDateString(undefined, {
+    const locale = language === 'ko' ? 'ko-KR' : 'en-US';
+    return dateObj.toLocaleString(locale, {
+      weekday: 'short',
       month: 'short',
       day: 'numeric',
       year: 'numeric',

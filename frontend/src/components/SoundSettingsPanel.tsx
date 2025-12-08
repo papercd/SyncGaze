@@ -1,5 +1,6 @@
 // src/components/SoundSettingsPanel.tsx
 import { useSoundSettings } from '../state/soundSettingsContext';
+import { useTranslation } from '../state/languageContext';
 import './SoundSettingsPanel.css';
 
 interface SoundSettingsPanelProps {
@@ -20,29 +21,37 @@ const SoundSettingsPanel: React.FC<SoundSettingsPanelProps> = ({
     setMuted,
     resetToDefaults,
   } = useSoundSettings();
+  const { t } = useTranslation();
 
   const formatVolume = (value: number) => Math.round(value * 100);
+  const formatAria = (key: string, value: number) =>
+    t(key, '{value}%').replace('{value}', `${formatVolume(value)}`);
 
   return (
     <div className={`sound-settings-panel ${compact ? 'sound-settings-panel--compact' : ''}`}>
       {/* Header with Mute Status */}
       <div className="sound-settings-header">
         <div>
-          <h3>Sound settings</h3>
-          <p>Adjust volume levels for gunfire and other sound effects.</p>
+          <h3>{t('settings.sound.header.title', 'Sound settings')}</h3>
+          <p>{t('settings.sound.header.desc', 'Adjust volume levels for gunfire and other sound effects.')}</p>
         </div>
         <span
           className="sound-settings-value"
-          aria-label={`Sound ${muted ? 'muted' : 'enabled'}`}
+          aria-label={t('settings.sound.aria.status', 'Sound {state}').replace(
+            '{state}',
+            muted ? t('settings.sound.status.muted', 'muted') : t('settings.sound.status.on', 'on'),
+          )}
         >
-          <span className="sound-settings-value-primary">{muted ? '🔇 Muted' : '🔊 On'}</span>
+          <span className="sound-settings-value-primary">
+            {muted ? t('settings.sound.status.muted', '🔇 Muted') : t('settings.sound.status.on', '🔊 On')}
+          </span>
         </span>
       </div>
 
       {/* Master Volume Slider */}
       <div className="sound-settings-slider">
         <label htmlFor="master-volume">
-          Master volume
+          {t('settings.sound.master', 'Master volume')}
           <span className="sound-volume-indicator">{formatVolume(masterVolume)}%</span>
         </label>
         <input
@@ -54,19 +63,19 @@ const SoundSettingsPanel: React.FC<SoundSettingsPanelProps> = ({
           value={formatVolume(masterVolume)}
           onChange={(e) => setMasterVolume(Number(e.target.value) / 100)}
           disabled={muted}
-          aria-valuetext={`${formatVolume(masterVolume)}% volume`}
+          aria-valuetext={formatAria('settings.sound.aria.masterValue', masterVolume)}
         />
         <div className="sound-settings-scale">
-          <span>Silent</span>
-          <span>Default</span>
-          <span>Loud</span>
+          <span>{t('settings.sound.scale.silent', 'Silent')}</span>
+          <span>{t('settings.sound.scale.default', 'Default')}</span>
+          <span>{t('settings.sound.scale.loud', 'Loud')}</span>
         </div>
       </div>
 
       {/* SFX Volume Slider */}
       <div className="sound-settings-slider">
         <label htmlFor="sfx-volume">
-          Sound effects
+          {t('settings.sound.effects', 'Sound effects')}
           <span className="sound-volume-indicator">{formatVolume(sfxVolume)}%</span>
         </label>
         <input
@@ -78,20 +87,20 @@ const SoundSettingsPanel: React.FC<SoundSettingsPanelProps> = ({
           value={formatVolume(sfxVolume)}
           onChange={(e) => setSfxVolume(Number(e.target.value) / 100)}
           disabled={muted}
-          aria-valuetext={`${formatVolume(sfxVolume)}% effects volume`}
+          aria-valuetext={formatAria('settings.sound.aria.effectsValue', sfxVolume)}
         />
         <div className="sound-settings-scale">
-          <span>Quiet</span>
-          <span>Default</span>
-          <span>Loud</span>
+          <span>{t('settings.sound.scale.quiet', 'Quiet')}</span>
+          <span>{t('settings.sound.scale.default', 'Default')}</span>
+          <span>{t('settings.sound.scale.loud', 'Loud')}</span>
         </div>
       </div>
 
       {/* Mute Toggle */}
       <div className="sound-settings-toggle">
         <div>
-          <h4>Mute all sounds</h4>
-          <p>Temporarily disable all audio output during training.</p>
+          <h4>{t('settings.sound.mute.title', 'Mute all sounds')}</h4>
+          <p>{t('settings.sound.mute.desc', 'Temporarily disable all audio output during training.')}</p>
         </div>
         <label className="switch" htmlFor="mute-toggle">
           <input
@@ -99,7 +108,7 @@ const SoundSettingsPanel: React.FC<SoundSettingsPanelProps> = ({
             type="checkbox"
             checked={muted}
             onChange={(e) => setMuted(e.target.checked)}
-            aria-label="Mute all sounds"
+            aria-label={t('settings.sound.mute.title', 'Mute all sounds')}
           />
           <span className="slider"></span>
         </label>
@@ -113,7 +122,7 @@ const SoundSettingsPanel: React.FC<SoundSettingsPanelProps> = ({
             className="sound-reset"
             onClick={resetToDefaults}
           >
-            Reset to default
+            {t('settings.sound.reset', 'Reset to default')}
           </button>
         </div>
       )}

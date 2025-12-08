@@ -20,15 +20,6 @@ import { saveSessionForUser } from '../utils/remoteSessions';
 import { calculatePerformanceAnalytics, generateErrorTimeSeries, PerformanceAnalytics } from '../utils/analytics';
 import { predictScore } from '../services/predictionService';
 
-const metricTooltips: Record<string, string> = {
-  targets: '명중 수는 결정력과 전투 페이스를 보여주며, FPS에서 킬 교환과 라운드 승률에 직결됩니다.',
-  avgReaction: '반응 시간이 짧을수록 첫 발 이점을 가져가며, 피킹/트레이드 상황에서 생존율을 높입니다.',
-  gazeReaction: '시선 반응은 목표 포착 속도를 의미하며, 인게임 정보 수집과 트래킹 정확도를 좌우합니다.',
-  gazeAimLatency: '눈-손 딜레이가 짧을수록 시선과 사격이 한몸처럼 맞물려 교전 시간이 줄어듭니다.',
-  hitError: '히트 시점 오차(px)가 작을수록 크로스헤어 센터링과 미세 에임이 안정적입니다.',
-  sync: '시선-마우스 동기화는 시선이 향한 곳으로 총구가 따라가는 정도로, 플릭·트래킹 일관성을 높입니다.',
-};
-
 type MetricKey =
   | 'targets'
   | 'avgReaction'
@@ -43,105 +34,62 @@ type MetricPercentile = {
 };
 
 const clampPercentile = (value: number): number => Math.min(99, Math.max(1, Math.round(value)));
-const formatPercentileLabel = (value: number) => `상위 ${clampPercentile(value)}%`;
+const formatPercentileLabel = (value: number, formatter: (pct: number) => string) => formatter(clampPercentile(value));
 
-const metricLevel = (key: MetricKey, analytics: PerformanceAnalytics) => {
-  const badColor = '#ff6b6b';
-  const midColor = '#f1c40f';
-  const goodColor = '#66d9ff';
-
+const metricPercentile = (
+  key: MetricKey,
+  analytics: PerformanceAnalytics,
+  formatter: (pct: number) => string,
+): MetricPercentile => {
   switch (key) {
     case 'targets': {
       const ratio = analytics.totalTargets > 0 ? analytics.targetsHit / analytics.totalTargets : 0;
-      if (ratio >= 0.8) return { label: '상위권 명중률', color: goodColor };
-      if (ratio >= 0.5) return { label: '보통 명중률', color: midColor };
-      return { label: '명중률 개선 필요', color: badColor };
+      if (ratio >= 0.9) return { value: 10, label: formatPercentileLabel(10, formatter) };
+      if (ratio >= 0.8) return { value: 20, label: formatPercentileLabel(20, formatter) };
+      if (ratio >= 0.65) return { value: 40, label: formatPercentileLabel(40, formatter) };
+      if (ratio >= 0.5) return { value: 60, label: formatPercentileLabel(60, formatter) };
+      return { value: 85, label: formatPercentileLabel(85, formatter) };
     }
     case 'avgReaction': {
       const v = analytics.avgReactionTime;
-      if (v <= 300) return { label: '반응 속도 우수', color: goodColor };
-      if (v <= 600) return { label: '평균 반응 속도', color: midColor };
-      return { label: '반응 속도 개선 필요', color: badColor };
+      if (v <= 200) return { value: 10, label: formatPercentileLabel(10, formatter) };
+      if (v <= 250) return { value: 25, label: formatPercentileLabel(25, formatter) };
+      if (v <= 300) return { value: 50, label: formatPercentileLabel(50, formatter) };
+      if (v <= 350) return { value: 70, label: formatPercentileLabel(70, formatter) };
+      return { value: 90, label: formatPercentileLabel(90, formatter) };
     }
     case 'gazeReaction': {
       const v = analytics.avgGazeReactionTime;
-      if (v <= 250) return { label: '시선 포착 빠름', color: goodColor };
-      if (v <= 450) return { label: '시선 포착 보통', color: midColor };
-      return { label: '시선 포착 지연', color: badColor };
+      if (v <= 200) return { value: 12, label: formatPercentileLabel(12, formatter) };
+      if (v <= 250) return { value: 25, label: formatPercentileLabel(25, formatter) };
+      if (v <= 350) return { value: 45, label: formatPercentileLabel(45, formatter) };
+      if (v <= 450) return { value: 65, label: formatPercentileLabel(65, formatter) };
+      return { value: 88, label: formatPercentileLabel(88, formatter) };
     }
     case 'gazeAimLatency': {
       const v = analytics.gazeAimLatency;
-      if (v <= 300) return { label: '눈-손 딜레이 짧음', color: goodColor };
-      if (v <= 600) return { label: '눈-손 딜레이 보통', color: midColor };
-      return { label: '딜레이 개선 필요', color: badColor };
+      if (v <= 250) return { value: 15, label: formatPercentileLabel(15, formatter) };
+      if (v <= 400) return { value: 35, label: formatPercentileLabel(35, formatter) };
+      if (v <= 600) return { value: 60, label: formatPercentileLabel(60, formatter) };
+      return { value: 85, label: formatPercentileLabel(85, formatter) };
     }
     case 'hitError': {
       const avgError = (analytics.gazeErrorAtHit + analytics.mouseErrorAtHit) / 2;
-      if (avgError <= 80) return { label: '정확도 우수', color: goodColor };
-      if (avgError <= 140) return { label: '정확도 보통', color: midColor };
-      return { label: '정확도 개선 필요', color: badColor };
+      if (avgError <= 60) return { value: 15, label: formatPercentileLabel(15, formatter) };
+      if (avgError <= 90) return { value: 30, label: formatPercentileLabel(30, formatter) };
+      if (avgError <= 130) return { value: 55, label: formatPercentileLabel(55, formatter) };
+      if (avgError <= 170) return { value: 75, label: formatPercentileLabel(75, formatter) };
+      return { value: 90, label: formatPercentileLabel(90, formatter) };
     }
     case 'sync': {
       const v = analytics.synchronization;
-      if (v <= 120) return { label: '시선-마우스 잘 맞음', color: goodColor };
-      if (v <= 200) return { label: '동기화 보통', color: midColor };
-      return { label: '동기화 개선 필요', color: badColor };
+      if (v <= 90) return { value: 15, label: formatPercentileLabel(15, formatter) };
+      if (v <= 140) return { value: 35, label: formatPercentileLabel(35, formatter) };
+      if (v <= 200) return { value: 60, label: formatPercentileLabel(60, formatter) };
+      return { value: 85, label: formatPercentileLabel(85, formatter) };
     }
     default:
-      return { label: '', color: '#d8ddf3' };
-  }
-};
-
-const metricPercentile = (key: MetricKey, analytics: PerformanceAnalytics): MetricPercentile => {
-  switch (key) {
-    case 'targets': {
-      const ratio = analytics.totalTargets > 0 ? analytics.targetsHit / analytics.totalTargets : 0;
-      if (ratio >= 0.9) return { value: 10, label: formatPercentileLabel(10) };
-      if (ratio >= 0.8) return { value: 20, label: formatPercentileLabel(20) };
-      if (ratio >= 0.65) return { value: 40, label: formatPercentileLabel(40) };
-      if (ratio >= 0.5) return { value: 60, label: formatPercentileLabel(60) };
-      return { value: 85, label: formatPercentileLabel(85) };
-    }
-    case 'avgReaction': {
-      const v = analytics.avgReactionTime;
-      if (v <= 200) return { value: 10, label: formatPercentileLabel(10) };
-      if (v <= 250) return { value: 25, label: formatPercentileLabel(25) };
-      if (v <= 300) return { value: 50, label: formatPercentileLabel(50) };
-      if (v <= 350) return { value: 70, label: formatPercentileLabel(70) };
-      return { value: 90, label: formatPercentileLabel(90) };
-    }
-    case 'gazeReaction': {
-      const v = analytics.avgGazeReactionTime;
-      if (v <= 200) return { value: 12, label: formatPercentileLabel(12) };
-      if (v <= 250) return { value: 25, label: formatPercentileLabel(25) };
-      if (v <= 350) return { value: 45, label: formatPercentileLabel(45) };
-      if (v <= 450) return { value: 65, label: formatPercentileLabel(65) };
-      return { value: 88, label: formatPercentileLabel(88) };
-    }
-    case 'gazeAimLatency': {
-      const v = analytics.gazeAimLatency;
-      if (v <= 250) return { value: 15, label: formatPercentileLabel(15) };
-      if (v <= 400) return { value: 35, label: formatPercentileLabel(35) };
-      if (v <= 600) return { value: 60, label: formatPercentileLabel(60) };
-      return { value: 85, label: formatPercentileLabel(85) };
-    }
-    case 'hitError': {
-      const avgError = (analytics.gazeErrorAtHit + analytics.mouseErrorAtHit) / 2;
-      if (avgError <= 60) return { value: 15, label: formatPercentileLabel(15) };
-      if (avgError <= 90) return { value: 30, label: formatPercentileLabel(30) };
-      if (avgError <= 130) return { value: 55, label: formatPercentileLabel(55) };
-      if (avgError <= 170) return { value: 75, label: formatPercentileLabel(75) };
-      return { value: 90, label: formatPercentileLabel(90) };
-    }
-    case 'sync': {
-      const v = analytics.synchronization;
-      if (v <= 90) return { value: 15, label: formatPercentileLabel(15) };
-      if (v <= 140) return { value: 35, label: formatPercentileLabel(35) };
-      if (v <= 200) return { value: 60, label: formatPercentileLabel(60) };
-      return { value: 85, label: formatPercentileLabel(85) };
-    }
-    default:
-      return { value: 50, label: formatPercentileLabel(50) };
+      return { value: 50, label: formatPercentileLabel(50, formatter) };
   }
 };
 
@@ -474,6 +422,74 @@ const ResultsPage = () => {
     if (!sessionData) return '';
     return new Date(sessionData.date).toLocaleString(language === 'ko' ? 'ko-KR' : 'en-US');
   }, [language, sessionData]);
+  const formatPercentile = useCallback(
+    (value: number) =>
+      t('results.percentile.label', language === 'ko' ? '상위 {percentile}%' : 'Top {percentile}%').replace(
+        '{percentile}',
+        `${clampPercentile(value)}`,
+      ),
+    [language, t],
+  );
+  const metricTooltips = useMemo(
+    () => ({
+      targets: t('results.tooltip.targets', 'Hits show decisiveness and tempo.'),
+      avgReaction: t('results.tooltip.avgReaction', 'Faster reactions secure the first-shot edge.'),
+      gazeReaction: t('results.tooltip.gazeReaction', 'Gaze reaction shows how fast you acquire targets.'),
+      gazeAimLatency: t('results.tooltip.gazeAimLatency', 'Shorter gaze-aim latency keeps aim and shots synced.'),
+      hitError: t('results.tooltip.hitError', 'Smaller hit error means steadier micro-aim.'),
+      sync: t('results.tooltip.sync', 'Gaze-mouse sync reflects aiming consistency.'),
+    }),
+    [t],
+  );
+  const getMetricLevel = useCallback(
+    (key: MetricKey, analytics: PerformanceAnalytics) => {
+      const badColor = '#ff6b6b';
+      const midColor = '#f1c40f';
+      const goodColor = '#66d9ff';
+
+      switch (key) {
+        case 'targets': {
+          const ratio = analytics.totalTargets > 0 ? analytics.targetsHit / analytics.totalTargets : 0;
+          if (ratio >= 0.8) return { label: t('results.level.targets.top', 'High hit rate'), color: goodColor };
+          if (ratio >= 0.5) return { label: t('results.level.targets.mid', 'Average hit rate'), color: midColor };
+          return { label: t('results.level.targets.low', 'Needs hit rate improvement'), color: badColor };
+        }
+        case 'avgReaction': {
+          const v = analytics.avgReactionTime;
+          if (v <= 300) return { label: t('results.level.reaction.top', 'Excellent reaction time'), color: goodColor };
+          if (v <= 600) return { label: t('results.level.reaction.mid', 'Average reaction time'), color: midColor };
+          return { label: t('results.level.reaction.low', 'Needs reaction improvement'), color: badColor };
+        }
+        case 'gazeReaction': {
+          const v = analytics.avgGazeReactionTime;
+          if (v <= 250) return { label: t('results.level.gaze.top', 'Fast gaze acquisition'), color: goodColor };
+          if (v <= 450) return { label: t('results.level.gaze.mid', 'Average gaze acquisition'), color: midColor };
+          return { label: t('results.level.gaze.low', 'Slow gaze acquisition'), color: badColor };
+        }
+        case 'gazeAimLatency': {
+          const v = analytics.gazeAimLatency;
+          if (v <= 300) return { label: t('results.level.gazeAim.top', 'Short gaze-hand delay'), color: goodColor };
+          if (v <= 600) return { label: t('results.level.gazeAim.mid', 'Average gaze-hand delay'), color: midColor };
+          return { label: t('results.level.gazeAim.low', 'Needs latency improvement'), color: badColor };
+        }
+        case 'hitError': {
+          const avgError = (analytics.gazeErrorAtHit + analytics.mouseErrorAtHit) / 2;
+          if (avgError <= 80) return { label: t('results.level.hitError.top', 'Excellent accuracy'), color: goodColor };
+          if (avgError <= 140) return { label: t('results.level.hitError.mid', 'Average accuracy'), color: midColor };
+          return { label: t('results.level.hitError.low', 'Needs accuracy improvement'), color: badColor };
+        }
+        case 'sync': {
+          const v = analytics.synchronization;
+          if (v <= 120) return { label: t('results.level.sync.top', 'Great gaze-mouse sync'), color: goodColor };
+          if (v <= 200) return { label: t('results.level.sync.mid', 'Average sync'), color: midColor };
+          return { label: t('results.level.sync.low', 'Needs sync improvement'), color: badColor };
+        }
+        default:
+          return { label: '', color: '#d8ddf3' };
+      }
+    },
+    [t, language],
+  );
   const rankLevel = useMemo(() => getRankLevel(predictedScore), [predictedScore]);
   const rankLabel = useMemo(
     () => (language === 'ko' ? rankLevel.labelKo : rankLevel.labelEn),
@@ -493,12 +509,24 @@ const ResultsPage = () => {
     () => {
       if (!sessionData) return [];
       return [
-        { label: '명중률', value: `${sessionData.accuracy.toFixed(1)}%`, desc: '타겟 명중률 반영' },
-        { label: '트래킹', value: `${sessionData.mouseAccuracy.toFixed(1)}%`, desc: '마우스-타겟 정렬도' },
-        { label: '반응', value: `${sessionData.avgReactionTime.toFixed(0)} ms`, desc: '평균 클릭 속도' },
+        {
+          label: t('results.sgRank.factor.accuracy.label', 'Accuracy'),
+          value: `${sessionData.accuracy.toFixed(1)}%`,
+          desc: t('results.sgRank.factor.accuracy.desc', 'Reflects target hit rate'),
+        },
+        {
+          label: t('results.sgRank.factor.tracking.label', 'Tracking'),
+          value: `${sessionData.mouseAccuracy.toFixed(1)}%`,
+          desc: t('results.sgRank.factor.tracking.desc', 'Mouse-to-target alignment'),
+        },
+        {
+          label: t('results.sgRank.factor.reaction.label', 'Reaction'),
+          value: `${sessionData.avgReactionTime.toFixed(0)} ms`,
+          desc: t('results.sgRank.factor.reaction.desc', 'Average click speed'),
+        },
       ];
     },
-    [sessionData],
+    [sessionData, t],
   );
 
   useEffect(() => {
@@ -967,18 +995,22 @@ const ResultsPage = () => {
                   </div>
                   <div className="prediction-left__body">
                     <div className="title-wrap">
-                      <p className="prediction-title">SG Rank</p>
+                      <p className="prediction-title">{t('results.sgRank.title', 'SG Rank')}</p>
                     </div>
-                    <p className="prediction-subtext">SyncGaze만의 에임 점수와 랭크예요.</p>
+                    <p className="prediction-subtext">
+                      {t('results.sgRank.subtitle', 'Your SyncGaze aim score and rank.')}
+                    </p>
                     <div className="score-row">
-                      <span className="score-value">{predictedScore != null ? predictedScore.toFixed(1) : '점수 없음'}</span>
+                      <span className="score-value">
+                        {predictedScore != null ? predictedScore.toFixed(1) : t('results.sgRank.noScore', 'No score')}
+                      </span>
                       <span className="score-scale">/ 100</span>
-                      {isPredictingScore && <span className="chip">예측 중</span>}
+                      {isPredictingScore && <span className="chip">{t('results.sgRank.predicting', 'Predicting')}</span>}
                     </div>
                   </div>
                 </div>
               <div className="rank-tooltip">
-                <strong className="rank-tooltip-title">점수대별 랭크</strong>
+                <strong className="rank-tooltip-title">{t('results.sgRank.tooltip', 'Rank by score range')}</strong>
                 <ul>
                   {rankLevels.map(level => {
                     const label = language === 'ko' ? level.labelKo : level.labelEn;
@@ -994,9 +1026,13 @@ const ResultsPage = () => {
             </div>
             <div className="prediction-right">
               <span className="inline-note">
-                객체를 <span className="inline-emph">{analytics.avgGazeReactionTime.toFixed(0)}ms</span>에 보고,
-                <span className="inline-emph">{analytics.gazeAimLatency.toFixed(0)}ms</span> 동안 마우스를 움직여,
-                <span className="inline-emph">{analytics.avgReactionTime.toFixed(0)}ms</span>에 쐈어요.
+                {t(
+                  'results.sgRank.note',
+                  'Saw the target at {gazeMs}ms, moved for {aimMs}ms, and shot at {clickMs}ms.',
+                )
+                  .replace('{gazeMs}', analytics.avgGazeReactionTime.toFixed(0))
+                  .replace('{aimMs}', analytics.gazeAimLatency.toFixed(0))
+                  .replace('{clickMs}', analytics.avgReactionTime.toFixed(0))}
               </span>
               <div className="prediction-inline-factors condensed">
                 {predictionFactors.map(factor => (
@@ -1032,16 +1068,18 @@ const ResultsPage = () => {
               <h2 style={{ margin: 0 }}>{t('results.section.overview')}</h2>
             </div>
             <div className="metrics-header__actions">
-              <div className="metrics-hint">아이콘에 마우스를 올리면 설명이 표시됩니다.</div>
-              <div className="metrics-hint metrics-hint--link">카드를 클릭하면 관련 상세 분석 페이지로 이동합니다.</div>
+              <div className="metrics-hint">{t('results.metrics.hint', 'Hover icons to see descriptions.')}</div>
+              <div className="metrics-hint metrics-hint--link">
+                {t('results.metrics.hint.link', 'Click a card to open the detailed analysis page.')}
+              </div>
             </div>
           </div>
           
           <div className="metrics-grid">
             {/* 1. Targets Hit */}
             {(() => {
-              const level = metricLevel('targets', analytics);
-              const percentile = metricPercentile('targets', analytics);
+              const level = getMetricLevel('targets', analytics);
+              const percentile = metricPercentile('targets', analytics, formatPercentile);
               return (
                 <button
                   type="button"
@@ -1066,10 +1104,7 @@ const ResultsPage = () => {
                     <div className="metric-tooltip">
                       <Info size={14} />
                       <span>{metricTooltips.targets}</span>
-                      <span
-                        className="metric-level"
-                        style={{ color: level.color }}
-                      >
+                      <span className="metric-level" style={{ color: level.color }}>
                         {level.label}
                       </span>
                       <span className="metric-percentile" style={{ color: level.color }}>
@@ -1083,8 +1118,8 @@ const ResultsPage = () => {
 
             {/* 2. Avg Reaction Time (Mouse) */}
             {(() => {
-              const level = metricLevel('avgReaction', analytics);
-              const percentile = metricPercentile('avgReaction', analytics);
+              const level = getMetricLevel('avgReaction', analytics);
+              const percentile = metricPercentile('avgReaction', analytics, formatPercentile);
               return (
                 <button
                   type="button"
@@ -1108,10 +1143,7 @@ const ResultsPage = () => {
                     <div className="metric-tooltip">
                       <Info size={14} />
                       <span>{metricTooltips.avgReaction}</span>
-                      <span
-                        className="metric-level"
-                        style={{ color: level.color }}
-                      >
+                      <span className="metric-level" style={{ color: level.color }}>
                         {level.label}
                       </span>
                       <span className="metric-percentile" style={{ color: level.color }}>
@@ -1125,8 +1157,8 @@ const ResultsPage = () => {
 
             {/* 3. Gaze Reaction Time (Eye) - NEW */}
             {(() => {
-              const level = metricLevel('gazeReaction', analytics);
-              const percentile = metricPercentile('gazeReaction', analytics);
+              const level = getMetricLevel('gazeReaction', analytics);
+              const percentile = metricPercentile('gazeReaction', analytics, formatPercentile);
               return (
                 <button
                   type="button"
@@ -1150,10 +1182,7 @@ const ResultsPage = () => {
                     <div className="metric-tooltip">
                       <Info size={14} />
                       <span>{metricTooltips.gazeReaction}</span>
-                      <span
-                        className="metric-level"
-                        style={{ color: level.color }}
-                      >
+                      <span className="metric-level" style={{ color: level.color }}>
                         {level.label}
                       </span>
                       <span className="metric-percentile" style={{ color: level.color }}>
@@ -1167,8 +1196,8 @@ const ResultsPage = () => {
 
             {/* 4. Gaze-Aim Latency - NEW */}
             {(() => {
-              const level = metricLevel('gazeAimLatency', analytics);
-              const percentile = metricPercentile('gazeAimLatency', analytics);
+              const level = getMetricLevel('gazeAimLatency', analytics);
+              const percentile = metricPercentile('gazeAimLatency', analytics, formatPercentile);
               return (
                 <button
                   type="button"
@@ -1192,10 +1221,7 @@ const ResultsPage = () => {
                     <div className="metric-tooltip">
                       <Info size={14} />
                       <span>{metricTooltips.gazeAimLatency}</span>
-                      <span
-                        className="metric-level"
-                        style={{ color: level.color }}
-                      >
+                      <span className="metric-level" style={{ color: level.color }}>
                         {level.label}
                       </span>
                       <span className="metric-percentile" style={{ color: level.color }}>
@@ -1209,8 +1235,8 @@ const ResultsPage = () => {
 
             {/* 5. Errors (Gaze / Mouse) - UPDATED from Accuracy */}
             {(() => {
-              const level = metricLevel('hitError', analytics);
-              const percentile = metricPercentile('hitError', analytics);
+              const level = getMetricLevel('hitError', analytics);
+              const percentile = metricPercentile('hitError', analytics, formatPercentile);
               return (
                 <button
                   type="button"
@@ -1234,10 +1260,7 @@ const ResultsPage = () => {
                     <div className="metric-tooltip">
                       <Info size={14} />
                       <span>{metricTooltips.hitError}</span>
-                      <span
-                        className="metric-level"
-                        style={{ color: level.color }}
-                      >
+                      <span className="metric-level" style={{ color: level.color }}>
                         {level.label}
                       </span>
                       <span className="metric-percentile" style={{ color: level.color }}>
@@ -1251,8 +1274,8 @@ const ResultsPage = () => {
 
             {/* 6. Synchronization - NEW */}
             {(() => {
-              const level = metricLevel('sync', analytics);
-              const percentile = metricPercentile('sync', analytics);
+              const level = getMetricLevel('sync', analytics);
+              const percentile = metricPercentile('sync', analytics, formatPercentile);
               return (
                 <button
                   type="button"
@@ -1276,10 +1299,7 @@ const ResultsPage = () => {
                     <div className="metric-tooltip">
                       <Info size={14} />
                       <span>{metricTooltips.sync}</span>
-                      <span
-                        className="metric-level"
-                        style={{ color: level.color }}
-                      >
+                      <span className="metric-level" style={{ color: level.color }}>
                         {level.label}
                       </span>
                       <span className="metric-percentile" style={{ color: level.color }}>
@@ -1422,7 +1442,7 @@ const ResultsPage = () => {
               style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
             >
               <Sparkles size={20} />
-              리포트 생성하기
+              {t('report.actions.generate', 'Generate report')}
             </button>
           </div>
         </section>

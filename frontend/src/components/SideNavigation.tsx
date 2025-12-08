@@ -21,13 +21,13 @@ const SideNavigation = () => {
   const { t } = useTranslation();
 
   const navItems: NavItem[] = [
-    { path: '/dashboard', icon: Home, label: 'Dashboard', protected: true },
-    { path: '/calibration', icon: Crosshair, label: 'Train', protected: true },
-    { path: '/sessions', icon: BarChart3, label: 'Your sessions', protected: true },
-    { path: '/report', icon: FileText, label: 'Report', protected: true },
-    { path: '/leaderboard', icon: Trophy, label: 'Leaderboard', protected: true },
-    { path: '/how-to', icon: BookOpen, label: 'How-to-guide', protected: true },
-    { path: '/settings', icon: Settings, label: 'Settings', protected: true },
+    { path: '/dashboard', icon: Home, label: t('nav.dashboard', 'Dashboard'), protected: true },
+    { path: '/calibration', icon: Crosshair, label: t('nav.calibration', 'Train'), protected: true },
+    { path: '/sessions', icon: BarChart3, label: t('nav.sessions', 'Your sessions'), protected: true },
+    { path: '/report', icon: FileText, label: t('nav.report', 'Report'), protected: true },
+    { path: '/leaderboard', icon: Trophy, label: t('nav.leaderboard', 'Leaderboard'), protected: true },
+    { path: '/how-to', icon: BookOpen, label: t('nav.howto', 'How-to guide'), protected: true },
+    { path: '/settings', icon: Settings, label: t('nav.settings', 'Settings'), protected: true },
   ];
 
   const filteredNavItems = navItems.filter(
@@ -40,7 +40,7 @@ const SideNavigation = () => {
         <button
           type="button"
           className="collapse-toggle"
-          aria-label={collapsed ? 'Expand navigation' : 'Collapse navigation'}
+          aria-label={collapsed ? t('nav.expand', 'Expand navigation') : t('nav.collapse', 'Collapse navigation')}
           onClick={() => setCollapsed(prev => !prev)}
         >
           {collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
@@ -85,13 +85,13 @@ const SideNavigation = () => {
             type="button"
             className="user-info"
             onClick={() => navigate('/account')}
-            aria-label="계정 정보 및 세션 요약 보기"
+            aria-label={t('nav.accountSummary', 'View account info and session summary')}
           >
             <div className="user-avatar">{user.email?.[0]?.toUpperCase()}</div>
             {!collapsed && (
               <div className="user-details">
                 <div className="user-email">{user.email}</div>
-                <div className="user-meta">계정 정보 요약 보기</div>
+                <div className="user-meta">{t('nav.accountMeta', 'See account summary')}</div>
               </div>
             )}
           </button>

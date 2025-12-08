@@ -1547,7 +1547,7 @@ const DetailedResultsPage = () => {
           <p className="muted">세션 중 발생한 오차 추세와 시선 분포를 확인하세요.</p>
         </div>
         
-        <div className="viz-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
+        <div className="viz-grid detailed-viz-grid">
           
           <div
             className={`viz-card viz-card--accent detail-card bordered ${focusMetric === 'trends' ? 'focused' : ''}`}
@@ -1605,8 +1605,7 @@ const DetailedResultsPage = () => {
               <span className="viz-pill">타겟 {analytics.totalTargets}개</span>
               <span className="viz-pill">히트 {analytics.targetsHit}회</span>
             </div>
-            
-            <div style={{ marginTop: '16px', cursor: 'zoom-in' }} onClick={() => openModal('trends')}>
+            <div className="viz-preview viz-preview--chart" onClick={() => openModal('trends')}>
               <PerformanceLineChart
                 series={filteredSeries}
                 duration={sessionData.duration}
@@ -1668,7 +1667,7 @@ const DetailedResultsPage = () => {
               <span className="viz-pill">히트 {rollingPerformance.hitTimes.length}회</span>
               <span className="viz-pill">세션 {sessionData.duration}s</span>
             </div>
-            <div style={{ marginTop: '16px', cursor: 'zoom-in' }} onClick={() => openModal('rolling')}>
+            <div className="viz-preview viz-preview--chart" onClick={() => openModal('rolling')}>
               <PerformanceLineChart
                 series={filteredRollingSeries}
                 duration={sessionData.duration}
@@ -1731,7 +1730,7 @@ const DetailedResultsPage = () => {
               <span className="viz-pill">시선 반응 {Math.round(analytics.avgGazeReactionTime)} ms</span>
               <span className="viz-pill">속도·반응 비교</span>
             </div>
-            <div style={{ marginTop: '16px', cursor: 'zoom-in' }} onClick={() => openModal('velocity')}>
+            <div className="viz-preview viz-preview--chart" onClick={() => openModal('velocity')}>
               <PerformanceLineChart
                 series={filteredVelocitySeries}
                 duration={sessionData.duration}
@@ -1773,8 +1772,8 @@ const DetailedResultsPage = () => {
               <span className="viz-pill">입력 커버 {coverage.mouse.toFixed(0)}%</span>
               <span className="viz-pill">포인트 {heatmapPoints.length}개</span>
             </div>
-            <div className="heatmap-wrapper" style={{ marginTop: '16px', border: '1px solid #333', borderRadius: '8px', overflow: 'hidden', cursor: 'zoom-in' }} onClick={() => openModal('heatmap')}>
-              <div style={{ width: '100%', overflow: 'auto', maxHeight: '400px', backgroundColor: '#1a1d24' }}>
+            <div className="heatmap-wrapper viz-preview viz-preview--heatmap" onClick={() => openModal('heatmap')}>
+              <div className="heatmap-scroll">
                 <div 
                   className="heatmap-container"
                   ref={heatmapContainerRef}

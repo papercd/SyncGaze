@@ -626,9 +626,18 @@
   z-index: 30;
 }
 
+/* When sidebar is open, nudge the popup slightly right to avoid overlap */
+.side-navigation:not(.collapsed) ~ .layout-content .viz-modal-overlay {
+  padding-left: calc(1.25rem + 120px);
+}
+
+.side-navigation.collapsed ~ .layout-content .viz-modal-overlay {
+  padding-left: calc(1.25rem + 60px);
+}
+
 .viz-modal {
-  width: min(1400px, 97vw);
-  max-height: 92vh;
+  width: min(1200px, 95vw);
+  max-height: 90vh;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
@@ -719,6 +728,52 @@
   color: #cdd3f5;
 }
 
+.detailed-results-page .detailed-viz-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 1.25rem;
+}
+
+.detailed-results-page .viz-preview {
+  margin-top: 0.75rem;
+  padding: 0.65rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.detailed-results-page .viz-preview--chart {
+  max-height: 340px;
+  overflow: hidden;
+  cursor: zoom-in;
+}
+
+.detailed-results-page .viz-preview--chart .chart-scroll-wrapper {
+  max-height: 300px;
+}
+
+.detailed-results-page .viz-preview--chart .chart-svg {
+  max-height: 260px;
+}
+
+.detailed-results-page .viz-preview--heatmap {
+  cursor: zoom-in;
+  border-color: #333;
+  background: #1a1d24;
+  max-height: 340px;
+}
+
+.detailed-results-page .viz-preview--heatmap .heatmap-scroll {
+  width: 100%;
+  overflow: auto;
+  max-height: 320px;
+  background: #1a1d24;
+}
+
+.detailed-results-page .viz-preview--heatmap .heatmap-container {
+  max-height: 320px;
+}
+
 .viz-pill {
   display: inline-flex;
   align-items: center;
@@ -781,7 +836,7 @@
   background: rgba(5, 7, 18, 0.65);
   overflow: hidden;
   flex: 1;
-  min-height: 620px;
+  min-height: 540px;
   display: flex;
   flex-direction: column;
 }

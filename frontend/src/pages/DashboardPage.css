@@ -105,6 +105,10 @@
   color: #fff;
 }
 
+.sg-rank-icon {
+  margin-right: 2px;
+}
+
 .welcome-section p {
   color: #b8b8d1;
   font-size: 1.1rem;

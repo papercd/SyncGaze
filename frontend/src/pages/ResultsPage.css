@@ -233,6 +233,12 @@
   text-align: center;
 }
 
+.rank-left-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
 .title-wrap {
   display: inline-flex;
   align-items: center;
@@ -268,6 +274,91 @@
   margin: 0.15rem 0 0.2rem;
   color: #aeb5ce;
   font-size: 0.9rem;
+}
+
+.rank-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.2rem 0 0.6rem;
+}
+
+.rank-chip {
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  font-size: 0.85rem;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.rank-tooltip-container {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  overflow: visible;
+}
+
+.rank-tooltip {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  transform: translate(-50%, 12px);
+  display: inline-flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(10, 12, 24, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #f2f4ff;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  transition: all 0.2s ease;
+  pointer-events: none;
+  z-index: 5;
+  min-width: 200px;
+}
+
+.rank-tooltip ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rank-tooltip-title {
+  font-weight: 800;
+  color: #fff;
+}
+
+.rank-range {
+  color: #c7cee6;
+  font-weight: 600;
+}
+
+.rank-tooltip-container:hover .rank-tooltip,
+.rank-tooltip-container:focus-within .rank-tooltip {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.rank-info-anchor {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  font-size: 0.85rem;
+  cursor: default;
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .score-row {
@@ -310,6 +401,21 @@
 .rank-name {
   font-weight: 800;
   font-size: 1rem;
+}
+
+.rank-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.2rem 0 0.6rem;
+}
+
+.rank-chip {
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  font-size: 0.85rem;
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .rank-sub {

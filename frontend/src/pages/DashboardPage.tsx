@@ -288,6 +288,7 @@ const DashboardPage = () => {
             <h2>{isFirstTime ? t('dashboard.welcome.first') : t('dashboard.welcome.return')}</h2>
             {bestPredictedSession && (
               <span className="sg-rank-badge">
+                <Award size={16} className="sg-rank-icon" />
                 SG Rank {Math.round(bestPredictedSession.score)}
                 {bestPredictedSession.session.date
                   ? ` · ${new Date(bestPredictedSession.session.date).toLocaleDateString('en-US', {

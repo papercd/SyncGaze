@@ -590,7 +590,7 @@ const DetailedResultsPage = () => {
 
   const [sessionData, setSessionData] = useState<TrainingSessionSummary | null>(activeSession);
   const [calibration, setCalibration] = useState<CalibrationResult | null>(calibrationResult);
-  const [predictedScore, setPredictedScore] = useState<number | null>(sessionData?.predictedScore ?? null);
+  const [predictedScore, setPredictedScore] = useState<number | null>(null);
   const [isPredictingScore, setIsPredictingScore] = useState(false);
 
   const [replayTargetId, setReplayTargetId] = useState<string | null>(null);
@@ -693,6 +693,11 @@ const DetailedResultsPage = () => {
     }
   }, [calibrationResult]);
 
+  // 세션이 바뀔 때 예측 점수를 초기화 (목업 값 표시 방지)
+  useEffect(() => {
+    setPredictedScore(null);
+  }, [sessionData?.id]);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -702,11 +707,8 @@ const DetailedResultsPage = () => {
         return;
       }
 
-      if (sessionData.predictedScore != null) {
-        setPredictedScore(sessionData.predictedScore);
-        return;
-      }
-
+      // 이전 값 제거 후 새 예측 시작해 초기 75 노출 방지
+      setPredictedScore(null);
       setIsPredictingScore(true);
       try {
         const result = await predictScore(sessionData);
@@ -1303,6 +1305,16 @@ const DetailedResultsPage = () => {
     () => (language === 'ko' ? rankLevel.labelKo : rankLevel.labelEn),
     [language, rankLevel],
   );
+  const rankRangeText = useMemo(
+    () =>
+      rankLevels
+        .map(level => {
+          const label = language === 'ko' ? level.labelKo : level.labelEn;
+          return `${label}: ${level.min}-${level.max}`;
+        })
+        .join(' • '),
+    [language],
+  );
 
   const predictionFactors = useMemo(
     () => {
@@ -1465,27 +1477,49 @@ const DetailedResultsPage = () => {
       <section className="detail-section training-results">
         <div className="prediction-card detail-card bordered">
           <div className="prediction-top">
-            <div className="prediction-left">
-              <div className="rank-stack">
-                <div className="rank-medal" style={{ ['--rank-color' as string]: rankLevel.color }}>
-                  <Target size={32} />
+            <div className="prediction-left rank-tooltip-container">
+              <div className="rank-left-row">
+                <div className="rank-stack">
+                  <div className="rank-medal" style={{ ['--rank-color' as string]: rankLevel.color }}>
+                    <Target size={32} />
+                  </div>
+                  <div className="rank-row rank-row--stacked">
+                    <span
+                      className="rank-name"
+                      style={{ color: rankLevel.color }}
+                      title={`${rankLabel}: ${rankLevel.min}-${rankLevel.max}`}
+                    >
+                      {rankLabel}
+                    </span>
+                  </div>
                 </div>
-                <div className="rank-row rank-row--stacked">
-                  <span className="rank-name" style={{ color: rankLevel.color }}>{rankLabel}</span>
+                <div className="prediction-left__body">
+                  <div className="title-wrap">
+                    <p className="card-label">Training Results</p>
+                  </div>
+                  <div className="score-row">
+                    <span className="card-value">
+                      {predictedScore != null ? predictedScore.toFixed(1) : '점수 없음'}
+                    </span>
+                    <span className="score-scale">/ 100</span>
+                    {isPredictingScore && <span className="chip">예측 중</span>}
+                  </div>
+                  <p className="card-meta">리포트 생성에 사용되는 예측 점수와 랭크입니다.</p>
                 </div>
               </div>
-              <div className="prediction-left__body">
-                <div className="title-wrap">
-                  <p className="card-label">Training Results</p>
-                </div>
-                <div className="score-row">
-                  <span className="card-value">
-                    {predictedScore != null ? predictedScore.toFixed(1) : '점수 없음'}
-                  </span>
-                  <span className="score-scale">/ 100</span>
-                  {isPredictingScore && <span className="chip">예측 중</span>}
-                </div>
-                <p className="card-meta">리포트 생성에 사용되는 예측 점수와 랭크입니다.</p>
+              <div className="rank-tooltip">
+                <strong className="rank-tooltip-title">점수대별 랭크</strong>
+                <ul>
+                  {rankLevels.map(level => {
+                    const label = language === 'ko' ? level.labelKo : level.labelEn;
+                    return (
+                      <li key={level.key}>
+                        <span style={{ color: level.color, fontWeight: 700 }}>{label}</span>{' '}
+                        <span className="rank-range">({level.min}-{level.max})</span>
+                      </li>
+                    );
+                  })}
+                </ul>
               </div>
             </div>
             <div className="prediction-right">

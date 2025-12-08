@@ -8,6 +8,8 @@ import { StageInstructionProps } from '../types/calibration';
  * Explains what the user needs to do in the upcoming stage
  */
 const StageInstruction: React.FC<StageInstructionProps> = ({ stage, onStart }) => {
+  const overlayZIndex = 3000; // Keep instructions above header/webcam layers
+
   // Get stage-specific content
   const getStageContent = () => {
     switch (stage) {
@@ -51,7 +53,7 @@ const StageInstruction: React.FC<StageInstructionProps> = ({ stage, onStart }) =
       width: '100vw',
       height: '100vh',
       backgroundColor: 'rgba(0, 0, 0, 0.95)',
-      zIndex: 1000,
+      zIndex: overlayZIndex,
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',

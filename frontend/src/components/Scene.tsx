@@ -17,6 +17,7 @@ import { useTrackingData } from '../hooks/useTrackingData';
 import { CalibrationOverlay, ValidationOverlay } from './CalibrationOverlay';
 import { LiveGaze } from '../types/calibration';
 import { useWebgazer } from '../hooks/tracking/useWebgazer';
+import { useWeaponSettings } from '../state/weaponSettingsContext';
 
 type Phase = 'idle' | 'calibration' | 'confirmValidation' | 'validation' | 'training' | 'complete';
 
@@ -36,6 +37,7 @@ export const Scene: React.FC<SceneProps> = ({
   const startTimeRef = useRef<number>(0);
   
   const [liveGaze, setLiveGaze] = useState<LiveGaze>({ x: null, y: null });
+  const { currentWeapon } = useWeaponSettings();
   
   // Use WebGazer context (single source of truth for WebGazer)
   const {
@@ -380,6 +382,7 @@ export const Scene: React.FC<SceneProps> = ({
               scale={1}
               velocity={velocity}
               physics={physicsRef.current}
+              modelPath={currentWeapon.modelPath}
             />
           </>
         )}

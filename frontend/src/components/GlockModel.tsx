@@ -11,6 +11,7 @@ interface GlockModelProps {
   scale?: number;
   velocity?: THREE.Vector3;
   physics?: CS2Physics; 
+  modelPath?: string;
 }
 
 export interface GlockModelRef {
@@ -23,12 +24,13 @@ export const GlockModel = forwardRef<GlockModelRef, GlockModelProps>(({
   rotation = [0, Math.PI, 0],
   scale = 1,
   velocity = new THREE.Vector3(),
-  physics
+  physics,
+  modelPath = '/glock/glock.glb'
 }, ref) => {
   const group = useRef<THREE.Group>(null);
   const { camera } = useThree();
   
-  const { scene, animations } = useGLTF('/glock/glock.glb');
+  const { scene, animations } = useGLTF(modelPath);
   const { actions, names } = useAnimations(animations, group);
 
   const recoilOffset = useRef(new THREE.Vector3());
@@ -213,3 +215,5 @@ export const GlockModel = forwardRef<GlockModelRef, GlockModelProps>(({
 GlockModel.displayName = 'GlockModel';
 
 useGLTF.preload('/glock/glock.glb');
+useGLTF.preload('/glock/second_glock.glb');
+useGLTF.preload('/glock/third_glock.glb');

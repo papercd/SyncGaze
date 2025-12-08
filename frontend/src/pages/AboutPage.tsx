@@ -1,6 +1,7 @@
 import ProfileCard from '../components/ProfileCard';
 import Navbar from '../components/TopNavBar';
 import './AboutPage.css';
+import { useTranslation } from '../state/languageContext';
 
 interface TeamMember {
   name: string;
@@ -49,6 +50,7 @@ const teamMembers: TeamMember[] = [
 ];
 
 const AboutPage = () => {
+  const { t } = useTranslation();
   const handleContactClick = (member: TeamMember) => {
     if (member.email) {
       window.location.href = `mailto:${member.email}`;
@@ -128,6 +130,14 @@ const AboutPage = () => {
           </p>
         </div>
       </div>
+
+      <footer className="about-github-footer">
+        <p className="about-github-link">
+          <a href="https://github.com/papercd/SyncGaze" target="_blank" rel="noreferrer">
+            {t('landing.footer.githubLine', '이 프로젝트의 GitHub 저장소를 확인하려면 여기를 클릭하세요.')}
+          </a>
+        </p>
+      </footer>
     </div>
   );
 };

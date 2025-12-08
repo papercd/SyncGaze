@@ -148,6 +148,7 @@ const LandingPage = () => {
             {user ? t('landing.cta.primary.dashboard') : t('landing.cta.primary.auth')}
           </button>
         </section>
+
       </div>
     </div>
   );

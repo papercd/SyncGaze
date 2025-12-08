@@ -13,8 +13,8 @@ interface SensitivityPreviewModalProps {
 }
 
 const MouseLookDriver: React.FC<{ active: boolean }> = ({ active }) => {
-  const { controlSensitivity } = useControlSettings();
-  useMouseLook(controlSensitivity, active);
+  const { controlSensitivity, invertYAxis } = useControlSettings();
+  useMouseLook(controlSensitivity, active, invertYAxis);
   return null;
 };
 

@@ -11,7 +11,7 @@ import { collection, getDocs, limit, orderBy, query } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import type { LeaderboardEntry } from '../utils/remoteSessions';
 import { calculatePerformanceAnalytics } from '../utils/analytics';
-import { Crosshair, Trophy, Settings, Hourglass, MousePointerClick, RotateCcw, Flag, Award, Timer, ScanEye } from 'lucide-react';
+import { Crosshair, Trophy, Settings, Hourglass, MousePointerClick, RotateCcw, Flag, Award, Timer, ScanEye, BookOpen } from 'lucide-react';
 
 const DashboardPage = () => {
   const navigate = useNavigate();
@@ -200,6 +200,12 @@ const DashboardPage = () => {
     return { value: clamp, label, color };
   }, [bestGazeAimLatency]);
 
+  const reactionRankSinceText = useMemo(() => {
+    if (!reactionRankSince) return '';
+    const formatted = new Date(reactionRankSince).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return t('dashboard.reaction.since', '(since {date})').replace('{date}', formatted);
+  }, [reactionRankSince, t]);
+
   useEffect(() => {
     const fetchReactionRank = async () => {
       if (!user?.uid) {
@@ -300,6 +306,27 @@ const DashboardPage = () => {
             )}
           </div>
           <p>{isFirstTime ? t('dashboard.welcome.first.desc') : t('dashboard.welcome.return.desc')}</p>
+          <div className="welcome-row">
+            <div className="welcome-copy">
+              <h2>{isFirstTime ? t('dashboard.welcome.first') : t('dashboard.welcome.return')}</h2>
+              <p>{isFirstTime ? t('dashboard.welcome.first.desc') : t('dashboard.welcome.return.desc')}</p>
+            </div>
+            {reactionRank && reactionRank <= 3 && (
+              <div className="stat-congrats welcome-congrats" data-rank={reactionRank}>
+                <p className="stat-congrats__title">
+                  {t('dashboard.reaction.congratsTitle', '축하합니다! 전체서버 {rank}등 랭커 입니다!').replace(
+                    '{rank}',
+                    `${reactionRank}`,
+                  )}
+                </p>
+                <p className="stat-congrats__meta">
+                  {t('dashboard.reaction.congratsMeta', '현재 #{rank}위를 유지중 {since}')
+                    .replace('{rank}', `${reactionRank}`)
+                    .replace('{since}', reactionRankSinceText)}
+                </p>
+              </div>
+            )}
+          </div>
         </section>
 
         {/* Reaction Time (Best) - standalone row */}
@@ -323,19 +350,10 @@ const DashboardPage = () => {
                       <span className="medal-rank">#{reactionRank}</span>
                     </span>
                   )}
-                </div>
-                <p>{t('dashboard.reaction.label', 'Reaction Time (best)')}</p>
               </div>
+                <p>{t('dashboard.reaction.label', 'Reaction Time (best)')}</p>
+            </div>
 
-              {reactionRank && reactionRank <= 3 && (
-                <div className="stat-congrats" data-rank={reactionRank}>
-                  <p className="stat-congrats__title">축하합니다! 전체서버 {reactionRank}등 랭커 입니다!</p>
-                  <p className="stat-congrats__meta">
-                    현재 #{reactionRank}위를 유지중
-                    {reactionRankSince ? ` (since ${new Date(reactionRankSince).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})` : ''}
-                  </p>
-                </div>
-              )}
             </div>
           </div>
 
@@ -434,11 +452,17 @@ const DashboardPage = () => {
             </div>
             {t('dashboard.action.leaderboard')}
           </button>
+          <button className="start-training-button" onClick={() => navigate('/how-to')}>
+              <div className ="button-icon">
+                <BookOpen size={24} strokeWidth={2.5}/>   
+              </div>
+            {t('dashboard.action.howTo', 'How-to 가이드')}
+          </button>
           <button className="start-training-button" onClick={() => navigate('/settings')}>
               <div className ="button-icon">
                 <Settings size={24} strokeWidth={2.5}/>   
               </div>
-            Settings
+            {t('dashboard.action.settings', '세팅')}
           </button>
         </section>
 

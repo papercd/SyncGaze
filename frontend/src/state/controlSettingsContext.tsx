@@ -7,10 +7,12 @@ export const MAX_SENSITIVITY = 0.02;
 
 export interface ControlSettingsState {
   controlSensitivity: number;
+  invertYAxis: boolean;
 }
 
 interface ControlSettingsContextValue extends ControlSettingsState {
   setControlSensitivity: (value: number) => void;
+  setInvertYAxis: (value: boolean) => void;
   resetSettings: () => void;
 }
 
@@ -18,7 +20,7 @@ const ControlSettingsContext = createContext<ControlSettingsContextValue | undef
 
 const loadSettings = (): ControlSettingsState => {
   if (typeof window === 'undefined') {
-    return { controlSensitivity: DEFAULT_SENSITIVITY };
+    return { controlSensitivity: DEFAULT_SENSITIVITY, invertYAxis: false };
   }
 
   try {
@@ -27,13 +29,14 @@ const loadSettings = (): ControlSettingsState => {
       const parsed = JSON.parse(stored) as Partial<ControlSettingsState>;
       return {
         controlSensitivity: parsed.controlSensitivity ?? DEFAULT_SENSITIVITY,
+        invertYAxis: parsed.invertYAxis ?? false,
       };
     }
   } catch (error) {
     console.warn('Failed to parse control settings:', error);
   }
 
-  return { controlSensitivity: DEFAULT_SENSITIVITY };
+  return { controlSensitivity: DEFAULT_SENSITIVITY, invertYAxis: false };
 };
 
 export const ControlSettingsProvider = ({ children }: { children: ReactNode }) => {
@@ -49,11 +52,16 @@ export const ControlSettingsProvider = ({ children }: { children: ReactNode }) =
     setSettings(prev => ({ ...prev, controlSensitivity: clamped }));
   };
 
-  const resetSettings = () => setSettings({ controlSensitivity: DEFAULT_SENSITIVITY });
+  const setInvertYAxis = (value: boolean) => {
+    setSettings(prev => ({ ...prev, invertYAxis: value }));
+  };
+
+  const resetSettings = () => setSettings({ controlSensitivity: DEFAULT_SENSITIVITY, invertYAxis: false });
 
   const value = useMemo<ControlSettingsContextValue>(() => ({
     ...settings,
     setControlSensitivity,
+    setInvertYAxis,
     resetSettings,
   }), [settings]);
 

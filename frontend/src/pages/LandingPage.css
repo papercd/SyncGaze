@@ -381,6 +381,24 @@
   z-index: 10; /* Ensures text stays above crosshair */
 }
 
+.landing-footer {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  text-align: center;
+  color: #b8b8d1;
+}
+
+.landing-github-link a {
+  color: #8fb4ff;
+  text-decoration: underline;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.landing-github-link a:hover {
+  color: #c3d6ff;
+}
+
 /* Footer */
 .footer {
   padding: 2rem;

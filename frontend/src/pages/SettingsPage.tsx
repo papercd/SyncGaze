@@ -48,10 +48,10 @@ const SettingsPage = () => {
         <section className="settings-card">
           <div className="settings-card__header">
             <div>
-              <p className="settings-kicker">Audio</p>
-              <h2>Sound settings</h2>
+              <p className="settings-kicker">{t('settings.sound.kicker', 'Audio')}</p>
+              <h2>{t('settings.sound.title', 'Sound settings')}</h2>
               <p className="settings-description">
-                Adjust volume levels for gunfire and other sound effects during training.
+                {t('settings.sound.desc', 'Adjust volume levels for gunfire and other sound effects during training.')}
               </p>
             </div>
           </div>

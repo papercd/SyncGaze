@@ -209,7 +209,7 @@ const TrainingPage = () => {
       
       {/* Pre-Training Instructions */}
           {!isTraining && !isComplete && (
-            <div className="training-overlay">
+            <div className="training-overlay training-overlay--center">
               <div className="training-instructions">
             <h1>{t('training.overlay.title')}</h1>
             <div className="training-info">
@@ -258,19 +258,23 @@ const TrainingPage = () => {
 
       {/* Post-Training Results */}
       {isComplete && (
-        <div className="training-overlay">
+        <div className="training-overlay training-overlay--center">
           <div className="training-complete">
             <h1>{t('training.complete.title')}</h1>
             <div className="completion-stats">
               <div className="stat-card">
-                <span className="stat-icon">🎯</span>
+                <span className="stat-icon">
+                  <Crosshair size={36} strokeWidth={2.5} />
+                </span>
                 <div className="stat-content">
                   <h3>{t('training.complete.score')}</h3>
                   <p className="stat-value">{finalScore}</p>
                 </div>
               </div>
               <div className="stat-card">
-                <span className="stat-icon">⏱️</span>
+                <span className="stat-icon">
+                  <Timer size={36} strokeWidth={2.5} />
+                </span>
                 <div className="stat-content">
                   <h3>{t('training.complete.duration')}</h3>
                   <p className="stat-value">60s</p>
@@ -284,9 +288,6 @@ const TrainingPage = () => {
               </button>
               <button className="start-button" onClick={handleStartTraining}>
                 {t('training.button.trainAgain')}
-              </button>
-              <button className="back-button-inline" onClick={handleBackToDashboard}>
-                {t('training.button.back')}
               </button>
             </div>
           </div>

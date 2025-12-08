@@ -126,7 +126,7 @@
 
 .info-item {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 1.5rem;
   background: rgba(255, 255, 255, 0.03);
   padding: 1.5rem;
@@ -135,8 +135,12 @@
 }
 
 .info-icon {
-  font-size: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+  min-width: 2.5rem;
+  color: #dbe2ff;
 }
 
 .info-item h3 {

@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { TrainingScene } from '../components/TrainingScene';
 import { TrackingDataRecord } from '../hooks/useTrackingData';
 import './TrainingPage.css';
+import { Timer, Crosshair, BarChart3 } from 'lucide-react';
 import {
   TrainingDataPoint,
   TrainingSessionSummary,
@@ -213,7 +214,9 @@ const TrainingPage = () => {
             <h1>{t('training.overlay.title')}</h1>
             <div className="training-info">
               <div className="info-item">
-                <span className="info-icon">⏱️</span>
+                <span className="info-icon">
+                  <Timer size={40} strokeWidth={2.5} />
+                </span>
                 <div>
                   <h3>{t('training.info.session.title')}</h3>
                   <p>{t('training.info.session.desc')}</p>
@@ -221,7 +224,9 @@ const TrainingPage = () => {
               </div>
 
               <div className="info-item">
-                <span className="info-icon">🎯</span>
+                <span className="info-icon">
+                  <Crosshair size={40} strokeWidth={2.5} />
+                </span>
                 <div>
                   <h3>{t('training.info.gaze.title')}</h3>
                   <p>{t('training.info.gaze.desc')}</p>
@@ -229,7 +234,9 @@ const TrainingPage = () => {
               </div>
 
               <div className="info-item">
-                <span className="info-icon">📊</span>
+                <span className="info-icon">
+                  <BarChart3 size={40} strokeWidth={2.5} />
+                </span>
                 <div>
                   <h3>{t('training.info.performance.title')}</h3>
                   <p>{t('training.info.performance.desc')}</p>

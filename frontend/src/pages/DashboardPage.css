@@ -83,6 +83,13 @@
 }
 
 .welcome-section h2 {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
 .welcome-row {
   display: flex;
   align-items: flex-start;
@@ -119,6 +126,11 @@
 }
 
 .welcome-section p {
+  color: #b8b8d1;
+  font-size: 1.1rem;
+  margin: 0;
+}
+
 .welcome-copy p {
   color: #b8b8d1;
   font-size: 1.1rem;

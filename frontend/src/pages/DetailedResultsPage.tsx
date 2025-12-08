@@ -1485,7 +1485,7 @@ const DetailedResultsPage = () => {
                   <span className="score-scale">/ 100</span>
                   {isPredictingScore && <span className="chip">예측 중</span>}
                 </div>
-                <p className="card-meta">머신러닝으로 계산한 에임 실력 점수와 랭크예요.</p>
+                <p className="card-meta">리포트 생성에 사용되는 예측 점수와 랭크입니다.</p>
               </div>
             </div>
             <div className="prediction-right">

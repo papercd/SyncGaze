@@ -118,8 +118,6 @@ const DashboardPage = () => {
   // ✅ NEW: Conditional welcome message based on session history
   const isFirstTime = recentSessions.length === 0;
 
-  const latestSession = recentSessions[0];
-
   const bestReactionSession = useMemo(() => {
     if (!recentSessions.length) return null;
     return [...recentSessions].reduce((best, session) => {
@@ -278,7 +276,7 @@ const DashboardPage = () => {
           </div>
 
           <div className="stat-card reaction-stat">
-            <div className ="stat-icon">
+            <div className="stat-icon">
               <ScanEye size={32} strokeWidth={2.5}/>   
             </div>
             <div className="stat-info">

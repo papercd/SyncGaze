@@ -11,7 +11,19 @@ import { collection, getDocs, limit, orderBy, query } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import type { LeaderboardEntry } from '../utils/remoteSessions';
 import { calculatePerformanceAnalytics } from '../utils/analytics';
-import { Crosshair, Trophy, Settings, Hourglass, MousePointerClick, RotateCcw, Flag, Award, Timer, ScanEye, BookOpen } from 'lucide-react';
+import {
+  Crosshair,
+  Trophy,
+  Settings,
+  Hourglass,
+  MousePointerClick,
+  RotateCcw,
+  Flag,
+  Award,
+  Timer,
+  ScanEye,
+  BookOpen,
+} from 'lucide-react';
 
 const DashboardPage = () => {
   const navigate = useNavigate();

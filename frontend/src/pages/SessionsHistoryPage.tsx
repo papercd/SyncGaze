@@ -5,7 +5,9 @@ import { useTrackingSession } from '../state/trackingSessionContext';
 import { useAuth } from '../state/authContext';
 import { useTranslation } from '../state/languageContext';
 import { getUserReports } from '../services/reportService';
+import { calculatePerformanceAnalytics } from '../utils/analytics';
 import { Line } from 'react-chartjs-2';
+import { AlertTriangle, Lightbulb } from 'lucide-react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -137,6 +139,14 @@ const SessionsHistoryPage = () => {
           tension: 0.4,
           yAxisID: 'y1',
         },
+        {
+          label: t('sessions.trend.sgScore', 'SG Score'),
+          data: filteredSessions.map(s => s.score),
+          borderColor: 'rgba(78, 205, 196, 1)',
+          backgroundColor: 'rgba(78, 205, 196, 0.1)',
+          fill: true,
+          tension: 0.35,
+        },
       ],
     };
   }, [recentSessions, trendPeriod, t]);
@@ -187,7 +197,7 @@ const SessionsHistoryPage = () => {
         },
         title: {
           display: true,
-          text: 'Accuracy (%)',
+          text: t('sessions.trend.yAxis.accuracy', 'Accuracy (%)'),
           color: '#d9d9e7',
         },
       },
@@ -203,7 +213,7 @@ const SessionsHistoryPage = () => {
         },
         title: {
           display: true,
-          text: 'Reaction Time (ms)',
+          text: t('sessions.trend.yAxis.reaction', 'Reaction Time (ms)'),
           color: '#d9d9e7',
         },
       },
@@ -271,18 +281,148 @@ const SessionsHistoryPage = () => {
     return 'poor';
   };
 
+  const coachingTips = useMemo(() => {
+    const validSessions = recentSessions.filter(session => !session.id.startsWith('mock-'));
+    if (!validSessions.length) return [];
+    const sorted = [...validSessions].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+    );
+    const latest = sorted.slice(0, 3);
+    const analytics = latest
+      .map(session => calculatePerformanceAnalytics(session.rawData))
+      .filter(Boolean);
+
+    const averageMetric = (getter: (a: ReturnType<typeof calculatePerformanceAnalytics>) => number) => {
+      const values = analytics
+        .map(getter)
+        .filter(v => Number.isFinite(v) && v > 0);
+      if (!values.length) return null;
+      return values.reduce((sum, v) => sum + v, 0) / values.length;
+    };
+
+    const avgReaction = averageMetric(a => a.avgReactionTime);
+    const avgGazeReaction = averageMetric(a => a.avgGazeReactionTime);
+    const avgGazeAim = averageMetric(a => a.gazeAimLatency);
+    const avgAccuracy = averageMetric(a =>
+      a.totalTargets > 0 ? (a.targetsHit / a.totalTargets) * 100 : 0,
+    );
+
+    const weaknessScore = (value: number, target: number, lowerIsBetter: boolean) => {
+      if (!Number.isFinite(value)) return 0;
+      if (lowerIsBetter) {
+        return Math.max(0, (value - target) / Math.max(target, 1));
+      }
+      return Math.max(0, (target - value) / Math.max(target, 1));
+    };
+
+    const candidates: {
+      key: string;
+      label: string;
+      detail: string;
+      action: string;
+      score: number;
+    }[] = [];
+
+    if (avgReaction !== null) {
+      const diff = avgReaction - 420;
+      candidates.push({
+        key: 'reaction',
+        label: t('sessions.coaching.metric.reaction', '반응 속도'),
+        detail: `+${Math.max(0, diff).toFixed(0)}ms · ${t('sessions.coaching.detail.recentAvg', '최근 3세션 평균 {value}ms').replace('{value}', avgReaction.toFixed(0))}`,
+        action: t('sessions.coaching.action.reaction', '짧은 플릭/스냅 드릴로 첫 발 시간을 줄여보세요.'),
+        score: weaknessScore(avgReaction, 420, true),
+      });
+    }
+
+    if (avgGazeReaction !== null) {
+      const diff = avgGazeReaction - 300;
+      candidates.push({
+        key: 'gaze',
+        label: t('sessions.coaching.metric.gaze', '시선 반응'),
+        detail: `+${Math.max(0, diff).toFixed(0)}ms · ${t('sessions.coaching.detail.gazeAvg', '시선 포착 평균 {value}ms').replace('{value}', avgGazeReaction.toFixed(0))}`,
+        action: t('sessions.coaching.action.gaze', '마커를 눈으로 먼저 찍고 마우스를 따라가게 연습하세요.'),
+        score: weaknessScore(avgGazeReaction, 300, true),
+      });
+    }
+
+    if (avgGazeAim !== null) {
+      const diff = avgGazeAim - 450;
+      candidates.push({
+        key: 'gazeAim',
+        label: t('sessions.coaching.metric.gazeAim', '눈-손 딜레이'),
+        detail: `+${Math.max(0, diff).toFixed(0)}ms · ${t('sessions.coaching.detail.gazeAimAvg', '딜레이 평균 {value}ms').replace('{value}', avgGazeAim.toFixed(0))}`,
+        action: t('sessions.coaching.action.gazeAim', '캘리브레이션 후 천천히-빠르게 번갈아 조준해 동기화 감각을 맞춰보세요.'),
+        score: weaknessScore(avgGazeAim, 450, true),
+      });
+    }
+
+    if (avgAccuracy !== null) {
+      const diff = 85 - avgAccuracy;
+      candidates.push({
+        key: 'accuracy',
+        label: t('sessions.coaching.metric.accuracy', '명중률'),
+        detail: `-${Math.max(0, diff).toFixed(1)}%p · ${t('sessions.coaching.detail.accuracyAvg', '평균 {value}%').replace('{value}', avgAccuracy.toFixed(1))}`,
+        action: t('sessions.coaching.action.accuracy', '트래킹 중에도 클릭 타이밍을 늦춰 정확도를 챙기세요.'),
+        score: weaknessScore(avgAccuracy, 85, false),
+      });
+    }
+
+    const weaknesses = candidates
+      .filter(c => c.score > 0.05)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 2);
+
+    if (weaknesses.length === 0) {
+      return [
+        {
+          key: 'stable',
+          label: t('sessions.coaching.metric.stable', '지표 안정'),
+          detail: t('sessions.coaching.detail.stable', '최근 3세션 주요 지표가 목표 범위 안입니다.'),
+          action: t('sessions.coaching.action.stable', '지금 리듬을 유지하면서 세션 간격만 일정하게 가져가세요.'),
+        },
+      ];
+    }
+
+    return weaknesses;
+  }, [recentSessions, t]);
+
   return (
     <div className="sessions-history-page">
       {/* Header */}
       <header className="sessions-header">
         <div className="header-content">
           <h1>{t('sessions.title', 'Training Sessions')}</h1>
-         
+          
         </div>
       </header>
 
+      {coachingTips.length > 0 && (
+        <section className="coaching-section">
+          <div className="coaching-header">
+            <div className="coaching-title">
+              <Lightbulb size={22} strokeWidth={2.5} />
+              <span>{t('sessions.coaching.title', '개인화 코칭')}</span>
+            </div>
+            <p className="coaching-subtitle">
+              {t('sessions.coaching.subtitle', '최근 3세션 기준 약한 지표를 빠르게 보완하세요.')}
+            </p>
+          </div>
+          <div className="coaching-grid">
+            {coachingTips.map(tip => (
+              <div key={tip.key} className="coaching-card">
+                <div className="coaching-card__label">
+                  <AlertTriangle size={16} />
+                  <span>{tip.label}</span>
+                </div>
+                <div className="coaching-card__detail">{tip.detail}</div>
+                <div className="coaching-card__action">{tip.action}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
-  
+ 
 
       {/* Trend Chart */}
       <section className="trend-section">

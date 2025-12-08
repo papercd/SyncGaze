@@ -1557,14 +1557,21 @@ const DetailedResultsPage = () => {
             <div className="viz-card__header">
               <div className="viz-card__title">
                 <h3>Performance Trends</h3>
-                <button
-                  type="button"
-                  className="icon-button"
-                  aria-label="Performance Trends 설명"
-                  title={vizDescriptions.trends}
-                >
-                  <Info size={16} />
-                </button>
+                <div className="viz-info">
+                  <button
+                    type="button"
+                    className="icon-button"
+                    aria-label="Performance Trends 설명"
+                  >
+                    <Info size={16} />
+                  </button>
+                  <div className="viz-tooltip" role="tooltip">
+                    <p>세션 {sessionData.duration}s</p>
+                    <p>타겟 {analytics.totalTargets}개</p>
+                    <p>히트 {analytics.targetsHit}회</p>
+                    <p className="viz-tooltip__desc">시선·마우스 오차와 동기화 추세를 시간 흐름에 따라 확인해요.</p>
+                  </div>
+                </div>
               </div>
               <div className="viz-card__actions">
                 <div className="visibility-controls" style={{ display: 'flex', gap: '8px' }}>
@@ -1596,14 +1603,9 @@ const DetailedResultsPage = () => {
                 </div>
                 <button className="detail-button small ghost icon-button--inline" type="button" onClick={() => openModal('trends')}>
                   <Maximize2 size={14} />
-                  <span>팝업으로 보기</span>
+                  <span>확대</span>
                 </button>
               </div>
-            </div>
-            <div className="viz-card__meta">
-              <span className="viz-pill">세션 {sessionData.duration}s</span>
-              <span className="viz-pill">타겟 {analytics.totalTargets}개</span>
-              <span className="viz-pill">히트 {analytics.targetsHit}회</span>
             </div>
             <div className="viz-preview viz-preview--chart" onClick={() => openModal('trends')}>
               <PerformanceLineChart
@@ -1620,14 +1622,21 @@ const DetailedResultsPage = () => {
             <div className="viz-card__header">
               <div className="viz-card__title">
                 <h3>Rolling Performance</h3>
-                <button
-                  type="button"
-                  className="icon-button"
-                  aria-label="Rolling Performance 설명"
-                  title={vizDescriptions.rolling}
-                >
-                  <Info size={16} />
-                </button>
+                <div className="viz-info">
+                  <button
+                    type="button"
+                    className="icon-button"
+                    aria-label="Rolling Performance 설명"
+                  >
+                    <Info size={16} />
+                  </button>
+                  <div className="viz-tooltip" role="tooltip">
+                    <p>세션 {sessionData.duration}s</p>
+                    <p>롤링 윈도우 {rollingWindowSeconds}s</p>
+                    <p>히트 {rollingPerformance.hitTimes.length}회</p>
+                    <p className="viz-tooltip__desc">최근 구간의 정확도·초당 히트·히트 시점을 묶어 단기 흐름을 보여줘요.</p>
+                  </div>
+                </div>
               </div>
               <div className="viz-card__actions">
                 <div className="visibility-controls" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -1658,14 +1667,9 @@ const DetailedResultsPage = () => {
                 </div>
                 <button className="detail-button small ghost icon-button--inline" type="button" onClick={() => openModal('rolling')}>
                   <Maximize2 size={14} />
-                  <span>팝업으로 보기</span>
+                  <span>확대</span>
                 </button>
               </div>
-            </div>
-            <div className="viz-card__meta">
-              <span className="viz-pill">{rollingWindowSeconds}s 롤링 윈도우</span>
-              <span className="viz-pill">히트 {rollingPerformance.hitTimes.length}회</span>
-              <span className="viz-pill">세션 {sessionData.duration}s</span>
             </div>
             <div className="viz-preview viz-preview--chart" onClick={() => openModal('rolling')}>
               <PerformanceLineChart
@@ -1683,14 +1687,21 @@ const DetailedResultsPage = () => {
             <div className="viz-card__header">
               <div className="viz-card__title">
                 <h3>Velocity & Reaction</h3>
-                <button
-                  type="button"
-                  className="icon-button"
-                  aria-label="Velocity & Reaction 설명"
-                  title={vizDescriptions.velocity}
-                >
-                  <Info size={16} />
-                </button>
+                <div className="viz-info">
+                  <button
+                    type="button"
+                    className="icon-button"
+                    aria-label="Velocity & Reaction 설명"
+                  >
+                    <Info size={16} />
+                  </button>
+                  <div className="viz-tooltip" role="tooltip">
+                    <p>세션 {sessionData.duration}s</p>
+                    <p>평균 반응 {Math.round(analytics.avgReactionTime)}ms</p>
+                    <p>시선 반응 {Math.round(analytics.avgGazeReactionTime)}ms</p>
+                    <p className="viz-tooltip__desc">마우스 이동 속도와 반응 시간의 관계를 비교해 느린 구간을 찾을 수 있어요.</p>
+                  </div>
+                </div>
               </div>
               <div className="viz-card__actions">
                 <div className="visibility-controls" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -1721,14 +1732,9 @@ const DetailedResultsPage = () => {
                 </div>
                 <button className="detail-button small ghost icon-button--inline" type="button" onClick={() => openModal('velocity')}>
                   <Maximize2 size={14} />
-                  <span>팝업으로 보기</span>
+                  <span>확대</span>
                 </button>
               </div>
-            </div>
-            <div className="viz-card__meta">
-              <span className="viz-pill">평균 반응 {Math.round(analytics.avgReactionTime)} ms</span>
-              <span className="viz-pill">시선 반응 {Math.round(analytics.avgGazeReactionTime)} ms</span>
-              <span className="viz-pill">속도·반응 비교</span>
             </div>
             <div className="viz-preview viz-preview--chart" onClick={() => openModal('velocity')}>
               <PerformanceLineChart
@@ -1751,26 +1757,28 @@ const DetailedResultsPage = () => {
              <div className="viz-card__header">
               <div className="viz-card__title">
                 <h3>Gaze Heatmap</h3>
-                <button
-                  type="button"
-                  className="icon-button"
-                  aria-label="Gaze Heatmap 설명"
-                  title={vizDescriptions.heatmap}
-                >
-                  <Info size={16} />
-                </button>
+                <div className="viz-info">
+                  <button
+                    type="button"
+                    className="icon-button"
+                    aria-label="Gaze Heatmap 설명"
+                  >
+                    <Info size={16} />
+                  </button>
+                  <div className="viz-tooltip" role="tooltip">
+                    <p>시선 커버 {coverage.gaze.toFixed(0)}%</p>
+                    <p>입력 커버 {coverage.mouse.toFixed(0)}%</p>
+                    <p>포인트 {heatmapPoints.length}개</p>
+                    <p className="viz-tooltip__desc">세션 동안 시선이 오래 머문 영역을 색상 농도로 보여줘요.</p>
+                  </div>
+                </div>
               </div>
               <div className="viz-card__actions">
                 <button className="detail-button small ghost icon-button--inline" type="button" onClick={() => openModal('heatmap')}>
                   <Maximize2 size={14} />
-                  <span>팝업으로 보기</span>
+                  <span>확대</span>
                 </button>
               </div>
-            </div>
-            <div className="viz-card__meta">
-              <span className="viz-pill">시선 커버 {coverage.gaze.toFixed(0)}%</span>
-              <span className="viz-pill">입력 커버 {coverage.mouse.toFixed(0)}%</span>
-              <span className="viz-pill">포인트 {heatmapPoints.length}개</span>
             </div>
             <div className="heatmap-wrapper viz-preview viz-preview--heatmap" onClick={() => openModal('heatmap')}>
               <div className="heatmap-scroll">

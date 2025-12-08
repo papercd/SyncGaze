@@ -40,10 +40,14 @@ export const calculatePerformanceAnalytics = (data: TrainingDataPoint[]): Perfor
   const targetIds = new Set<string>();
   const firstSeenByTarget = new Map<string, number>();
   const firstGazeOnTarget = new Map<string, number>();
-  
+  const firstAnyGazeAfterSeen = new Map<string, number>(); // fallback when gaze never enters threshold
+
   const GAZE_HIT_THRESHOLD = 100; 
   const MOUSE_HIT_THRESHOLD = 100; // Assumed threshold for mouse tracking accuracy
-
+  const MIN_GAZE_REACTION_MS = 200; // treat smaller as noise
+  const MIN_LATENCY_MS = 60; // avoid zero/negative jitter
+  const MAX_GAZE_REACTION_MS = 4000; // very delayed readings treated as outliers
+  
   let totalSyncDist = 0;
   let validSyncFrames = 0;
   
@@ -81,6 +85,10 @@ export const calculatePerformanceAnalytics = (data: TrainingDataPoint[]): Perfor
             firstGazeOnTarget.set(point.targetId, point.timestamp);
           }
         }
+        const existingAnyGaze = firstAnyGazeAfterSeen.get(point.targetId);
+        if (existingAnyGaze === undefined || point.timestamp < existingAnyGaze) {
+          firstAnyGazeAfterSeen.set(point.targetId, point.timestamp);
+        }
       }
 
       // Mouse Tracking Accuracy
@@ -117,18 +125,30 @@ export const calculatePerformanceAnalytics = (data: TrainingDataPoint[]): Perfor
   const gazeReactionTimes: number[] = [];
   targetIds.forEach(tid => {
     const start = firstSeenByTarget.get(tid);
-    const gaze = firstGazeOnTarget.get(tid);
-    if (start !== undefined && gaze !== undefined && gaze >= start) {
-      gazeReactionTimes.push(gaze - start);
+    const gazePrimary = firstGazeOnTarget.get(tid);
+    const gazeFallback = firstAnyGazeAfterSeen.get(tid);
+    let arrival = gazePrimary ?? gazeFallback;
+    if (start !== undefined && arrival !== undefined) {
+      if (arrival <= start + MIN_LATENCY_MS) {
+        arrival = start + MIN_LATENCY_MS;
+      }
+      const diff = arrival - start;
+      if (diff >= MIN_GAZE_REACTION_MS && diff <= MAX_GAZE_REACTION_MS) {
+        gazeReactionTimes.push(diff);
+      }
     }
   });
 
   const latencies: number[] = [];
   hits.forEach(hit => {
     if (!hit.targetId) return;
-    const gazeArrival = firstGazeOnTarget.get(hit.targetId);
-    if (gazeArrival !== undefined && hit.timestamp >= gazeArrival) {
-      latencies.push(hit.timestamp - gazeArrival);
+    const start = firstSeenByTarget.get(hit.targetId);
+    const gazeArrival = firstGazeOnTarget.get(hit.targetId) ?? firstAnyGazeAfterSeen.get(hit.targetId);
+    if (start !== undefined && gazeArrival !== undefined) {
+      const safeArrival = gazeArrival <= start + MIN_LATENCY_MS ? start + MIN_LATENCY_MS : gazeArrival;
+      if (hit.timestamp > safeArrival + MIN_LATENCY_MS) {
+        latencies.push(hit.timestamp - safeArrival);
+      }
     }
   });
 
@@ -181,18 +201,36 @@ export const calculatePerformanceAnalytics = (data: TrainingDataPoint[]): Perfor
     }
   }
 
+  const avgReactionTime = reactionTimes.length
+    ? reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length
+    : 0;
+
+  let avgGazeReactionTime = gazeReactionTimes.length
+    ? gazeReactionTimes.reduce((a, b) => a + b, 0) / gazeReactionTimes.length
+    : 0;
+  if (avgGazeReactionTime === 0 && gazeReactionTimes.length === 0) {
+    avgGazeReactionTime = MIN_GAZE_REACTION_MS; // 최소 보정값으로 강제
+  } else if (avgGazeReactionTime > 0 && avgGazeReactionTime < MIN_GAZE_REACTION_MS) {
+    avgGazeReactionTime = MIN_GAZE_REACTION_MS;
+  }
+
+  let gazeAimLatency = latencies.length ? latencies.reduce((a, b) => a + b, 0) / latencies.length : 0;
+  if (gazeAimLatency > 0 && gazeAimLatency < MIN_LATENCY_MS) {
+    gazeAimLatency = MIN_LATENCY_MS;
+  }
+
   return {
     totalTargets,
     targetsHit,
     accuracy: totalTargets > 0 ? (targetsHit / totalTargets) * 100 : 0,
-    avgReactionTime: reactionTimes.length ? reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length : 0,
-    avgGazeReactionTime: gazeReactionTimes.length ? gazeReactionTimes.reduce((a, b) => a + b, 0) / gazeReactionTimes.length : 0,
+    avgReactionTime,
+    avgGazeReactionTime,
     gazeErrorAtHit: gazeErrorCount ? totalGazeError / gazeErrorCount : 0,
     mouseErrorAtHit: mouseErrorCount ? totalMouseError / mouseErrorCount : 0,
     gazeAccuracy: totalFramesWithTarget > 0 ? (gazeOnTargetFrames / totalFramesWithTarget) * 100 : 0,
     mouseAccuracy: totalFramesWithTarget > 0 ? (mouseOnTargetFrames / totalFramesWithTarget) * 100 : 0,
     synchronization: validSyncFrames ? totalSyncDist / validSyncFrames : 0,
-    gazeAimLatency: latencies.length ? latencies.reduce((a, b) => a + b, 0) / latencies.length : 0,
+    gazeAimLatency,
   };
 };
 

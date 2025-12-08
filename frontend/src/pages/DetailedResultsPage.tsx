@@ -1,4 +1,4 @@
-import type { WheelEvent } from 'react';
+import type { CSSProperties, PointerEvent as ReactPointerEvent, WheelEvent } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Info, Maximize2 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -69,6 +69,51 @@ type ReplayFrame = TrainingDataPoint & {
   displayGazeY: number | null;
   displayMouseX: number | null;
   displayMouseY: number | null;
+};
+
+// --- Shared drag-to-pan helper ---
+const useDragToScroll = (enabled: boolean) => {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const start = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 });
+
+  const handlePointerDown = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!enabled || event.button !== 0) return;
+    const el = ref.current;
+    if (!el) return;
+    event.preventDefault();
+    start.current = { x: event.clientX, y: event.clientY, scrollLeft: el.scrollLeft, scrollTop: el.scrollTop };
+    setDragging(true);
+    el.setPointerCapture?.(event.pointerId);
+  }, [enabled]);
+
+  const handlePointerMove = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!enabled || !dragging) return;
+    const el = ref.current;
+    if (!el) return;
+    const { x, y, scrollLeft, scrollTop } = start.current;
+    el.scrollLeft = scrollLeft - (event.clientX - x);
+    el.scrollTop = scrollTop - (event.clientY - y);
+  }, [dragging, enabled]);
+
+  const endDrag = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!dragging) return;
+    setDragging(false);
+    const el = ref.current;
+    if (el?.hasPointerCapture?.(event.pointerId)) {
+      el.releasePointerCapture(event.pointerId);
+    }
+  }, [dragging]);
+
+  return {
+    ref,
+    dragging,
+    handlePointerDown,
+    handlePointerMove,
+    handlePointerUp: endDrag,
+    handlePointerLeave: endDrag,
+    handlePointerCancel: endDrag,
+  };
 };
 
 const metricTooltips: Record<string, string> = {
@@ -250,6 +295,7 @@ const PerformanceLineChart = ({
   yAxisLabel = 'Error (px)',
   constrainHeight = false,
   tickDensityMultiplier = 1,
+  enablePan = false,
 }: {
   series: SeriesConfig[];
   duration: number;
@@ -259,6 +305,7 @@ const PerformanceLineChart = ({
   yAxisLabel?: string;
   constrainHeight?: boolean;
   tickDensityMultiplier?: number;
+  enablePan?: boolean;
 }) => {
   const activeSeries = series.filter(s => s.points.some(p => p.value !== null));
 
@@ -305,25 +352,44 @@ const PerformanceLineChart = ({
   const yScale = (value: number) =>
     height - paddingBottom - (value / yMax) * (height - paddingTop - paddingBottom);
 
+  const canPan = enablePan && zoomLevel > 1;
+  const {
+    ref: panRef,
+    dragging,
+    handlePointerDown,
+    handlePointerMove,
+    handlePointerUp,
+    handlePointerLeave,
+    handlePointerCancel,
+  } = useDragToScroll(canPan);
+
+  const wrapperStyle: CSSProperties = constrainHeight
+    ? {
+        overflow: 'auto',
+        maxWidth: '100%',
+        maxHeight: '70vh',
+        height: '100%',
+        flex: 1,
+        minHeight: 360,
+        cursor: canPan ? (dragging ? 'grabbing' : 'grab') : undefined,
+      }
+    : {
+        overflowX: 'auto',
+        overflowY: 'visible',
+        maxWidth: '100%',
+        cursor: canPan ? (dragging ? 'grabbing' : 'grab') : undefined,
+      };
+
   return (
     <div
       className="chart-scroll-wrapper"
-      style={
-        constrainHeight
-          ? {
-              overflow: 'auto',
-              maxWidth: '100%',
-              maxHeight: '100%',
-              height: '100%',
-              flex: 1,
-              minHeight: '100%',
-            }
-          : {
-              overflowX: 'auto',
-              overflowY: 'visible',
-              maxWidth: '100%',
-            }
-      }
+      ref={panRef}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerLeave={handlePointerLeave}
+      onPointerCancel={handlePointerCancel}
+      style={wrapperStyle}
     >
       <div
         style={{
@@ -516,6 +582,7 @@ const DetailedResultsPage = () => {
 
   const [activeModal, setActiveModal] = useState<'trends' | 'rolling' | 'velocity' | 'heatmap' | null>(null);
   const [modalZoom, setModalZoom] = useState(1);
+  const modalHeatmapPan = useDragToScroll(activeModal === 'heatmap' && modalZoom > 1);
 
   const [rollingVisibility, setRollingVisibility] = useState<Record<string, boolean>>({
     'rolling-accuracy': true,
@@ -1180,6 +1247,7 @@ const DetailedResultsPage = () => {
             duration={sessionData.duration}
             hitTimes={hitTimes}
             zoomLevel={modalZoom}
+            enablePan
             showHitMarkers={visibleMetrics['hit-moment']}
             constrainHeight
             tickDensityMultiplier={2}
@@ -1193,6 +1261,7 @@ const DetailedResultsPage = () => {
             duration={sessionData.duration}
             hitTimes={rollingVisibility['rolling-hits'] ? rollingPerformance.hitTimes : []}
             zoomLevel={modalZoom}
+            enablePan
             showHitMarkers={rollingVisibility['rolling-hits']}
             yAxisLabel={`Last ${rollingWindowSeconds}s window`}
             constrainHeight
@@ -1207,6 +1276,7 @@ const DetailedResultsPage = () => {
             duration={sessionData.duration}
             hitTimes={velocityVisibility['velocity-hits'] ? velocityReaction.hitTimes : []}
             zoomLevel={modalZoom}
+            enablePan
             showHitMarkers={velocityVisibility['velocity-hits']}
             yAxisLabel="Speed (px/s) · Reaction (ms)"
             constrainHeight
@@ -1216,7 +1286,23 @@ const DetailedResultsPage = () => {
       }
       return (
         <div className="heatmap-wrapper" style={{ border: '1px solid #333', borderRadius: '12px', overflow: 'hidden', backgroundColor: '#1a1d24' }}>
-          <div style={{ width: '100%', overflow: 'auto', maxHeight: '70vh', backgroundColor: '#1a1d24' }}>
+          <div
+            style={{
+              width: '100%',
+              overflow: 'auto',
+              maxHeight: '70vh',
+              backgroundColor: '#1a1d24',
+              cursor: activeModal === 'heatmap' && modalZoom > 1
+                ? (modalHeatmapPan.dragging ? 'grabbing' : 'grab')
+                : undefined,
+            }}
+            ref={modalHeatmapPan.ref}
+            onPointerDown={modalHeatmapPan.handlePointerDown}
+            onPointerMove={modalHeatmapPan.handlePointerMove}
+            onPointerUp={modalHeatmapPan.handlePointerUp}
+            onPointerLeave={modalHeatmapPan.handlePointerLeave}
+            onPointerCancel={modalHeatmapPan.handlePointerCancel}
+          >
             <div
               className="heatmap-container"
               ref={modalHeatmapContainerRef}
@@ -1265,7 +1351,7 @@ const DetailedResultsPage = () => {
             </div>
           </div>
           <div className="viz-modal__body" onWheel={handleModalWheel}>
-            <p className="viz-modal__hint">마우스 스크롤로 확대/축소할 수 있어요.</p>
+            <p className="viz-modal__hint">마우스 스크롤로 확대/축소하고, 그래프를 드래그해 이동할 수 있어요.</p>
             <div className="viz-modal__content">{modalBody}</div>
           </div>
         </div>

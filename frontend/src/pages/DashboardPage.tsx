@@ -10,7 +10,7 @@ import { collection, getDocs, limit, orderBy, query } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import type { LeaderboardEntry } from '../utils/remoteSessions';
 import { calculatePerformanceAnalytics } from '../utils/analytics';
-import { Crosshair, Trophy, Settings, Hourglass, MousePointerClick, RotateCcw, Flag, Award, Timer, ScanEye } from 'lucide-react';
+import { Crosshair, Trophy, Settings, Hourglass, MousePointerClick, RotateCcw, Flag, Award, Timer, ScanEye, BookOpen } from 'lucide-react';
 
 const DashboardPage = () => {
   const navigate = useNavigate();
@@ -388,11 +388,17 @@ const DashboardPage = () => {
             </div>
             {t('dashboard.action.leaderboard')}
           </button>
+          <button className="start-training-button" onClick={() => navigate('/how-to')}>
+              <div className ="button-icon">
+                <BookOpen size={24} strokeWidth={2.5}/>   
+              </div>
+            {t('dashboard.action.howTo', 'How-to 가이드')}
+          </button>
           <button className="start-training-button" onClick={() => navigate('/settings')}>
               <div className ="button-icon">
                 <Settings size={24} strokeWidth={2.5}/>   
               </div>
-            Settings
+            {t('dashboard.action.settings', '세팅')}
           </button>
         </section>
 

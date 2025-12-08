@@ -17,6 +17,7 @@ import TermsOfServicePage from './pages/TermsOfServicePage.tsx';
 import SettingsPage from './pages/SettingsPage';
 import SessionsHistoryPage from './pages/SessionsHistoryPage.tsx';
 import AccountPage from './pages/AccountPage';
+import HowToPage from './pages/HowToPage';
 import { ReactElement, useEffect } from 'react';
 import { useAuth } from './state/authContext';
 import SessionRemoteHydrator from './components/SessionRemoteHydrator';
@@ -204,6 +205,16 @@ const AppRouter = () => {
             <ProtectedRoute>
               <Layout>
                 <SettingsPage />
+              </Layout>
+            </ProtectedRoute>
+          )}
+        />
+        <Route
+          path="/how-to"
+          element={(
+            <ProtectedRoute>
+              <Layout>
+                <HowToPage />
               </Layout>
             </ProtectedRoute>
           )}

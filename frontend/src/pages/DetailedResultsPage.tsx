@@ -1573,7 +1573,7 @@ const DetailedResultsPage = () => {
                   </div>
                 </div>
               </div>
-              <div className="viz-card__actions">
+              <div className="viz-card__actions viz-card__actions--compact">
                 <div className="visibility-controls" style={{ display: 'flex', gap: '8px' }}>
                   {[
                     { key: 'gaze-error', label: 'Gaze', color: '#4ecdc4', textColor: '#1a1d24' },
@@ -1638,14 +1638,14 @@ const DetailedResultsPage = () => {
                   </div>
                 </div>
               </div>
-              <div className="viz-card__actions">
-                <div className="visibility-controls" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                {[{ key: 'rolling-accuracy', label: 'Rolling Accuracy', color: '#7c9bff' }, { key: 'rolling-hps', label: 'HPS', color: '#f1c40f' }, { key: 'rolling-hits', label: 'Hits', color: '#d14b4b', isHit: true }].map(({ key, label, color, isHit }) => (
+              <div className="viz-card__actions viz-card__actions--compact">
+                <div className="visibility-controls" style={{ display: 'flex', gap: '6px', flexWrap: 'nowrap', flex: 1, minWidth: 0 }}>
+                {[{ key: 'rolling-accuracy', label: 'Rolling Accuracy', color: '#7c9bff' }, { key: 'rolling-hps', label: 'HPS', color: '#f1c40f' }, { key: 'rolling-hits', label: 'Hits', color: '#d14b4b' }].map(({ key, label, color }) => (
                   <button
                     key={key}
                     onClick={() => toggleRollingMetric(key)}
                     style={{
-                      padding: '4px 12px',
+                      padding: '4px 10px',
                       fontSize: '0.8rem',
                       borderRadius: '16px',
                       border: `1px solid ${color}`,
@@ -1660,7 +1660,6 @@ const DetailedResultsPage = () => {
                     }}
                     aria-pressed={rollingVisibility[key]}
                   >
-                    {isHit && <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: rollingVisibility[key] ? '#0b1021' : color }} />}
                     {label}
                   </button>
                 ))}
@@ -1704,13 +1703,13 @@ const DetailedResultsPage = () => {
                 </div>
               </div>
               <div className="viz-card__actions">
-                <div className="visibility-controls" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  {[{ key: 'mouse-velocity', label: 'Mouse Velocity', color: '#4ecdc4' }, { key: 'reaction-time', label: 'Reaction Time', color: '#ff6b6b' }, { key: 'velocity-hits', label: 'Hits', color: '#d14b4b', isHit: true }].map(({ key, label, color, isHit }) => (
+                <div className="visibility-controls" style={{ display: 'flex', gap: '6px', flexWrap: 'nowrap', flex: 1, minWidth: 0 }}>
+                  {[{ key: 'mouse-velocity', label: 'Mouse Velocity', color: '#4ecdc4' }, { key: 'reaction-time', label: 'Reaction Time', color: '#ff6b6b' }, { key: 'velocity-hits', label: 'Hits', color: '#d14b4b' }].map(({ key, label, color }) => (
                     <button
                       key={key}
                       onClick={() => toggleVelocityMetric(key)}
                       style={{
-                        padding: '4px 12px',
+                        padding: '4px 10px',
                         fontSize: '0.8rem',
                         borderRadius: '16px',
                         border: `1px solid ${color}`,
@@ -1725,7 +1724,6 @@ const DetailedResultsPage = () => {
                       }}
                       aria-pressed={velocityVisibility[key]}
                     >
-                      {isHit && <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: velocityVisibility[key] ? '#0b1021' : color }} />}
                       {label}
                     </button>
                   ))}

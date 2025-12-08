@@ -718,6 +718,22 @@
   justify-content: flex-end;
 }
 
+.viz-card__actions--compact {
+  flex-wrap: nowrap;
+  gap: 6px;
+}
+
+.viz-card__actions--compact .visibility-controls {
+  flex-wrap: nowrap !important;
+  gap: 6px !important;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.viz-card__actions--compact button {
+  white-space: nowrap;
+}
+
 .viz-card__meta {
   display: flex;
   align-items: center;

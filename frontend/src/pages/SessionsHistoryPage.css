@@ -291,6 +291,10 @@
   text-align: left;
 }
 
+.table-wrapper thead th:last-child {
+  text-align: center;
+}
+
 .table-wrapper tbody {
   display: table-row-group !important;
 }
@@ -320,6 +324,10 @@
   font-weight: 600;
   vertical-align: middle;
   text-align: left;
+}
+
+.table-wrapper tbody td:last-child {
+  text-align: center;
 }
 
 /* Sortable headers */
@@ -407,15 +415,15 @@
   display: table-cell !important;
   padding: 0.85rem 1rem !important;
   vertical-align: middle;
-  text-align: left;
+  text-align: center;
 }
 
 .table-actions-group {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(95px, 1fr));
   gap: 0.5rem;
-  flex-wrap: nowrap;
+  margin: 0 auto;
+  min-width: 200px;
 }
 
 /* Action Buttons */
@@ -543,7 +551,8 @@
   }
 
   .table-actions-group {
-    flex-direction: column;
+    grid-template-columns: 1fr;
+    min-width: 140px;
     gap: 0.25rem;
   }
 
@@ -552,6 +561,8 @@
     padding: 0.35rem 0.7rem;
     font-size: 0.8rem;
     width: 100%;
+    justify-content: center;
+    text-align: center;
   }
 }
 

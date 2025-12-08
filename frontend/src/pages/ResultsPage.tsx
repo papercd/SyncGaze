@@ -1,7 +1,7 @@
 // frontend/src/pages/ResultsPage.tsx
 // UPDATED: Stops WebGazer when mounting results page, Improved Heatmap Colors & Legend
 
-import { SplinePointer, Sparkles, Hourglass, ScanEye, RulerDimensionLine, Link, MousePointerClick, Info } from 'lucide-react';
+import { SplinePointer, Sparkles, Hourglass, ScanEye, RulerDimensionLine, Link, MousePointerClick, Info, Target } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import './ResultsPage.css';
@@ -18,6 +18,7 @@ import { persistLatestSession } from '../utils/resultsStorage';
 import { saveSessionForUser } from '../utils/remoteSessions';
 // Analytics 인터페이스와 함수를 utils에서 import (ResultsPage 내의 중복 정의 제거)
 import { calculatePerformanceAnalytics, generateErrorTimeSeries, PerformanceAnalytics } from '../utils/analytics';
+import { predictScore } from '../services/predictionService';
 
 const metricTooltips: Record<string, string> = {
   targets: '명중 수는 결정력과 전투 페이스를 보여주며, FPS에서 킬 교환과 라운드 승률에 직결됩니다.',
@@ -176,6 +177,31 @@ type SeriesConfig = {
 };
 
 type HeatmapPoint = { x: number; y: number };
+
+type RankLevel = {
+  key: 'trainee' | 'green' | 'blue' | 'indigo' | 'purple';
+  labelKo: string;
+  labelEn: string;
+  min: number;
+  max: number;
+  color: string;
+};
+
+const rankLevels: RankLevel[] = [
+  { key: 'trainee', labelKo: '훈련병', labelEn: 'Grey Trainee', min: 0, max: 19.9, color: '#9E9E9E' },
+  { key: 'green', labelKo: '연습 사수', labelEn: 'Green Shooter', min: 20, max: 39.9, color: '#4CAF50' },
+  { key: 'blue', labelKo: '초급 사수', labelEn: 'Blue Shooter', min: 40, max: 59.9, color: '#2196F3' },
+  { key: 'indigo', labelKo: '중급 사수', labelEn: 'Indigo Shooter', min: 60, max: 79.9, color: '#3F51B5' },
+  { key: 'purple', labelKo: '고급 사수', labelEn: 'Purple Marksman', min: 80, max: 100, color: '#9C27B0' },
+];
+
+const getRankLevel = (score: number | null): RankLevel => {
+  if (score === null || Number.isNaN(score)) {
+    return rankLevels[0];
+  }
+  const clamped = Math.min(100, Math.max(0, score));
+  return rankLevels.find(level => clamped >= level.min && clamped <= level.max) ?? rankLevels[rankLevels.length - 1];
+};
 
 // --- PerformanceLineChart Component (UPDATED with Hit Markers) ---
 const PerformanceLineChart = ({
@@ -425,6 +451,8 @@ const ResultsPage = () => {
   const analytics = useMemo<PerformanceAnalytics | null>(() => {
     return sessionData ? calculatePerformanceAnalytics(sessionData.rawData) : null;
   }, [sessionData]);
+  const [predictedScore, setPredictedScore] = useState<number | null>(sessionData?.predictedScore ?? null);
+  const [isPredictingScore, setIsPredictingScore] = useState(false);
 
   const [missingRawData, setMissingRawData] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -446,6 +474,61 @@ const ResultsPage = () => {
     if (!sessionData) return '';
     return new Date(sessionData.date).toLocaleString(language === 'ko' ? 'ko-KR' : 'en-US');
   }, [language, sessionData]);
+  const rankLevel = useMemo(() => getRankLevel(predictedScore), [predictedScore]);
+  const rankLabel = useMemo(
+    () => (language === 'ko' ? rankLevel.labelKo : rankLevel.labelEn),
+    [language, rankLevel],
+  );
+  const predictionFactors = useMemo(
+    () => {
+      if (!sessionData) return [];
+      return [
+        { label: '명중률', value: `${sessionData.accuracy.toFixed(1)}%`, desc: '타겟 명중률 반영' },
+        { label: '트래킹', value: `${sessionData.mouseAccuracy.toFixed(1)}%`, desc: '마우스-타겟 정렬도' },
+        { label: '반응', value: `${sessionData.avgReactionTime.toFixed(0)} ms`, desc: '평균 클릭 속도' },
+      ];
+    },
+    [sessionData],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const runPrediction = async () => {
+      if (!sessionData) {
+        setPredictedScore(null);
+        return;
+      }
+
+      if (sessionData.predictedScore != null) {
+        setPredictedScore(sessionData.predictedScore);
+        return;
+      }
+
+      setIsPredictingScore(true);
+      try {
+        const result = await predictScore(sessionData);
+        if (!cancelled) {
+          setPredictedScore(result.predictedScore ?? null);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.warn('Failed to predict score on results page:', error);
+          setPredictedScore(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsPredictingScore(false);
+        }
+      }
+    };
+
+    runPrediction();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionData]);
 
   // --- NEW: Performance Series Data Generation ---
   const performanceSeries = useMemo<SeriesConfig[]>(() => {
@@ -856,6 +939,47 @@ const ResultsPage = () => {
 
       {/* Main Content */}
       <main className="results-main">
+        <section className="metrics-section training-results">
+          <div className="prediction-card prediction-card--split prediction-card--compact">
+              <div className="prediction-left">
+                <div className="rank-stack">
+                  <div className="rank-medal" style={{ ['--rank-color' as string]: rankLevel.color }}>
+                    <Target size={32} />
+                  </div>
+                  <div className="rank-row rank-row--stacked">
+                  <span className="rank-name" style={{ color: rankLevel.color }}>{rankLabel}</span>
+                  </div>
+                </div>
+                <div className="prediction-left__body">
+                  <div className="title-wrap">
+                    <p className="prediction-title">SG Rank</p>
+                  </div>
+                <p className="prediction-subtext">SyncGaze만의 에임 점수와 랭크예요.</p>
+                <div className="score-row">
+                  <span className="score-value">{predictedScore != null ? predictedScore.toFixed(1) : '점수 없음'}</span>
+                  <span className="score-scale">/ 100</span>
+                  {isPredictingScore && <span className="chip">예측 중</span>}
+                </div>
+              </div>
+            </div>
+            <div className="prediction-right">
+              <span className="inline-note">
+                객체를 <span className="inline-emph">{analytics.avgGazeReactionTime.toFixed(0)}ms</span>에 보고,
+                <span className="inline-emph">{analytics.gazeAimLatency.toFixed(0)}ms</span> 동안 마우스를 움직여,
+                <span className="inline-emph">{analytics.avgReactionTime.toFixed(0)}ms</span>에 쐈어요.
+              </span>
+              <div className="prediction-inline-factors condensed">
+                {predictionFactors.map(factor => (
+                  <span key={factor.label} className="inline-factor">
+                    <span className="factor-label">{factor.label}</span>
+                    <strong>{factor.value}</strong>
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Key Metrics Section - UPDATED */}
         {(!isCalibrationValidated || missingRawData) && (
           <div className="alert-banner warning" role="alert">

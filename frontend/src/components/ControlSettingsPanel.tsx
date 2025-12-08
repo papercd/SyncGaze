@@ -1,6 +1,7 @@
 import './ControlSettingsPanel.css';
 import { useControlSettings, DEFAULT_SENSITIVITY, MIN_SENSITIVITY, MAX_SENSITIVITY } from '../state/controlSettingsContext';
 import React from 'react';
+import { useTranslation } from '../state/languageContext';
 
 interface ControlSettingsPanelProps {
   showReset?: boolean;
@@ -60,6 +61,7 @@ const ControlSettingsPanel: React.FC<ControlSettingsPanelProps> = ({
   onOpenPreview
 }) => {
   const { controlSensitivity, invertYAxis, setControlSensitivity, setInvertYAxis, resetSettings } = useControlSettings();
+  const { t } = useTranslation();
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setControlSensitivity(sliderValueToSensitivity(Number(event.target.value)));
@@ -73,8 +75,8 @@ const ControlSettingsPanel: React.FC<ControlSettingsPanelProps> = ({
     <div className={`control-settings-panel ${compact ? 'control-settings-panel--compact' : ''}`}>
       <div className="control-settings-header">
         <div>
-          <h3>Control Sensitivity</h3>
-          <p>Adjust how quickly your view responds to mouse movement.</p>
+          <h3>{t('settings.controls.title', 'Control sensitivity')}</h3>
+          <p>{t('settings.controls.panel.desc', 'Adjust how quickly your view responds to mouse movement.')}</p>
         </div>
         <span
           className="control-settings-value"
@@ -86,7 +88,7 @@ const ControlSettingsPanel: React.FC<ControlSettingsPanelProps> = ({
       </div>
 
       <div className="control-settings-slider">
-        <label htmlFor="sensitivity">Mouse look speed</label>
+        <label htmlFor="sensitivity">{t('settings.controls.slider.label', 'Mouse look speed')}</label>
         <input
           id="sensitivity"
           type="range"
@@ -99,29 +101,31 @@ const ControlSettingsPanel: React.FC<ControlSettingsPanelProps> = ({
           aria-valuetext={`${ratioLabel} of default sensitivity`}
         />
         <datalist id="sensitivityMarks">
-          <option value={0} label="Min" />
-          <option value={50} label="Default" />
-          <option value={100} label="Max" />
+          <option value={0} label={t('settings.controls.slider.min', 'Min')} />
+          <option value={50} label={t('settings.controls.slider.default', 'Default')} />
+          <option value={100} label={t('settings.controls.slider.max', 'Max')} />
         </datalist>
         <div className="control-settings-scale">
-          <span>Slower</span>
-          <span>Default</span>
-          <span>Faster</span>
+          <span>{t('settings.controls.scale.slower', 'Slower')}</span>
+          <span>{t('settings.controls.scale.default', 'Default')}</span>
+          <span>{t('settings.controls.scale.faster', 'Faster')}</span>
         </div>
-        <div className="control-settings-footnote">Default: {formatSensitivity(DEFAULT_SENSITIVITY)}</div>
+        <div className="control-settings-footnote">
+          {t('settings.controls.defaultLabel', 'Default')}: {formatSensitivity(DEFAULT_SENSITIVITY)}
+        </div>
       </div>
 
       <div className="control-settings-toggle">
         <div>
-          <h4>Invert Y-Axis</h4>
-          <p>Flip vertical look so pushing the mouse forward aims downward.</p>
+          <h4>{t('settings.controls.invert.title', 'Invert Y-Axis')}</h4>
+          <p>{t('settings.controls.invert.desc', 'Flip vertical look so pushing the mouse forward aims downward.')}</p>
         </div>
         <label className="switch">
           <input
             type="checkbox"
             checked={invertYAxis}
             onChange={(event) => setInvertYAxis(event.target.checked)}
-            aria-label="Invert Y axis"
+            aria-label={t('settings.controls.invert.aria', 'Invert Y axis')}
           />
           <span className="slider" />
         </label>
@@ -131,12 +135,12 @@ const ControlSettingsPanel: React.FC<ControlSettingsPanelProps> = ({
         <div className="control-settings-actions">
           {onOpenPreview && (
             <button type="button" className="control-test" onClick={onOpenPreview}>
-              Test in training arena
+              {t('settings.controls.preview', 'Test in training arena')}
             </button>
           )}
           {showReset && (
             <button type="button" className="control-reset" onClick={resetSettings}>
-              Reset to default
+              {t('settings.controls.reset', 'Reset to default')}
             </button>
           )}
         </div>

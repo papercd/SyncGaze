@@ -8,8 +8,10 @@ import {
   CROSSHAIR_THICKNESS_RANGE,
   DEFAULT_CROSSHAIR_SETTINGS,
 } from '../state/crosshairSettingsContext';
+import { useTranslation } from '../state/languageContext';
 
 const CrosshairSettingsPanel: React.FC = () => {
+  const { t } = useTranslation();
   const {
     color,
     size,
@@ -37,10 +39,10 @@ const CrosshairSettingsPanel: React.FC = () => {
         <div className="crosshair-settings__meta">
           <span className="crosshair-settings__chip" style={{ backgroundColor: color }} />
           <span className="crosshair-settings__meta-text">
-            {color.toUpperCase()} • Size {size}px • Thickness {thickness}px • Gap {gap}px
+            {color.toUpperCase()} • {t('settings.crosshair.size', 'Size')} {size}px • {t('settings.crosshair.thickness', 'Thickness')} {thickness}px • {t('settings.crosshair.gap', 'Gap')} {gap}px
           </span>
           {color !== DEFAULT_CROSSHAIR_SETTINGS.color && (
-            <span className="crosshair-settings__pill">Custom color</span>
+            <span className="crosshair-settings__pill">{t('settings.crosshair.customColor', 'Custom color')}</span>
           )}
         </div>
       </div>
@@ -48,7 +50,7 @@ const CrosshairSettingsPanel: React.FC = () => {
       <div className="crosshair-settings__grid">
         <label className="crosshair-settings__control">
           <div className="crosshair-settings__label">
-            <span>Color</span>
+            <span>{t('settings.crosshair.color', 'Color')}</span>
             <span className="crosshair-settings__value">{color.toUpperCase()}</span>
           </div>
           <div className="crosshair-settings__color-input">
@@ -56,20 +58,20 @@ const CrosshairSettingsPanel: React.FC = () => {
               type="color"
               value={color}
               onChange={handleColorChange}
-              aria-label="Crosshair color"
+              aria-label={t('settings.crosshair.color', 'Crosshair color')}
             />
             <input
               type="text"
               value={color.toUpperCase()}
               readOnly
-              aria-label="Hex color value"
+              aria-label={t('settings.crosshair.colorHex', 'Hex color value')}
             />
           </div>
         </label>
 
         <label className="crosshair-settings__control">
           <div className="crosshair-settings__label">
-            <span>Size</span>
+            <span>{t('settings.crosshair.size', 'Size')}</span>
             <span className="crosshair-settings__value">{size}px</span>
           </div>
           <input
@@ -84,7 +86,7 @@ const CrosshairSettingsPanel: React.FC = () => {
 
         <label className="crosshair-settings__control">
           <div className="crosshair-settings__label">
-            <span>Thickness</span>
+            <span>{t('settings.crosshair.thickness', 'Thickness')}</span>
             <span className="crosshair-settings__value">{thickness}px</span>
           </div>
           <input
@@ -99,7 +101,7 @@ const CrosshairSettingsPanel: React.FC = () => {
 
         <label className="crosshair-settings__control">
           <div className="crosshair-settings__label">
-            <span>Gap</span>
+            <span>{t('settings.crosshair.gap', 'Gap')}</span>
             <span className="crosshair-settings__value">{gap}px</span>
           </div>
           <input
@@ -115,7 +117,7 @@ const CrosshairSettingsPanel: React.FC = () => {
 
       <div className="crosshair-settings__actions">
         <button type="button" className="crosshair-settings__reset" onClick={handleReset}>
-          Reset to default
+          {t('settings.crosshair.reset', 'Reset to default')}
         </button>
       </div>
     </div>

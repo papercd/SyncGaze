@@ -27,6 +27,10 @@
   gap: 2rem;
 }
 
+.training-overlay--center {
+  justify-content: center;
+}
+
 .exit-overlay {
   position: fixed;
   inset: 0;
@@ -126,7 +130,7 @@
 
 .info-item {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 1.5rem;
   background: rgba(255, 255, 255, 0.03);
   padding: 1.5rem;
@@ -135,8 +139,12 @@
 }
 
 .info-icon {
-  font-size: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+  min-width: 2.5rem;
+  color: #dbe2ff;
 }
 
 .info-item h3 {
@@ -193,7 +201,11 @@
 }
 
 .stat-icon {
-  font-size: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.5rem;
+  color: #dbe2ff;
 }
 
 .stat-content h3 {
@@ -236,12 +248,6 @@
 
 .training-controls button {
   width: 100%;
-}
-
-.training-controls .view-results-button {
-  grid-column: 1 / -1;
-  max-width: 420px;
-  justify-self: center;
 }
 
 .start-button,

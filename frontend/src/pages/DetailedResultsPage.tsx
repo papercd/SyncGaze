@@ -341,8 +341,8 @@ const PerformanceLineChart = ({
     return <div className="chart-empty">No data selected to display.</div>;
   }
 
-  const width = 720; 
-  const height = 360;
+  const width = 700; 
+  const height = 320;
   const basePadding = 56;
   
   // X축 최대값: 시리즈가 없으면 duration 기준
@@ -584,7 +584,7 @@ const calculateHitIntervals = (data: TrainingDataPoint[]): HitIntervals => {
 const DetailedResultsPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { language } = useTranslation();
+  const { language, t } = useTranslation();
   const focusMetric = (location.state as { focusMetric?: FocusMetric } | null)?.focusMetric;
   const { activeSession, calibrationResult } = useTrackingSession();
 
@@ -638,6 +638,14 @@ const DetailedResultsPage = () => {
 
   const toggleVelocityMetric = (key: string) => {
     setVelocityVisibility(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const formatText = (key: string, fallback: string, params: Record<string, string | number>) => {
+    let text = t(key, fallback);
+    Object.entries(params).forEach(([k, v]) => {
+      text = text.replace(`{${k}}`, String(v));
+    });
+    return text;
   };
 
   const heatmapCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -1288,8 +1296,10 @@ const DetailedResultsPage = () => {
     return (
       <div className="detailed-results-page">
         <div className="detail-empty">
-          <p>최근 세션 정보를 찾을 수 없어요.</p>
-          <button type="button" className="detail-button" onClick={handleBack}>결과 페이지로 돌아가기</button>
+          <p>{t('detailed.empty.message', '최근 세션 정보를 찾을 수 없어요.')}</p>
+          <button type="button" className="detail-button" onClick={handleBack}>
+            {t('detailed.empty.back', '결과 페이지로 돌아가기')}
+          </button>
         </div>
       </div>
     );
@@ -1320,12 +1330,24 @@ const DetailedResultsPage = () => {
     () => {
       if (!sessionData) return [];
       return [
-        { label: '명중률', value: `${sessionData.accuracy.toFixed(1)}%`, desc: '타겟 명중률 반영' },
-        { label: '트래킹', value: `${sessionData.mouseAccuracy.toFixed(1)}%`, desc: '마우스-타겟 정렬도' },
-        { label: '반응', value: `${sessionData.avgReactionTime.toFixed(0)} ms`, desc: '평균 클릭 속도' },
+        {
+          label: t('detailed.training.factor.accuracy', '명중률'),
+          value: `${sessionData.accuracy.toFixed(1)}%`,
+          desc: t('detailed.training.factor.accuracyDesc', '타겟 명중률 반영'),
+        },
+        {
+          label: t('detailed.training.factor.tracking', '트래킹'),
+          value: `${sessionData.mouseAccuracy.toFixed(1)}%`,
+          desc: t('detailed.training.factor.trackingDesc', '마우스-타겟 정렬도'),
+        },
+        {
+          label: t('detailed.training.factor.reaction', '반응'),
+          value: `${sessionData.avgReactionTime.toFixed(0)} ms`,
+          desc: t('detailed.training.factor.reactionDesc', '평균 클릭 속도'),
+        },
       ];
     },
-    [sessionData],
+    [sessionData, t],
   );
 
   const renderModalContent = () => {
@@ -1445,12 +1467,14 @@ const DetailedResultsPage = () => {
             <div className="viz-modal__actions">
               <span className="zoom-readout">{Math.round(modalZoom * 100)}%</span>
               <button className="detail-button small ghost" type="button" onClick={closeModal}>
-                닫기
+                {t('common.close', '닫기')}
               </button>
             </div>
           </div>
           <div className="viz-modal__body" onWheel={handleModalWheel}>
-            <p className="viz-modal__hint">마우스 스크롤로 확대/축소하고, 그래프를 드래그해 이동할 수 있어요.</p>
+            <p className="viz-modal__hint">
+              {t('detailed.modal.hint', '마우스 스크롤로 확대/축소하고, 그래프를 드래그해 이동할 수 있어요.')}
+            </p>
             <div className="viz-modal__content">{modalBody}</div>
           </div>
         </div>
@@ -1495,20 +1519,20 @@ const DetailedResultsPage = () => {
                 </div>
                 <div className="prediction-left__body">
                   <div className="title-wrap">
-                    <p className="card-label">Training Results</p>
+                    <p className="card-label">{t('detailed.training.title', 'Training Results')}</p>
                   </div>
                   <div className="score-row">
                     <span className="card-value">
-                      {predictedScore != null ? predictedScore.toFixed(1) : '점수 없음'}
+                      {predictedScore != null ? predictedScore.toFixed(1) : t('detailed.training.noScore', '점수 없음')}
                     </span>
                     <span className="score-scale">/ 100</span>
-                    {isPredictingScore && <span className="chip">예측 중</span>}
+                    {isPredictingScore && <span className="chip">{t('detailed.training.predicting', '예측 중')}</span>}
                   </div>
                   <p className="card-meta">SyncGaze만의 에임 점수와 랭크에요.</p>
                 </div>
               </div>
               <div className="rank-tooltip">
-                <strong className="rank-tooltip-title">점수대별 랭크</strong>
+                <strong className="rank-tooltip-title">{t('detailed.training.rankTitle', '점수대별 랭크')}</strong>
                 <ul>
                   {rankLevels.map(level => {
                     const label = language === 'ko' ? level.labelKo : level.labelEn;
@@ -1524,9 +1548,15 @@ const DetailedResultsPage = () => {
             </div>
             <div className="prediction-right">
               <span className="inline-note">
-                객체를 <span className="inline-emph">{analytics.avgGazeReactionTime.toFixed(0)}ms</span>에 보고,
-                <span className="inline-emph">{analytics.gazeAimLatency.toFixed(0)}ms</span> 동안 마우스를 움직여,
-                <span className="inline-emph">{analytics.avgReactionTime.toFixed(0)}ms</span>에 쐈어요.
+                {formatText(
+                  'detailed.training.inlineNote',
+                  '객체를 {gazeMs}ms에 보고, {aimMs}ms 동안 마우스를 움직여, {clickMs}ms에 쐈어요.',
+                  {
+                    gazeMs: analytics.avgGazeReactionTime.toFixed(0),
+                    aimMs: analytics.gazeAimLatency.toFixed(0),
+                    clickMs: analytics.avgReactionTime.toFixed(0),
+                  },
+                )}
               </span>
               <div className="prediction-inline-factors condensed">
                 {predictionFactors.map(factor => (
@@ -1544,10 +1574,12 @@ const DetailedResultsPage = () => {
       <section className="detail-section">
         <div className="section-header">
           <h2>Detailed Visualizations</h2>
-          <p className="muted">세션 중 발생한 오차 추세와 시선 분포를 확인하세요.</p>
+          <p className="muted">
+            {t('detailed.viz.subtitle', '세션 중 발생한 오차 추세와 시선 분포를 확인하세요.')}
+          </p>
         </div>
         
-        <div className="viz-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
+        <div className="viz-grid detailed-viz-grid">
           
           <div
             className={`viz-card viz-card--accent detail-card bordered ${focusMetric === 'trends' ? 'focused' : ''}`}
@@ -1557,16 +1589,23 @@ const DetailedResultsPage = () => {
             <div className="viz-card__header">
               <div className="viz-card__title">
                 <h3>Performance Trends</h3>
-                <button
-                  type="button"
-                  className="icon-button"
-                  aria-label="Performance Trends 설명"
-                  title={vizDescriptions.trends}
-                >
-                  <Info size={16} />
-                </button>
+                <div className="viz-info">
+                  <button
+                    type="button"
+                    className="icon-button"
+                    aria-label="Performance Trends 설명"
+                  >
+                    <Info size={16} />
+                  </button>
+                  <div className="viz-tooltip" role="tooltip">
+                    <p>{formatText('detailed.viz.trends.meta.session', '세션 {seconds}s', { seconds: sessionData.duration })}</p>
+                    <p>{formatText('detailed.viz.trends.meta.targets', '타겟 {count}개', { count: analytics.totalTargets })}</p>
+                    <p>{formatText('detailed.viz.trends.meta.hits', '히트 {count}회', { count: analytics.targetsHit })}</p>
+                    <p className="viz-tooltip__desc">{t('detailed.viz.trends.desc', '시선·마우스 오차와 동기화 추세를 시간 흐름에 따라 확인해요.')}</p>
+                  </div>
+                </div>
               </div>
-              <div className="viz-card__actions">
+              <div className="viz-card__actions viz-card__actions--compact">
                 <div className="visibility-controls" style={{ display: 'flex', gap: '8px' }}>
                   {[
                     { key: 'gaze-error', label: 'Gaze', color: '#4ecdc4', textColor: '#1a1d24' },
@@ -1596,17 +1635,11 @@ const DetailedResultsPage = () => {
                 </div>
                 <button className="detail-button small ghost icon-button--inline" type="button" onClick={() => openModal('trends')}>
                   <Maximize2 size={14} />
-                  <span>팝업으로 보기</span>
+                  <span>{t('detailed.viz.expand', '확대')}</span>
                 </button>
               </div>
             </div>
-            <div className="viz-card__meta">
-              <span className="viz-pill">세션 {sessionData.duration}s</span>
-              <span className="viz-pill">타겟 {analytics.totalTargets}개</span>
-              <span className="viz-pill">히트 {analytics.targetsHit}회</span>
-            </div>
-            
-            <div style={{ marginTop: '16px', cursor: 'zoom-in' }} onClick={() => openModal('trends')}>
+            <div className="viz-preview viz-preview--chart" onClick={() => openModal('trends')}>
               <PerformanceLineChart
                 series={filteredSeries}
                 duration={sessionData.duration}
@@ -1621,23 +1654,30 @@ const DetailedResultsPage = () => {
             <div className="viz-card__header">
               <div className="viz-card__title">
                 <h3>Rolling Performance</h3>
-                <button
-                  type="button"
-                  className="icon-button"
-                  aria-label="Rolling Performance 설명"
-                  title={vizDescriptions.rolling}
-                >
-                  <Info size={16} />
-                </button>
+                <div className="viz-info">
+                  <button
+                    type="button"
+                    className="icon-button"
+                    aria-label="Rolling Performance 설명"
+                  >
+                    <Info size={16} />
+                  </button>
+                  <div className="viz-tooltip" role="tooltip">
+                    <p>{formatText('detailed.viz.rolling.meta.session', '세션 {seconds}s', { seconds: sessionData.duration })}</p>
+                    <p>{formatText('detailed.viz.rolling.meta.window', '롤링 윈도우 {window}s', { window: rollingWindowSeconds })}</p>
+                    <p>{formatText('detailed.viz.rolling.meta.hits', '히트 {count}회', { count: rollingPerformance.hitTimes.length })}</p>
+                    <p className="viz-tooltip__desc">{t('detailed.viz.rolling.desc', '최근 구간의 정확도·초당 히트·히트 시점을 묶어 단기 흐름을 보여줘요.')}</p>
+                  </div>
+                </div>
               </div>
-              <div className="viz-card__actions">
-                <div className="visibility-controls" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                {[{ key: 'rolling-accuracy', label: 'Rolling Accuracy', color: '#7c9bff' }, { key: 'rolling-hps', label: 'HPS', color: '#f1c40f' }, { key: 'rolling-hits', label: 'Hits', color: '#d14b4b', isHit: true }].map(({ key, label, color, isHit }) => (
+              <div className="viz-card__actions viz-card__actions--compact">
+                <div className="visibility-controls" style={{ display: 'flex', gap: '6px', flexWrap: 'nowrap', flex: 1, minWidth: 0 }}>
+                {[{ key: 'rolling-accuracy', label: 'Rolling Accuracy', color: '#7c9bff' }, { key: 'rolling-hps', label: 'HPS', color: '#f1c40f' }, { key: 'rolling-hits', label: 'Hits', color: '#d14b4b' }].map(({ key, label, color }) => (
                   <button
                     key={key}
                     onClick={() => toggleRollingMetric(key)}
                     style={{
-                      padding: '4px 12px',
+                      padding: '4px 10px',
                       fontSize: '0.8rem',
                       borderRadius: '16px',
                       border: `1px solid ${color}`,
@@ -1652,23 +1692,17 @@ const DetailedResultsPage = () => {
                     }}
                     aria-pressed={rollingVisibility[key]}
                   >
-                    {isHit && <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: rollingVisibility[key] ? '#0b1021' : color }} />}
                     {label}
                   </button>
                 ))}
                 </div>
                 <button className="detail-button small ghost icon-button--inline" type="button" onClick={() => openModal('rolling')}>
                   <Maximize2 size={14} />
-                  <span>팝업으로 보기</span>
+                  <span>{t('detailed.viz.expand', '확대')}</span>
                 </button>
               </div>
             </div>
-            <div className="viz-card__meta">
-              <span className="viz-pill">{rollingWindowSeconds}s 롤링 윈도우</span>
-              <span className="viz-pill">히트 {rollingPerformance.hitTimes.length}회</span>
-              <span className="viz-pill">세션 {sessionData.duration}s</span>
-            </div>
-            <div style={{ marginTop: '16px', cursor: 'zoom-in' }} onClick={() => openModal('rolling')}>
+            <div className="viz-preview viz-preview--chart" onClick={() => openModal('rolling')}>
               <PerformanceLineChart
                 series={filteredRollingSeries}
                 duration={sessionData.duration}
@@ -1684,23 +1718,30 @@ const DetailedResultsPage = () => {
             <div className="viz-card__header">
               <div className="viz-card__title">
                 <h3>Velocity & Reaction</h3>
-                <button
-                  type="button"
-                  className="icon-button"
-                  aria-label="Velocity & Reaction 설명"
-                  title={vizDescriptions.velocity}
-                >
-                  <Info size={16} />
-                </button>
+                <div className="viz-info">
+                  <button
+                    type="button"
+                    className="icon-button"
+                    aria-label="Velocity & Reaction 설명"
+                  >
+                    <Info size={16} />
+                  </button>
+                  <div className="viz-tooltip" role="tooltip">
+                    <p>{formatText('detailed.viz.velocity.meta.session', '세션 {seconds}s', { seconds: sessionData.duration })}</p>
+                    <p>{formatText('detailed.viz.velocity.meta.reaction', '평균 반응 {ms}ms', { ms: Math.round(analytics.avgReactionTime) })}</p>
+                    <p>{formatText('detailed.viz.velocity.meta.gaze', '시선 반응 {ms}ms', { ms: Math.round(analytics.avgGazeReactionTime) })}</p>
+                    <p className="viz-tooltip__desc">{t('detailed.viz.velocity.desc', '마우스 이동 속도와 반응 시간의 관계를 비교해 느린 구간을 찾을 수 있어요.')}</p>
+                  </div>
+                </div>
               </div>
               <div className="viz-card__actions">
-                <div className="visibility-controls" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  {[{ key: 'mouse-velocity', label: 'Mouse Velocity', color: '#4ecdc4' }, { key: 'reaction-time', label: 'Reaction Time', color: '#ff6b6b' }, { key: 'velocity-hits', label: 'Hits', color: '#d14b4b', isHit: true }].map(({ key, label, color, isHit }) => (
+                <div className="visibility-controls" style={{ display: 'flex', gap: '6px', flexWrap: 'nowrap', flex: 1, minWidth: 0 }}>
+                  {[{ key: 'mouse-velocity', label: 'Mouse Velocity', color: '#4ecdc4' }, { key: 'reaction-time', label: 'Reaction Time', color: '#ff6b6b' }, { key: 'velocity-hits', label: 'Hits', color: '#d14b4b' }].map(({ key, label, color }) => (
                     <button
                       key={key}
                       onClick={() => toggleVelocityMetric(key)}
                       style={{
-                        padding: '4px 12px',
+                        padding: '4px 10px',
                         fontSize: '0.8rem',
                         borderRadius: '16px',
                         border: `1px solid ${color}`,
@@ -1715,23 +1756,17 @@ const DetailedResultsPage = () => {
                       }}
                       aria-pressed={velocityVisibility[key]}
                     >
-                      {isHit && <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: velocityVisibility[key] ? '#0b1021' : color }} />}
                       {label}
                     </button>
                   ))}
                 </div>
                 <button className="detail-button small ghost icon-button--inline" type="button" onClick={() => openModal('velocity')}>
                   <Maximize2 size={14} />
-                  <span>팝업으로 보기</span>
+                  <span>{t('detailed.viz.expand', '확대')}</span>
                 </button>
               </div>
             </div>
-            <div className="viz-card__meta">
-              <span className="viz-pill">평균 반응 {Math.round(analytics.avgReactionTime)} ms</span>
-              <span className="viz-pill">시선 반응 {Math.round(analytics.avgGazeReactionTime)} ms</span>
-              <span className="viz-pill">속도·반응 비교</span>
-            </div>
-            <div style={{ marginTop: '16px', cursor: 'zoom-in' }} onClick={() => openModal('velocity')}>
+            <div className="viz-preview viz-preview--chart" onClick={() => openModal('velocity')}>
               <PerformanceLineChart
                 series={filteredVelocitySeries}
                 duration={sessionData.duration}
@@ -1752,29 +1787,31 @@ const DetailedResultsPage = () => {
              <div className="viz-card__header">
               <div className="viz-card__title">
                 <h3>Gaze Heatmap</h3>
-                <button
-                  type="button"
-                  className="icon-button"
-                  aria-label="Gaze Heatmap 설명"
-                  title={vizDescriptions.heatmap}
-                >
-                  <Info size={16} />
-                </button>
+                <div className="viz-info">
+                  <button
+                    type="button"
+                    className="icon-button"
+                    aria-label="Gaze Heatmap 설명"
+                  >
+                    <Info size={16} />
+                  </button>
+                  <div className="viz-tooltip" role="tooltip">
+                    <p>{formatText('detailed.viz.heatmap.meta.gaze', '시선 커버 {pct}%', { pct: coverage.gaze.toFixed(0) })}</p>
+                    <p>{formatText('detailed.viz.heatmap.meta.mouse', '입력 커버 {pct}%', { pct: coverage.mouse.toFixed(0) })}</p>
+                    <p>{formatText('detailed.viz.heatmap.meta.points', '포인트 {count}개', { count: heatmapPoints.length })}</p>
+                    <p className="viz-tooltip__desc">{t('detailed.viz.heatmap.desc', '세션 동안 시선이 오래 머문 영역을 색상 농도로 보여줘요.')}</p>
+                  </div>
+                </div>
               </div>
               <div className="viz-card__actions">
                 <button className="detail-button small ghost icon-button--inline" type="button" onClick={() => openModal('heatmap')}>
                   <Maximize2 size={14} />
-                  <span>팝업으로 보기</span>
+                  <span>{t('detailed.viz.expand', '확대')}</span>
                 </button>
               </div>
             </div>
-            <div className="viz-card__meta">
-              <span className="viz-pill">시선 커버 {coverage.gaze.toFixed(0)}%</span>
-              <span className="viz-pill">입력 커버 {coverage.mouse.toFixed(0)}%</span>
-              <span className="viz-pill">포인트 {heatmapPoints.length}개</span>
-            </div>
-            <div className="heatmap-wrapper" style={{ marginTop: '16px', border: '1px solid #333', borderRadius: '8px', overflow: 'hidden', cursor: 'zoom-in' }} onClick={() => openModal('heatmap')}>
-              <div style={{ width: '100%', overflow: 'auto', maxHeight: '400px', backgroundColor: '#1a1d24' }}>
+            <div className="heatmap-wrapper viz-preview viz-preview--heatmap" onClick={() => openModal('heatmap')}>
+              <div className="heatmap-scroll">
                 <div 
                   className="heatmap-container"
                   ref={heatmapContainerRef}
@@ -1812,9 +1849,15 @@ const DetailedResultsPage = () => {
         <div className="detail-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))' }}>
           {/* 1. Accuracy */}
           <div className={`detail-card ${focusMetric === 'accuracy' ? 'focused' : ''}`}>
-            <p className="card-label">Hit Rate (Accuracy)</p>
+            <p className="card-label">{t('detailed.metrics.hitRate', 'Hit Rate (Accuracy)')}</p>
             <p className="card-value">{accuracyPct.toFixed(1)}%</p>
-            <p className="card-meta">{analytics.targetsHit} / {analytics.totalTargets} targets hit</p>
+            <p className="card-meta">
+              {formatText(
+                'detailed.metrics.hitRateMeta',
+                '{hits} / {total} targets hit',
+                { hits: analytics.targetsHit, total: analytics.totalTargets },
+              )}
+            </p>
             {(() => {
               const level = metricDetailLevel('accuracy', analytics);
               const percentile = metricPercentile('accuracy', analytics);
@@ -1836,9 +1879,9 @@ const DetailedResultsPage = () => {
 
           {/* 2. Avg Reaction Time */}
           <div className={`detail-card ${focusMetric === 'reaction' ? 'focused' : ''}`}>
-            <p className="card-label">Avg Reaction Time</p>
+            <p className="card-label">{t('detailed.metrics.reaction', 'Avg Reaction Time')}</p>
             <p className="card-value">{analytics.avgReactionTime.toFixed(0)} ms</p>
-            <p className="card-meta">Mouse click latency</p>
+            <p className="card-meta">{t('detailed.metrics.reactionDesc', 'Mouse click latency')}</p>
             {(() => {
               const level = metricDetailLevel('reaction', analytics);
               const percentile = metricPercentile('reaction', analytics);
@@ -1860,9 +1903,9 @@ const DetailedResultsPage = () => {
 
           {/* 3. Gaze Reaction */}
           <div className={`detail-card ${focusMetric === 'gaze' ? 'focused' : ''}`}>
-            <p className="card-label">Gaze Reaction</p>
+            <p className="card-label">{t('detailed.metrics.gaze', 'Gaze Reaction')}</p>
             <p className="card-value">{analytics.avgGazeReactionTime.toFixed(0)} ms</p>
-            <p className="card-meta">Time to first look at target</p>
+            <p className="card-meta">{t('detailed.metrics.gazeDesc', 'Time to first look at target')}</p>
             {(() => {
               const level = metricDetailLevel('gaze', analytics);
               const percentile = metricPercentile('gaze', analytics);
@@ -1884,9 +1927,9 @@ const DetailedResultsPage = () => {
 
           {/* 4. Gaze-Aim Latency */}
           <div className="detail-card">
-            <p className="card-label">Gaze-Aim Latency</p>
+            <p className="card-label">{t('detailed.metrics.gazeAim', 'Gaze-Aim Latency')}</p>
             <p className="card-value">{analytics.gazeAimLatency.toFixed(0)} ms</p>
-            <p className="card-meta">Eye vs Hand delay</p>
+            <p className="card-meta">{t('detailed.metrics.gazeAimDesc', 'Eye vs Hand delay')}</p>
             {(() => {
               const level = metricDetailLevel('gazeAim', analytics);
               const percentile = metricPercentile('gazeAim', analytics);
@@ -1908,9 +1951,9 @@ const DetailedResultsPage = () => {
 
            {/* 5. Synchronization */}
           <div className="detail-card">
-            <p className="card-label">Synchronization</p>
+            <p className="card-label">{t('detailed.metrics.sync', 'Synchronization')}</p>
             <p className="card-value">{analytics.synchronization.toFixed(0)} px</p>
-            <p className="card-meta">Avg distance: Gaze ↔ Mouse</p>
+            <p className="card-meta">{t('detailed.metrics.syncDesc', 'Avg distance: Gaze ↔ Mouse')}</p>
             {(() => {
               const level = metricDetailLevel('sync', analytics);
               const percentile = metricPercentile('sync', analytics);
@@ -1932,9 +1975,9 @@ const DetailedResultsPage = () => {
 
           {/* 6. Gaze Coverage */}
           <div className={`detail-card ${focusMetric === 'gaze' ? 'focused' : ''}`}>
-            <p className="card-label">Gaze Samples</p>
+            <p className="card-label">{t('detailed.metrics.gazeSamples', 'Gaze Samples')}</p>
             <p className="card-value">{coverage.gaze.toFixed(1)}%</p>
-            <p className="card-meta">Tracking coverage</p>
+            <p className="card-meta">{t('detailed.metrics.gazeSamplesDesc', 'Tracking coverage')}</p>
             {(() => {
               const level = metricDetailLevel('coverage', analytics, coverage);
               const percentile = metricPercentile('coverage', analytics, coverage);
@@ -1956,9 +1999,9 @@ const DetailedResultsPage = () => {
 
           {/* 7. Mouse Coverage */}
           <div className={`detail-card ${focusMetric === 'mouse' ? 'focused' : ''}`}>
-            <p className="card-label">Mouse Samples</p>
+            <p className="card-label">{t('detailed.metrics.mouseSamples', 'Mouse Samples')}</p>
             <p className="card-value">{coverage.mouse.toFixed(1)}%</p>
-            <p className="card-meta">Input coverage</p>
+            <p className="card-meta">{t('detailed.metrics.mouseSamplesDesc', 'Input coverage')}</p>
             {(() => {
               const level = metricDetailLevel('coverage', analytics, coverage);
               const percentile = metricPercentile('coverage', analytics, coverage);
@@ -1983,7 +2026,9 @@ const DetailedResultsPage = () => {
       <section className="detail-section">
         <div className="section-header">
           <h2>Error Breakdown</h2>
-          <p className="muted">오차는 타겟 중심으로부터의 평균 픽셀 거리입니다.</p>
+          <p className="muted">
+            {t('detailed.error.subtitle', '오차는 타겟 중심으로부터의 평균 픽셀 거리입니다.')}
+          </p>
         </div>
         <div className="detail-grid two-col">
           <div className={`detail-card bordered ${focusMetric === 'gaze' ? 'focused' : ''}`}>
@@ -2039,42 +2084,47 @@ const DetailedResultsPage = () => {
       <section className="detail-section">
         <div className="section-header">
           <h2>Data Quality & Timing</h2>
-          <p className="muted">세션 동안 수집된 입력과 타겟 정보를 확인하세요.</p>
+          <p className="muted">
+            {t('detailed.data.subtitle', '세션 동안 수집된 입력과 타겟 정보를 확인하세요.')}
+          </p>
         </div>
         <div className="detail-grid three-col">
           <div className="detail-card bordered">
-            <p className="card-label">Frames with Target Data</p>
+            <p className="card-label">{t('detailed.data.framesWithTargets', 'Frames with Target Data')}</p>
             <p className="card-value">{dataQuality ? dataQuality.withTargetsPct.toFixed(1) : '0.0'}%</p>
-            <p className="card-meta">타겟 좌표가 함께 기록된 프레임</p>
+            <p className="card-meta">{t('detailed.data.framesWithTargetsDesc', '타겟 좌표가 함께 기록된 프레임')}</p>
           </div>
           <div className="detail-card bordered">
-            <p className="card-label">Gaze Coverage</p>
+            <p className="card-label">{t('detailed.data.gazeCoverage', 'Gaze Coverage')}</p>
             <p className="card-value">{dataQuality ? dataQuality.gazeCoverage.toFixed(1) : '0.0'}%</p>
-            <p className="card-meta">가용한 전체 프레임 기준</p>
+            <p className="card-meta">{t('detailed.data.coverageDesc', '가용한 전체 프레임 기준')}</p>
           </div>
           <div className="detail-card bordered">
-            <p className="card-label">Mouse Coverage</p>
+            <p className="card-label">{t('detailed.data.mouseCoverage', 'Mouse Coverage')}</p>
             <p className="card-value">{dataQuality ? dataQuality.mouseCoverage.toFixed(1) : '0.0'}%</p>
-            <p className="card-meta">가용한 전체 프레임 기준</p>
+            <p className="card-meta">{t('detailed.data.coverageDesc', '가용한 전체 프레임 기준')}</p>
           </div>
           <div className="detail-card bordered">
-            <p className="card-label">Hit Rate</p>
+            <p className="card-label">{t('detailed.data.hitRate', 'Hit Rate')}</p>
             <p className="card-value">{dataQuality ? dataQuality.hitRate.toFixed(1) : '0.0'}%</p>
-            <p className="card-meta">타겟당 명중률</p>
+            <p className="card-meta">{t('detailed.data.hitRateDesc', '타겟당 명중률')}</p>
           </div>
           <div className="detail-card bordered">
-            <p className="card-label">Hit Interval (avg)</p>
+            <p className="card-label">{t('detailed.data.hitInterval', 'Hit Interval (avg)')}</p>
             <p className="card-value">{hitIntervals ? hitIntervals.avg.toFixed(0) : '0'} ms</p>
             <p className="card-meta">
               {hitIntervals && hitIntervals.samples > 0
-                ? `min ${hitIntervals.min.toFixed(0)} / max ${hitIntervals.max.toFixed(0)}`
-                : '충분한 데이터가 없습니다'}
+                ? formatText('detailed.data.hitIntervalRange', 'min {min} / max {max}', {
+                  min: hitIntervals.min.toFixed(0),
+                  max: hitIntervals.max.toFixed(0),
+                })
+                : t('detailed.data.insufficient', '충분한 데이터가 없습니다')}
             </p>
           </div>
           <div className="detail-card bordered">
-            <p className="card-label">Raw Points</p>
+            <p className="card-label">{t('detailed.data.rawPoints', 'Raw Points')}</p>
             <p className="card-value">{sessionData.rawData.length}</p>
-            <p className="card-meta">세션에 저장된 총 샘플</p>
+            <p className="card-meta">{t('detailed.data.rawPointsDesc', '세션에 저장된 총 샘플')}</p>
           </div>
         </div>
       </section>
@@ -2083,7 +2133,12 @@ const DetailedResultsPage = () => {
       <section className="detail-section">
         <div className="section-header">
           <h2>Recent Targets</h2>
-          <p className="muted">세션동안 등장한 타겟의 오차와 반응 시간을 확인하세요. 한 번에 8개씩 표시되며 스크롤로 다음 타겟까지 탐색할 수 있습니다. 타겟 ID를 누르면 해당 타겟 등장부터 사라질 때까지의 슬로우모션 리플레이가 재생됩니다.</p>
+          <p className="muted">
+            {t(
+              'detailed.targets.subtitle',
+              '세션동안 등장한 타겟의 오차와 반응 시간을 확인하세요. 한 번에 8개씩 표시되며 스크롤로 다음 타겟까지 탐색할 수 있습니다. 타겟 ID를 누르면 해당 타겟 등장부터 사라질 때까지의 슬로우모션 리플레이가 재생됩니다.',
+            )}
+          </p>
         </div>
         <div className="samples-table scrollable">
           <div className="samples-scroll">

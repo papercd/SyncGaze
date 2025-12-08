@@ -77,7 +77,7 @@ const SideNavigation = () => {
             {!collapsed && (
               <div className="user-details">
                 <div className="user-email">{user.email}</div>
-                <div className="user-meta">계정·세션 요약 보기</div>
+                <div className="user-meta">계정 정보 요약 보기</div>
               </div>
             )}
           </button>

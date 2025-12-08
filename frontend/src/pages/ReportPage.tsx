@@ -3,16 +3,18 @@ import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FileText, Sparkles } from 'lucide-react';
 import { useAuth } from '../state/authContext';
-import { useTrackingSession } from '../state/trackingSessionContext';
+import { useTrackingSession, type TrainingSessionSummary } from '../state/trackingSessionContext';
 import { generatePerformanceReport, saveReport, getUserReports, PerformanceReport } from '../services/reportService';
 import { predictScore } from '../services/predictionService';
 import './ReportPage.css';
+import { useTranslation } from '../state/languageContext';
 
 const ReportPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const { activeSession, calibrationResult } = useTrackingSession();
+  const { t, language } = useTranslation();
+  const { activeSession, calibrationResult, recentSessions } = useTrackingSession();
   const reportSessionId = (location.state as { sessionId?: string } | null)?.sessionId;
 
   const [isGenerating, setIsGenerating] = useState(false);
@@ -92,7 +94,7 @@ const ReportPage = () => {
 
   const handleGenerateReport = async () => {
     if (!activeSession || !user?.uid) {
-      setError('활성 세션 또는 사용자 정보가 없습니다.');
+      setError(t('report.error.missingSession', '활성 세션 또는 사용자 정보가 없습니다.'));
       return;
     }
 
@@ -130,7 +132,7 @@ const ReportPage = () => {
       setSelectedReportId(report.id);
     } catch (err) {
       console.error('Report generation failed:', err);
-      setError('리포트 생성에 실패했습니다. 다시 시도해주세요.');
+      setError(t('report.error.generateFail', '리포트 생성에 실패했습니다. 다시 시도해주세요.'));
     } finally {
       setIsGenerating(false);
     }
@@ -147,7 +149,7 @@ const ReportPage = () => {
   const formatReportDate = (dateString: string, includeTime: boolean = false): string => {
     const date = new Date(dateString);
     if (includeTime) {
-      return date.toLocaleString('ko-KR', { 
+      return date.toLocaleString(language === 'ko' ? 'ko-KR' : 'en-US', { 
         year: 'numeric',
         month: 'long',
         day: 'numeric',
@@ -155,7 +157,7 @@ const ReportPage = () => {
         minute: '2-digit'
       });
     }
-    return date.toLocaleDateString('ko-KR', { 
+    return date.toLocaleDateString(language === 'ko' ? 'ko-KR' : 'en-US', { 
       year: 'numeric',
       month: 'long',
       day: 'numeric'
@@ -164,17 +166,49 @@ const ReportPage = () => {
 
   const getReportTitle = (report: PerformanceReport): string => {
     const date = new Date(report.generatedAt);
-    const timeString = date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
-    return `${timeString} 리포트`;
+    const timeString = date.toLocaleTimeString(language === 'ko' ? 'ko-KR' : 'en-US', { hour: '2-digit', minute: '2-digit' });
+    return t('report.card.title', '{time} 리포트').replace('{time}', timeString);
   };
 
   const renderReportContent = (report: PerformanceReport) => {
+    const sessionInfo: TrainingSessionSummary | undefined = recentSessions.find(s => s.id === report.sessionId);
+    const sessionDateText = sessionInfo
+      ? new Date(sessionInfo.date).toLocaleString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })
+      : null;
+    const sessionDurationText = sessionInfo ? `${sessionInfo.duration}s` : null;
+    const sessionAccuracyText = sessionInfo ? `${sessionInfo.accuracy.toFixed(1)}%` : null;
+    const sessionTargetsText = sessionInfo ? `${sessionInfo.targetsHit}/${sessionInfo.totalTargets}` : null;
+
     return (
       <div className="report-content">
         <div className="report-header">
-          <h2>성능 분석 리포트</h2>
+          <h2>{t('report.title', '성능 분석 리포트')}</h2>
           <div className="report-meta">
             <span>📅 {formatReportDate(report.generatedAt, true)}</span>
+          </div>
+          <div className="report-session-meta">
+            <div className="meta-row">
+              <span className="meta-label">{t('report.session.id', '세션 ID')}</span>
+              <span className="meta-value">{report.sessionId}</span>
+            </div>
+            <div className="meta-grid">
+              <div className="meta-item">
+                <span className="meta-label">{t('report.session.date', '날짜')}</span>
+                <span className="meta-value">{sessionDateText ?? '-'}</span>
+              </div>
+              <div className="meta-item">
+                <span className="meta-label">{t('report.session.duration', '세션 길이')}</span>
+                <span className="meta-value">{sessionDurationText ?? '-'}</span>
+              </div>
+              <div className="meta-item">
+                <span className="meta-label">{t('report.session.targets', '명중')}</span>
+                <span className="meta-value">{sessionTargetsText ?? '-'}</span>
+              </div>
+              <div className="meta-item">
+                <span className="meta-label">{t('report.session.accuracy', '정확도')}</span>
+                <span className="meta-value">{sessionAccuracyText ?? '-'}</span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -184,10 +218,10 @@ const ReportPage = () => {
         />
 
         <div className="report-data-summary">
-          <h3>측정 데이터</h3>
+          <h3>{t('report.data.title', '측정 데이터')}</h3>
           <div className="data-grid">
             <div className="data-item">
-              <span className="data-label">예측 점수</span>
+              <span className="data-label">{t('report.data.predicted', '예측 점수')}</span>
               <span className="data-value">
                 {report.metrics.predictedScore != null
                   ? report.metrics.predictedScore.toFixed(1)
@@ -195,21 +229,21 @@ const ReportPage = () => {
               </span>
             </div>
             <div className="data-item">
-              <span className="data-label">반응 속도</span>
+              <span className="data-label">{t('report.data.reaction', '반응 속도')}</span>
               <span className="data-value">{report.metrics.reactionTime.toFixed(0)}ms</span>
               <span className="data-percentile">(상위 {report.metrics.reactionTimePercentile}%)</span>
             </div>
             <div className="data-item">
-              <span className="data-label">시선-에임 일치도</span>
+              <span className="data-label">{t('report.data.overlap', '시선-에임 일치도')}</span>
               <span className="data-value">{report.metrics.overlapScore.toFixed(1)}%</span>
               <span className="data-percentile">(상위 {report.metrics.overlapScorePercentile}%)</span>
             </div>
             <div className="data-item">
-              <span className="data-label">트래킹 정확도</span>
+              <span className="data-label">{t('report.data.tracking', '트래킹 정확도')}</span>
               <span className="data-value">{report.metrics.trackingAccuracy.toFixed(1)}%</span>
             </div>
             <div className="data-item">
-              <span className="data-label">종합 정확도</span>
+              <span className="data-label">{t('report.data.accuracy', '종합 정확도')}</span>
               <span className="data-value">{report.metrics.accuracy.toFixed(1)}%</span>
             </div>
           </div>
@@ -241,19 +275,19 @@ const ReportPage = () => {
     <div className="report-page">
       <div className="report-container">
         <button className="back-button" onClick={() => navigate('/results')}>
-          ← 결과 페이지로 돌아가기
+          ← {t('report.back', '결과 페이지로 돌아가기')}
         </button>
 
         <div className="report-layout">
           {/* Sidebar with saved reports */}
           <aside className="report-sidebar">
-            <h3>저장된 리포트</h3>
+            <h3>{t('report.sidebar.title', '저장된 리포트')}</h3>
             <div className="report-list">
               {savedReports.length === 0 ? (
                 <p className="no-reports">
                   <FileText size={48} strokeWidth={1.5} style={{ opacity: 0.3, margin: '1rem auto' }} />
                   <br />
-                  저장된 리포트가 없습니다
+                  {t('report.sidebar.empty', '저장된 리포트가 없습니다')}
                 </p>
               ) : (
                 savedReports.map(report => (
@@ -278,46 +312,48 @@ const ReportPage = () => {
           <main className="report-main">
             {!currentReport ? (
               <div className="report-generate">
-                <h1>AI 성능 분석 리포트</h1>
+                <h1>{t('report.generate.title', 'AI 성능 분석 리포트')}</h1>
                 <p className="report-description">
-                  전직 FPS 프로게이머 출신 코치의 시각으로 당신의 플레이를 분석하고,
-                  맞춤형 훈련 방법을 제안합니다.
+                  {t(
+                    'report.generate.desc',
+                    '전직 FPS 프로게이머 출신 코치의 시각으로 당신의 플레이를 분석하고, 맞춤형 훈련 방법을 제안합니다.',
+                  )}
                 </p>
 
                 {!activeSession && (
                   <div className="warning-box">
-                    <p>⚠️ 활성 세션이 없습니다. 먼저 트레이닝을 완료해주세요.</p>
+                    <p>⚠️ {t('report.warning.noSession', '활성 세션이 없습니다. 먼저 트레이닝을 완료해주세요.')}</p>
                   </div>
                 )}
 
                 {activeSession && (
                   <div className="session-summary">
-                    <h3>현재 세션 데이터</h3>
+                    <h3>{t('report.summary.title', '현재 세션 데이터')}</h3>
                     <div className="summary-grid">
                       <div className="summary-item">
-                        <span>예측 점수</span>
+                        <span>{t('report.data.predicted', '예측 점수')}</span>
                         <strong>
                           {predictedScore != null
                             ? predictedScore.toFixed(1)
                             : isPredicting
-                              ? '계산 중...'
+                              ? t('report.loading.prediction', '계산 중...')
                               : 'N/A'}
                         </strong>
                       </div>
                       <div className="summary-item">
-                        <span>반응 속도</span>
+                        <span>{t('report.data.reaction', '반응 속도')}</span>
                         <strong>{activeSession.avgReactionTime.toFixed(0)}ms</strong>
                       </div>
                       <div className="summary-item">
-                        <span>시선 정확도</span>
+                        <span>{t('report.summary.gazeAcc', '시선 정확도')}</span>
                         <strong>{activeSession.gazeAccuracy.toFixed(1)}%</strong>
                       </div>
                       <div className="summary-item">
-                        <span>마우스 정확도</span>
+                        <span>{t('report.summary.mouseAcc', '마우스 정확도')}</span>
                         <strong>{activeSession.mouseAccuracy.toFixed(1)}%</strong>
                       </div>
                       <div className="summary-item">
-                        <span>적중률</span>
+                        <span>{t('report.summary.hitRate', '적중률')}</span>
                         <strong>{activeSession.accuracy.toFixed(1)}%</strong>
                       </div>
                     </div>
@@ -338,12 +374,12 @@ const ReportPage = () => {
                   {isGenerating ? (
                     <>
                       <span className="spinner"></span>
-                      리포트 생성 중...
+                      {t('report.actions.generating', '리포트 생성 중...')}
                     </>
                   ) : (
                     <>
                       <Sparkles size={20} />
-                      리포트 생성하기
+                      {t('report.actions.generate', '리포트 생성하기')}
                     </>
                   )}
                 </button>
@@ -351,15 +387,20 @@ const ReportPage = () => {
             ) : (
               <>
                 {renderReportContent(currentReport)}
-                <button
-                  className="new-report-button"
-                  onClick={() => {
-                    setCurrentReport(null);
-                    setSelectedReportId(null);
-                  }}
-                >
-                  새 리포트 생성
-                </button>
+                <div className="report-actions">
+                  <button
+                    className="new-report-button inline"
+                    onClick={() => {
+                      setCurrentReport(null);
+                      setSelectedReportId(null);
+                    }}
+                  >
+                    {t('report.actions.new', '새 리포트 생성')}
+                  </button>
+                  <button className="print-button" onClick={() => window.print()}>
+                    🖨️ {t('report.actions.print', '리포트 인쇄')}
+                  </button>
+                </div>
               </>
             )}
           </main>

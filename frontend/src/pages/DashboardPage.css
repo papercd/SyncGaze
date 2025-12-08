@@ -75,7 +75,15 @@
   margin-bottom: 3rem;
 }
 
-.welcome-section h2 {
+.welcome-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.welcome-copy h2 {
   font-size: 2.5rem;
   margin-bottom: 0.5rem;
   background: linear-gradient(135deg, #fff 0%, #b8b8d1 100%);
@@ -84,9 +92,10 @@
   background-clip: text;
 }
 
-.welcome-section p {
+.welcome-copy p {
   color: #b8b8d1;
   font-size: 1.1rem;
+  margin: 0;
 }
 
 /* Reaction stat styling */
@@ -185,6 +194,18 @@
   margin: 0;
   color: #d8ddf3;
   font-size: 0.9rem;
+}
+
+.reaction-stat {
+  min-width: 420px;
+}
+
+.gaze-stat .stat-info {
+  width: 100%;
+}
+
+.welcome-congrats {
+  min-width: 300px;
 }
 
 .stat-subtext {
@@ -289,7 +310,7 @@
 /* Recent Sessions */
 .recent-sessions {
   width: 100%;
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -362,14 +383,17 @@
 
 .table-actions {
   text-align: center;
-}
-
-.table-actions-group {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
+}
+
+.table-actions-group {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.4rem;
+  margin: 0 auto;
 }
 
 .accuracy-badge {
@@ -431,6 +455,12 @@
 }
 
 @media (max-width: 768px) {
+  .reaction-stat {
+    min-width: 0;
+  }
+  .reaction-stat .stat-inner {
+    flex-wrap: wrap;
+  }
   .dashboard-main {
     padding: 2rem 1rem;
   }

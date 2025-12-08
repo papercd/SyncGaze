@@ -107,6 +107,7 @@
 .about-project h2 {
   font-size: 2rem;
   margin-bottom: 1rem;
+  font-weight: 800;
   background: linear-gradient(135deg, #71C4FF 0%, #a78bfa 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -117,6 +118,23 @@
   color: rgba(255, 255, 255, 0.8);
   line-height: 1.8;
   font-size: 1.1rem;
+}
+
+.about-github-footer {
+  margin: 1.5rem auto 0;
+  text-align: center;
+  color: #b8b8d1;
+}
+
+.about-github-link a {
+  color: #8fb4ff;
+  text-decoration: underline;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.about-github-link a:hover {
+  color: #c3d6ff;
 }
 
 /* Responsive Design */

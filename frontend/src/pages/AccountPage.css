@@ -74,9 +74,15 @@
   font-size: 0.9rem;
 }
 
+.muted {
+  color: #9da5c5;
+  margin: 0.25rem 0 0;
+  font-size: 0.95rem;
+}
+
 .account-section {
   max-width: 100%;
-  margin: 0 auto;
+  margin: 0 auto 1.5rem;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;

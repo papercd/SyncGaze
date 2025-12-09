@@ -33,7 +33,7 @@ const TrainingPage = () => {
   } = useTrackingSession();
   
   const { user } = useAuth();
-  const { stopSession } = useWebgazer();
+  const { stopSession, isTrackingActive } = useWebgazer();
   const { t } = useTranslation();
   const { controlSensitivity } = useControlSettings();
 
@@ -43,6 +43,8 @@ const TrainingPage = () => {
   const [finalScore, setFinalScore] = useState(0);
   const [scoreComparisonText, setScoreComparisonText] = useState<string | null>(null);
   const [showExitPrompt, setShowExitPrompt] = useState(false);
+  const [trackingWarning, setTrackingWarning] = useState<string | null>(null);
+  const [sessionSaved, setSessionSaved] = useState(false);
   const trainingStartTime = useRef<number>(0);
 
   // ❌ REMOVED: No automatic cleanup on unmount
@@ -84,6 +86,35 @@ const TrainingPage = () => {
     trainingStartTime.current = Date.now();
     setIsTraining(true);
     setIsComplete(false);
+    setTrackingWarning(null);
+    setSessionSaved(false);
+    setScoreComparisonText(null);
+  }, []);
+
+  const hasLiveCameraFeed = useCallback(() => {
+    if (typeof document === 'undefined') return false;
+    const videoEl = document.getElementById('webgazerVideoFeed') as HTMLVideoElement | null;
+    const stream = videoEl?.srcObject as MediaStream | null;
+    if (!stream) return false;
+    return stream.getVideoTracks().some(track => track.readyState === 'live' && track.enabled);
+  }, []);
+
+  const isWebgazerOperational = useCallback(() => {
+    if (typeof window === 'undefined') return false;
+    if (!window.webgazer) return false;
+    try {
+      if (typeof window.webgazer.isReady === 'function') {
+        return Boolean(window.webgazer.isReady());
+      }
+      if (typeof window.webgazer.getVideoElementCanvas === 'function') {
+        const canvas = window.webgazer.getVideoElementCanvas();
+        return Boolean(canvas && canvas.width > 0);
+      }
+    } catch (error) {
+      console.warn('Failed to check WebGazer readiness', error);
+      return false;
+    }
+    return false;
   }, []);
 
   // Convert TrackingDataRecord to TrainingDataPoint format
@@ -104,11 +135,32 @@ const TrainingPage = () => {
   const handleTrainingComplete = useCallback((
     score: number,
     targetsHit: number,
-    rawTrackingData: TrackingDataRecord[]
+    rawTrackingData: TrackingDataRecord[],
+    trackingMeta: { gazeSamples: number }
   ) => {
     setIsComplete(true);
     setIsTraining(false);
     setFinalScore(score);
+    setSessionSaved(false);
+
+    const hasGazeSamples = (trackingMeta?.gazeSamples ?? 0) > 0;
+    const webgazerHealthy = isTrackingActive && isWebgazerOperational();
+    const cameraHealthy = hasLiveCameraFeed();
+    const shouldBlockSession = !webgazerHealthy || !cameraHealthy || !hasGazeSamples;
+
+    if (shouldBlockSession) {
+      setTrackingWarning(
+        t(
+          'training.warning.trackingMissing',
+          '시야 데이터 수집에 문제가 있어 이번 세션 기록은 저장되지 않았습니다. 캘리브레이션과 웹캠 상태를 확인한 뒤 다시 시도해주세요.',
+        ),
+      );
+      setScoreComparisonText(null);
+      return;
+    }
+
+    setTrackingWarning(null);
+    setSessionSaved(true);
     const previousScores = recentSessions.map(session => session.score);
     const previousBest = previousScores.length ? Math.max(...previousScores) : null;
     const lastScore = recentSessions[0]?.score ?? null;
@@ -223,10 +275,20 @@ const TrainingPage = () => {
     user,
     controlSensitivity,
     recentSessions,
+    isTrackingActive,
+    isWebgazerOperational,
+    hasLiveCameraFeed,
     t,
   ]);
 
   const handleViewResults = useCallback(() => {
+    if (!sessionSaved) {
+      setTrackingWarning(prev => prev ?? t(
+        'training.warning.trackingMissing',
+        '시야 데이터 수집에 문제가 있어 이번 세션 기록은 저장되지 않았습니다. 캘리브레이션과 웹캠 상태를 확인한 뒤 다시 시도해주세요.',
+      ));
+      return;
+    }
     // ✅ Don't stop WebGazer here - ResultsPage will handle it on mount
     navigate('/results', {
       state: {
@@ -234,7 +296,7 @@ const TrainingPage = () => {
         sessionId: activeSessionId ?? null,
       },
     });
-  }, [navigate, activeSessionId]);
+  }, [navigate, activeSessionId, sessionSaved, t]);
 
   const handleBackToDashboard = useCallback(() => {
     // ✅ Only stop WebGazer when navigating to Dashboard
@@ -354,9 +416,19 @@ const TrainingPage = () => {
                 <p>{scoreComparisonText}</p>
               </div>
             )}
+            {trackingWarning && (
+              <div className="tracking-warning" role="alert">
+                <p>{trackingWarning}</p>
+              </div>
+            )}
 
             <div className="training-controls">
-              <button className="view-results-button" onClick={handleViewResults}>
+              <button
+                className="view-results-button"
+                onClick={handleViewResults}
+                disabled={!sessionSaved}
+                aria-disabled={!sessionSaved}
+              >
                 {t('training.button.viewResults')}
               </button>
               <button className="start-button" onClick={handleStartTraining}>

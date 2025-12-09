@@ -22,6 +22,8 @@ declare global {
       showFaceOverlay(show: boolean): void;
       showFaceFeedbackBox(show: boolean): void;
       recordScreenPosition?: (x: number, y: number, type?: string) => void;
+      isReady?: () => boolean;
+      getVideoElementCanvas?: () => HTMLCanvasElement | null;
       params?: {
         checkClick?: boolean;
         checkMove?: boolean;

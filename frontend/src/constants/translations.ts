@@ -1019,6 +1019,10 @@ export const translations: Record<string, Record<Language, string>> = {
   'training.complete.firstRun': { ko: '첫 기록이에요! 다음 판에서 더 올려보세요.', en: 'First record! Set the bar high next run.' },
   'training.complete.tiedLast': { ko: '지난번과 같은 점수예요. 조금만 더 집중해볼까요?', en: 'Same as last time—one more run to beat it?' },
   'training.complete.keepTrying': { ko: '아주 근접했어요! 다음엔 신기록을 노려보세요.', en: 'So close—push for a new high score next time!' },
+  'training.warning.trackingMissing': {
+    ko: '시야 데이터 수집에 문제가 있어 이번 세션 기록은 저장되지 않았습니다. 캘리브레이션과 웹캠 상태를 확인한 뒤 다시 시도해주세요.',
+    en: 'Eye-tracking data was not captured, so this session was not saved. Please check webcam access and redo calibration before retrying.',
+  },
   'training.button.viewResults': { ko: '상세 결과 보기', en: 'View Detailed Results' },
   'training.button.trainAgain': { ko: '다시 트레이닝', en: 'Train Again' },
 

@@ -12,6 +12,7 @@ import {
 interface WebgazerContextValue {
   gameState: GameState;
   isReady: boolean;
+  isTrackingActive: boolean;
   liveGaze: LiveGaze;
   validationError: number | null;
   gazeStability: number | null;
@@ -51,6 +52,7 @@ export const WebgazerProvider = ({ children }: { children: ReactNode }) => {
   const [validationSequence, setValidationSequence] = useState(0);
   const [quality, setQuality] = useState<QualitySetting>('high');
   const [isFaceDetected, setIsFaceDetected] = useState(false);
+  const [isTrackingActive, setIsTrackingActive] = useState(false);
   
   const updateQuality = useCallback((nextQuality: QualitySetting) => {
     setQuality(nextQuality);
@@ -134,6 +136,7 @@ export const WebgazerProvider = ({ children }: { children: ReactNode }) => {
       console.error('Failed to stop WebGazer', error);
     } finally {
       hasWebgazerStarted.current = false;
+      setIsTrackingActive(false);
     }
   }, []);
 
@@ -217,6 +220,7 @@ export const WebgazerProvider = ({ children }: { children: ReactNode }) => {
     }
     window.webgazer.begin();
     hasWebgazerStarted.current = true;
+    setIsTrackingActive(true);
     window.webgazer.applyKalmanFilter(USE_KALMAN_FILTER);
 
     if (window.webgazer.setCameraConstraints) {
@@ -239,6 +243,7 @@ export const WebgazerProvider = ({ children }: { children: ReactNode }) => {
     safelyEndWebgazer();
     setGameState('idle');
     setLiveGaze({ x: null, y: null });
+    setIsTrackingActive(false);
   }, [safelyEndWebgazer]);
 
   // NEW: Pause WebGazer session (can be resumed)
@@ -393,6 +398,7 @@ export const WebgazerProvider = ({ children }: { children: ReactNode }) => {
   const value: WebgazerContextValue = {
     gameState,
     isReady,
+    isTrackingActive,
     liveGaze,
     validationError,
     gazeStability,

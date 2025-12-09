@@ -1,97 +1,146 @@
-describe('tracker flow scenario', () => {
-  const prepareAuthenticatedVisit = (path: string) => {
-    cy.visit(path, {
-      onBeforeLoad(win) {
-        win.localStorage.setItem('isAuthenticated', 'true');
-        win.localStorage.removeItem('trackingSessionState');
+const loginWithCredentials = () => {
+  const email = Cypress.env('E2E_EMAIL');
+  const password = Cypress.env('E2E_PASSWORD');
+
+  if (!email || !password) {
+    throw new Error('Set E2E_EMAIL and E2E_PASSWORD env vars to run the Cypress flow');
+  }
+
+  cy.visit('/auth');
+  cy.get('input[name="email"]').clear().type(email);
+  cy.get('input[name="password"]').clear().type(password);
+  cy.get('button[type="submit"]').click();
+  cy.url().should('include', '/dashboard');
+};
+
+const completeSurvey = () => {
+  cy.contains('label', '기본 PC').find('input').check({ force: true });
+  cy.contains('label', '시선 추적').find('input').check({ force: true });
+
+  cy.contains('button', '발로란트').click();
+  cy.get('select#mainGame').select('발로란트 (Valorant)');
+  cy.get('input[name="aimTrainerUsage"][value="yes"]').check({ force: true });
+  cy.get('input#inGameRank').type('Immortal 1');
+  cy.get('select[name="playTime"]').select('주 7-14시간');
+  cy.get('input#selfAssessment').invoke('val', 7).trigger('input');
+  cy.get('textarea#trainingGoal').type('랭크 올리기');
+};
+
+const acceptConsent = () => {
+  ['웹캠', '영상 보안', '데이터 활용', '참여 권리'].forEach(label => {
+    cy.contains('label', label).find('input').check({ force: true });
+  });
+  cy.contains('button', '연구에 동의하고').click();
+};
+
+const seedSessionState = (win: Window) => {
+  const session = {
+    id: 'cypress-session',
+    date: new Date().toISOString(),
+    duration: 60,
+    score: 86,
+    accuracy: 86,
+    targetsHit: 43,
+    totalTargets: 50,
+    avgReactionTime: 240,
+    gazeAccuracy: 82,
+    mouseAccuracy: 91,
+    csvData: 'timestamp,gazeX',
+    rawData: [
+      {
+        timestamp: 0,
+        gazeX: 100,
+        gazeY: 100,
+        mouseX: 105,
+        mouseY: 102,
+        targetHit: false,
+        targetId: 't1',
+        targetX: 100,
+        targetY: 100,
       },
-    });
+      {
+        timestamp: 500,
+        gazeX: 102,
+        gazeY: 98,
+        mouseX: 101,
+        mouseY: 96,
+        targetHit: true,
+        targetId: 't1',
+        targetX: 100,
+        targetY: 100,
+      },
+      {
+        timestamp: 900,
+        gazeX: 300,
+        gazeY: 280,
+        mouseX: 310,
+        mouseY: 275,
+        targetHit: true,
+        targetId: 't2',
+        targetX: 300,
+        targetY: 280,
+      },
+    ],
   };
 
-  it('moves through survey → consent → tracker → training → results', () => {
-    prepareAuthenticatedVisit('/onboarding/survey');
+  const state = {
+    surveyResponses: {
+      ageCheck: true,
+      webcamCheck: true,
+      gamesPlayed: ['valorant'],
+      mainGame: 'valorant',
+      mainGameOther: '',
+      aimTrainerUsage: 'yes',
+      inGameRank: 'Immortal 1',
+      playTime: '주 7-14시간',
+      selfAssessment: 7,
+      trainingGoal: '랭크 올리기',
+    },
+    consentAccepted: true,
+    calibrationResult: { status: 'validated', validationError: 3, completedAt: new Date().toISOString() },
+    recentSessions: [session],
+    lastSession: session,
+    activeSessionId: session.id,
+    isAnonymousSession: false,
+    surveyHydrated: true,
+  };
 
-    cy.contains('Q1').find('input[type="checkbox"]').check({ force: true });
-    cy.contains('Q2').find('input[type="checkbox"]').check({ force: true });
-    cy.contains('button', 'Valorant').click();
-    cy.get('input[type="radio"][value="Valorant"]').check({ force: true });
-    cy.get('input[name="inGameRank"]').type('Immortal 1');
-    cy.get('select[name="playTime"]').select('500-1000시간');
-    cy.get('input[name="selfAssessment"]').invoke('val', 6).trigger('input');
-    cy.contains('button', '설문 제출 및 다음 단계로').click();
+  win.localStorage.setItem('trackingSessionState', JSON.stringify(state));
+};
 
-    cy.url().should('include', '/tracker-flow');
-    cy.contains('article.flow-card', '연구 동의서').within(() => {
-      cy.contains('button', '동의하기').click();
-    });
+describe('tracker flow scenario', () => {
+  beforeEach(() => {
+    cy.clearLocalStorage();
+    cy.clearCookies();
+  });
 
-    cy.url().should('include', '/tracker-app');
-    cy.contains('label', '연구 목적 및 개인정보 처리에 동의합니다.').find('input').check({ force: true });
-    cy.contains('button', 'Go to tracker flow').click();
+  it('completes onboarding and reflects progress across tracker flow', () => {
+    loginWithCredentials();
 
-    cy.url().should('include', '/tracker-flow');
+    cy.visit('/onboarding/survey');
+    completeSurvey();
+    cy.contains('button', '저장하고 계속하기').click();
+    cy.url().should('include', '/dashboard');
 
-    cy.window().then(win => {
-      const stored = JSON.parse(win.localStorage.getItem('trackingSessionState') ?? '{}');
-      stored.calibrationResult = {
-        status: 'validated',
-        validationError: 3,
-        completedAt: new Date().toISOString(),
-      };
-      win.localStorage.setItem('trackingSessionState', JSON.stringify(stored));
-    });
+    cy.visit('/onboarding/consent');
+    acceptConsent();
+    cy.url().should('include', '/calibration');
 
+    cy.window().then(seedSessionState);
     cy.visit('/tracker-flow');
-    cy.contains('article.flow-card', '트레이닝 세션').within(() => {
-      cy.contains('button', '트레이닝 실행').click();
-    });
 
-    cy.url().should('include', '/training');
-    cy.contains('Ready to Train?').should('be.visible');
-
-    cy.window().then(win => {
-      const stored = JSON.parse(win.localStorage.getItem('trackingSessionState') ?? '{}');
-      const session = {
-        id: 'cypress-session',
-        date: new Date().toISOString(),
-        duration: 60,
-        score: 42,
-        accuracy: 88,
-        targetsHit: 40,
-        totalTargets: 50,
-        avgReactionTime: 240,
-        gazeAccuracy: 80,
-        mouseAccuracy: 92,
-        csvData: 'timestamp,gazeX',
-        rawData: [
-          {
-            timestamp: 100,
-            gazeX: 10,
-            gazeY: 20,
-            mouseX: 30,
-            mouseY: 40,
-            targetHit: true,
-            targetId: 't1',
-          },
-          {
-            timestamp: 200,
-            gazeX: 15,
-            gazeY: 25,
-            mouseX: 35,
-            mouseY: 45,
-            targetHit: false,
-            targetId: 't2',
-          },
-        ],
-      };
-      stored.recentSessions = [session];
-      stored.lastSession = session;
-      stored.activeSessionId = session.id;
-      win.localStorage.setItem('trackingSessionState', JSON.stringify(stored));
+    cy.contains('연구 진행 현황').should('be.visible');
+    cy.get('.status-pill')
+      .should('have.length', 5)
+      .each($pill => cy.wrap($pill).contains('완료'));
+    cy.contains('최근 세션').parent().within(() => {
+      cy.contains('43/50');
+      cy.contains('86');
     });
 
     cy.visit('/results');
-    cy.contains('Training Results').should('be.visible');
-    cy.contains('Performance Overview').should('be.visible');
+    cy.contains('트레이닝 결과').should('be.visible');
+    cy.contains('SG Rank').should('be.visible');
+    cy.contains('상세 분석').should('be.visible');
   });
 });

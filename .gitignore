@@ -41,3 +41,4 @@ frontend/package-lock.json
 # Firebase
 .firebase/
 firebase-debug.log*
+frontend/cypress.env.json

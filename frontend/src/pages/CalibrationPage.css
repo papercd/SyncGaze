@@ -360,6 +360,7 @@
   padding: 1rem 2rem;
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
 }
 
 .calibration-hint p {
@@ -745,11 +746,31 @@
   border-radius: 50%;
   cursor: pointer;
   transform: translate(-50%, -50%);
-  transition: transform 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 0 20px rgba(255, 77, 77, 0.35);
+  animation: pulse 2s ease-in-out infinite;
 }
 
 .calibration-dot:hover {
   transform: translate(-50%, -50%) scale(1.2);
+  box-shadow: 0 0 28px rgba(255, 77, 77, 0.5);
+}
+
+.calibration-dot.pressed {
+  animation: calibration-press 0.18s ease, pulse 2s ease-in-out infinite;
+  box-shadow: 0 0 26px rgba(255, 77, 77, 0.55);
+}
+
+@keyframes calibration-press {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(0.82);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
 }
 
 .calibration-hint {
@@ -761,6 +782,14 @@
   padding: 1rem 2rem;
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+}
+
+.calibration-sub-hint {
+  color: #e9ecff;
+  margin: 0.35rem 0 0;
+  font-size: 0.95rem;
+  opacity: 0.95;
 }
 
 .validation-container .result-container {

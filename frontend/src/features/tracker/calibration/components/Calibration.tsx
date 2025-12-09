@@ -32,11 +32,14 @@ const StageInstruction = ({ stage, onStart }: StageInstructionProps) => {
   );
 };
 
+const CLICKS_PER_DOT = 3;
+
 const Calibration = ({ onComplete, liveGaze, onCalStage3Complete }: CalibrationProps) => {
   const { t } = useTranslation();
   const [step, setStep] = useState(2);
   const [dotIndex, setDotIndex] = useState(0);
   const [clickCount, setClickCount] = useState(0);
+  const [isDotPressed, setIsDotPressed] = useState(false);
   const [isInstructionVisible, setIsInstructionVisible] = useState(true);
   const [progress, setProgress] = useState(0);
   const [isGazeOnTarget, setIsGazeOnTarget] = useState(false);
@@ -45,6 +48,8 @@ const Calibration = ({ onComplete, liveGaze, onCalStage3Complete }: CalibrationP
   const dotRef = useRef<HTMLDivElement>(null);
   const stage3FrameCount = useRef(0);
   const stage3SuccessFrameCount = useRef(0);
+  const pressTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const advanceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     liveGazeRef.current = liveGaze;
@@ -136,21 +141,46 @@ const Calibration = ({ onComplete, liveGaze, onCalStage3Complete }: CalibrationP
     }
   }, [step, onComplete]);
 
+  useEffect(() => {
+    return () => {
+      if (pressTimeoutRef.current) {
+        clearTimeout(pressTimeoutRef.current);
+      }
+      if (advanceTimeoutRef.current) {
+        clearTimeout(advanceTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const handleDotClick = () => {
-    const CLICKS_PER_DOT = 3;
+    if (clickCount >= CLICKS_PER_DOT) return;
+
+    if (pressTimeoutRef.current) {
+      clearTimeout(pressTimeoutRef.current);
+    }
+    setIsDotPressed(true);
+    pressTimeoutRef.current = window.setTimeout(() => setIsDotPressed(false), 180);
+
     const newClickCount = clickCount + 1;
-    if (newClickCount < CLICKS_PER_DOT) {
-      setClickCount(newClickCount);
-      return;
+    const isLastClickForDot = newClickCount >= CLICKS_PER_DOT;
+    setClickCount(Math.min(newClickCount, CLICKS_PER_DOT));
+
+    if (!isLastClickForDot) return;
+
+    if (advanceTimeoutRef.current) {
+      clearTimeout(advanceTimeoutRef.current);
     }
 
-    if (dotIndex < CALIBRATION_DOTS.length - 1) {
-      setDotIndex(dotIndex + 1);
-      setClickCount(0);
-    } else {
-      setStep(prev => prev + 1);
-      setIsInstructionVisible(true);
-    }
+    advanceTimeoutRef.current = window.setTimeout(() => {
+      if (dotIndex < CALIBRATION_DOTS.length - 1) {
+        setDotIndex(prev => prev + 1);
+        setClickCount(0);
+      } else {
+        setStep(prev => prev + 1);
+        setIsInstructionVisible(true);
+      }
+      advanceTimeoutRef.current = null;
+    }, 160);
   };
 
   if (isInstructionVisible && step <= 3) {
@@ -162,15 +192,22 @@ const Calibration = ({ onComplete, liveGaze, onCalStage3Complete }: CalibrationP
     const hint = t('calibration.stage2.hint', '각 점을 3회씩 클릭해 주세요. ({current}/{total})')
       .replace('{current}', String(dotIndex + 1))
       .replace('{total}', String(CALIBRATION_DOTS.length));
+    const dotClickProgress = t(
+      'calibration.stage2.perDotCount',
+      '현재 점 클릭: {current}/{total}',
+    )
+      .replace('{current}', String(clickCount))
+      .replace('{total}', String(CLICKS_PER_DOT));
     return (
       <div className="calibration-grid">
         <div
-          className="calibration-dot"
+          className={`calibration-dot ${isDotPressed ? 'pressed' : ''}`}
           style={{ left: currentDot.x, top: currentDot.y, position: 'absolute', transform: 'translate(-50%, -50%)' }}
           onClick={handleDotClick}
         />
         <div className="calibration-hint">
           <p>{hint}</p>
+          <p className="calibration-sub-hint">{dotClickProgress}</p>
         </div>
       </div>
     );

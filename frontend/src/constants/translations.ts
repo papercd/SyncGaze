@@ -963,6 +963,10 @@ export const translations: Record<string, Record<Language, string>> = {
       ko: '각 점을 3회씩 클릭해 주세요. ({current}/{total})',
       en: 'Click each point three times. ({current}/{total})',
     },
+    'calibration.stage2.perDotCount': {
+      ko: '현재 점 클릭: {current}/{total}',
+      en: 'Clicks on this point: {current}/{total}',
+    },
     'calibration.stage3.message': {
       ko: '캘리브레이션 (2/2): 시선(녹색 점)을 움직이는 목표점 안에 유지해주세요.',
       en: 'Calibration (2/2): Keep your gaze (green dot) inside the moving target.',

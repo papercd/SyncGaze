@@ -1014,6 +1014,11 @@ export const translations: Record<string, Record<Language, string>> = {
   'training.complete.title': { ko: '트레이닝 완료!', en: 'Training Complete!' },
   'training.complete.score': { ko: '최종 점수', en: 'Final Score' },
   'training.complete.duration': { ko: '소요 시간', en: 'Duration' },
+  'training.complete.personalBest': { ko: '신기록 달성! (+{diff}점)', en: 'New personal best! (+{diff} pts)' },
+  'training.complete.improvedFromLast': { ko: '지난번보다 +{diff}점 상승', en: '+{diff} pts over last run' },
+  'training.complete.firstRun': { ko: '첫 기록이에요! 다음 판에서 더 올려보세요.', en: 'First record! Set the bar high next run.' },
+  'training.complete.tiedLast': { ko: '지난번과 같은 점수예요. 조금만 더 집중해볼까요?', en: 'Same as last time—one more run to beat it?' },
+  'training.complete.keepTrying': { ko: '아주 근접했어요! 다음엔 신기록을 노려보세요.', en: 'So close—push for a new high score next time!' },
   'training.button.viewResults': { ko: '상세 결과 보기', en: 'View Detailed Results' },
   'training.button.trainAgain': { ko: '다시 트레이닝', en: 'Train Again' },
 

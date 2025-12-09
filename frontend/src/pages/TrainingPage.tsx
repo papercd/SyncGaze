@@ -29,6 +29,7 @@ const TrainingPage = () => {
     surveyResponses,
     consentAccepted,
     activeSessionId,
+    recentSessions,
   } = useTrackingSession();
   
   const { user } = useAuth();
@@ -40,6 +41,7 @@ const TrainingPage = () => {
   const [isTraining, setIsTraining] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
   const [finalScore, setFinalScore] = useState(0);
+  const [scoreComparisonText, setScoreComparisonText] = useState<string | null>(null);
   const [showExitPrompt, setShowExitPrompt] = useState(false);
   const trainingStartTime = useRef<number>(0);
 
@@ -86,6 +88,41 @@ const TrainingPage = () => {
     setIsComplete(true);
     setIsTraining(false);
     setFinalScore(score);
+    const previousScores = recentSessions.map(session => session.score);
+    const previousBest = previousScores.length ? Math.max(...previousScores) : null;
+    const lastScore = recentSessions[0]?.score ?? null;
+    let comparisonMessage: string | null = null;
+
+    if (!previousScores.length) {
+      comparisonMessage = t(
+        'training.complete.firstRun',
+        '첫 기록이에요! 다음 판에서 더 올려보세요.',
+      );
+    } else if (previousBest !== null && score > previousBest) {
+      const diff = score - previousBest;
+      comparisonMessage = t(
+        'training.complete.personalBest',
+        '신기록 달성! (+{diff}점)',
+      ).replace('{diff}', String(diff));
+    } else if (lastScore !== null && score > lastScore) {
+      const diff = score - lastScore;
+      comparisonMessage = t(
+        'training.complete.improvedFromLast',
+        '지난번보다 +{diff}점 상승',
+      ).replace('{diff}', String(diff));
+    } else if (lastScore !== null && score === lastScore) {
+      comparisonMessage = t(
+        'training.complete.tiedLast',
+        '지난번과 같은 점수예요. 조금만 더 집중해볼까요?',
+      );
+    } else {
+      comparisonMessage = t(
+        'training.complete.keepTrying',
+        '아주 근접했어요! 다음엔 신기록을 노려보세요.',
+      );
+    }
+
+    setScoreComparisonText(comparisonMessage);
 
     console.log('📊 Processing training session:', {
       score,
@@ -156,7 +193,17 @@ const TrainingPage = () => {
       dataPoints: convertedData.length,
       accuracy: metrics.accuracy.toFixed(2) + '%',
     });
-  }, [addSession, setActiveSessionId, calibrationResult, surveyResponses, consentAccepted, user, controlSensitivity]);
+  }, [
+    addSession,
+    setActiveSessionId,
+    calibrationResult,
+    surveyResponses,
+    consentAccepted,
+    user,
+    controlSensitivity,
+    recentSessions,
+    t,
+  ]);
 
   const handleViewResults = useCallback(() => {
     // ✅ Don't stop WebGazer here - ResultsPage will handle it on mount
@@ -281,6 +328,11 @@ const TrainingPage = () => {
                 </div>
               </div>
             </div>
+            {scoreComparisonText && (
+              <div className="score-callout" role="status">
+                <p>{scoreComparisonText}</p>
+              </div>
+            )}
 
             <div className="training-controls">
               <button className="view-results-button" onClick={handleViewResults}>

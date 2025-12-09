@@ -23,11 +23,13 @@ export const createTrackingSessionValue = (
   setConsentAccepted: vi.fn(),
   saveCalibrationResult: vi.fn(),
   addSession: vi.fn(),
+  hydrateSessions: vi.fn(),
   setActiveSessionId: vi.fn(),
   clearRecentSessions: vi.fn(),
   activeSession: null,
   setAnonymousSession: vi.fn(),
   setSurveyHydrated: vi.fn(),
+  resetState: vi.fn(),
   ...overrides,
 });
 

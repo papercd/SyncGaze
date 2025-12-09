@@ -50,6 +50,27 @@ const TrainingPage = () => {
   // WebGazer should stay running during: CalibrationPage → TrainingPage → ResultsPage
   // Only stop when explicitly navigating to Dashboard
 
+  // Stop WebGazer if the user leaves the training/results flow unexpectedly
+  useEffect(() => {
+    const handlePageHide = () => {
+      stopSession();
+    };
+
+    window.addEventListener('pagehide', handlePageHide);
+
+    return () => {
+      window.removeEventListener('pagehide', handlePageHide);
+
+      const nextPath = window.location.pathname;
+      const staysInGazeFlow = nextPath.startsWith('/training') || nextPath.startsWith('/results');
+
+      if (!staysInGazeFlow) {
+        console.log('🛑 TrainingPage unmounted - stopping WebGazer for route change:', nextPath);
+        stopSession();
+      }
+    };
+  }, [stopSession]);
+
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setShowExitPrompt(true);

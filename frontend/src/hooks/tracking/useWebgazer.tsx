@@ -59,12 +59,76 @@ export const WebgazerProvider = ({ children }: { children: ReactNode }) => {
   const validationGazePoints = useRef<{ x: number; y: number }[]>([]);
   const hasWebgazerStarted = useRef(false);
 
+  // Keep the WebGazer preview aspect ratio in sync with the actual camera feed (helps on QHD screens)
+  const adjustPreviewSize = useCallback(() => {
+    const videoEl = document.getElementById('webgazerVideoFeed') as HTMLVideoElement | null;
+    if (!videoEl) {
+      return false;
+    }
+
+    const stream = videoEl.srcObject as MediaStream | null;
+    const track = stream?.getVideoTracks()[0];
+    const settings = track?.getSettings();
+    const intrinsicWidth = settings?.width ?? videoEl.videoWidth;
+    const intrinsicHeight = settings?.height ?? videoEl.videoHeight;
+
+    if (!intrinsicWidth || !intrinsicHeight) {
+      return false;
+    }
+
+    const aspectRatio = intrinsicWidth / intrinsicHeight;
+    const baseHeight = 240; // default WebGazer preview height (preserves vertical space on high-res screens)
+
+    // Prefer keeping height generous to avoid a squashed preview when the camera is 16:9
+    const targetHeight = baseHeight;
+    const targetWidth = Math.round(targetHeight * aspectRatio);
+
+    if (typeof window.webgazer?.setVideoViewerSize === 'function') {
+      window.webgazer.setVideoViewerSize(targetWidth, targetHeight);
+    } else {
+      const container = document.getElementById('webgazerVideoContainer');
+      const faceOverlay = document.getElementById('webgazerFaceOverlay');
+      const faceFeedbackBox = document.getElementById('webgazerFaceFeedbackBox');
+      [videoEl, container, faceOverlay, faceFeedbackBox].forEach(el => {
+        if (!el) return;
+        (el as HTMLElement).style.width = `${targetWidth}px`;
+        (el as HTMLElement).style.height = `${targetHeight}px`;
+      });
+    }
+
+    return true;
+  }, []);
+
   const safelyEndWebgazer = useCallback(() => {
     if (!window.webgazer || !hasWebgazerStarted.current) {
       return;
     }
     try {
       console.log('🛑 Stopping WebGazer');
+      // Stop the underlying camera stream first (without removing overlay elements)
+      let tracksStopped = false;
+      try {
+        const videoEl = document.getElementById('webgazerVideoFeed') as HTMLVideoElement | null;
+        const stream = videoEl?.srcObject as MediaStream | null;
+        if (stream) {
+          stream.getTracks().forEach(track => track.stop());
+          tracksStopped = true;
+        }
+      } catch (error) {
+        console.warn('Failed to stop WebGazer media tracks', error);
+      }
+
+      // Fallback to library helper only if tracks were not stopped (stopVideo removes overlays)
+      if (!tracksStopped) {
+        try {
+          if (typeof window.webgazer.stopVideo === 'function') {
+            window.webgazer.stopVideo();
+          }
+        } catch (error) {
+          console.warn('Failed to stop WebGazer video via stopVideo()', error);
+        }
+      }
+
       window.webgazer.end();
     } catch (error) {
       console.error('Failed to stop WebGazer', error);
@@ -219,6 +283,32 @@ export const WebgazerProvider = ({ children }: { children: ReactNode }) => {
     setGazeStability(null);
     setGameState('validating');
   }, []);
+
+  // Adjust camera preview/overlay aspect ratio once the webcam feed is available
+  useEffect(() => {
+    if (gameState !== 'webcamCheck') {
+      return;
+    }
+
+    let cancelled = false;
+    let attempts = 0;
+
+    const attemptAdjust = () => {
+      if (cancelled) return;
+      const adjusted = adjustPreviewSize();
+      if (adjusted || attempts >= 10) {
+        return;
+      }
+      attempts += 1;
+      window.setTimeout(attemptAdjust, 150);
+    };
+
+    attemptAdjust();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [gameState, adjustPreviewSize]);
 
   
   // Live gaze tracking

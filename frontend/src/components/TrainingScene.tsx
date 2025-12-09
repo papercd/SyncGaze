@@ -24,7 +24,12 @@ import { useSoundSettings } from '../state/soundSettingsContext';
 import SoundSettingsPanel from './SoundSettingsPanel';
 
 interface TrainingSceneProps {
-  onComplete?: (score: number, targetsHit: number, rawData: TrackingDataRecord[]) => void;
+  onComplete?: (
+    score: number,
+    targetsHit: number,
+    rawData: TrackingDataRecord[],
+    trackingMeta: { gazeSamples: number }
+  ) => void;
   onExitDashboard?: () => void;
 }
 
@@ -79,7 +84,8 @@ export const TrainingScene: React.FC<TrainingSceneProps> = ({ onComplete, onExit
     getData,
     exportData,
     clearData,
-    dataCount
+    dataCount,
+    gazeSampleCount
   } = useTrackingData({
     isActive: isLocked,
     phase: 'training',
@@ -334,17 +340,19 @@ export const TrainingScene: React.FC<TrainingSceneProps> = ({ onComplete, onExit
       
       const collectedData = getData();
       const targetsHit = collectedData.filter(d => d.hitRegistered).length;
+      const gazeSamples = gazeSampleCount;
       
       console.log('✅ Training complete:', {
         score: scoreRef.current, // USE REF HERE
         targetsHit,
-        dataPointsCollected: collectedData.length
+        dataPointsCollected: collectedData.length,
+        gazeSamples,
       });
       
       // Pass the ref value
-      onComplete?.(scoreRef.current, targetsHit, collectedData); // USE REF HERE
+      onComplete?.(scoreRef.current, targetsHit, collectedData, { gazeSamples }); // USE REF HERE
     }
-  }, [exitPointerLock, onComplete, getData]); 
+  }, [exitPointerLock, onComplete, getData, gazeSampleCount]); 
 
   // Mouse click listener - just handles weapon animations
   useEffect(() => {

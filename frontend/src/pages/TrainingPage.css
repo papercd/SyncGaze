@@ -234,6 +234,42 @@
   margin: 0.5rem 0;
 }
 
+.score-callout {
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto 1.5rem;
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+  background: linear-gradient(120deg, rgba(102, 126, 234, 0.16), rgba(78, 205, 196, 0.16));
+  border: 1px solid rgba(102, 126, 234, 0.35);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.25);
+}
+
+.score-callout p {
+  margin: 0;
+  color: #e9ecff;
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.tracking-warning {
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto 1.5rem;
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+  background: rgba(255, 117, 117, 0.14);
+  border: 1px solid rgba(255, 117, 117, 0.35);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.25);
+}
+
+.tracking-warning p {
+  margin: 0;
+  color: #ffe5e5;
+  line-height: 1.5;
+}
+
 /* Controls */
 .training-controls {
   display: grid;
@@ -277,6 +313,13 @@
 
 .view-results-button:hover {
   box-shadow: 0 6px 20px rgba(78, 205, 196, 0.6);
+}
+
+.view-results-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
 }
 
 .back-button-inline {

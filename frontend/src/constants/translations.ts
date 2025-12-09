@@ -720,6 +720,8 @@ export const translations: Record<string, Record<Language, string>> = {
   'dashboard.reaction.congratsTitle': { ko: '축하합니다! 전체서버 {rank}등 랭커 입니다!', en: 'Congrats! You are #{rank} globally!' },
   'dashboard.reaction.congratsMeta': { ko: '현재 #{rank}위를 유지중 {since}', en: 'Currently holding #{rank} {since}' },
   'dashboard.reaction.congratsMetaSg': { ko: '현재 SG Rank #{rank}위를 유지중 {since}', en: 'Currently holding SG Rank #{rank} {since}' },
+  'dashboard.reaction.rankerPendingTitle': { ko: 'SG 랭킹 대기중', en: 'SG Rank Pending' },
+  'dashboard.reaction.rankerPendingMeta': { ko: '첫 세션을 완료하면 순위가 집계됩니다.', en: 'Finish your first session to get ranked.' },
   'dashboard.reaction.since': { ko: '(since {date})', en: '(since {date})' },
   'dashboard.percentile.label': { ko: '상위 {percentile}%', en: 'Top {percentile}%' },
   // Sessions history page
@@ -963,6 +965,10 @@ export const translations: Record<string, Record<Language, string>> = {
       ko: '각 점을 3회씩 클릭해 주세요. ({current}/{total})',
       en: 'Click each point three times. ({current}/{total})',
     },
+    'calibration.stage2.perDotCount': {
+      ko: '현재 점 클릭: {current}/{total}',
+      en: 'Clicks on this point: {current}/{total}',
+    },
     'calibration.stage3.message': {
       ko: '캘리브레이션 (2/2): 시선(녹색 점)을 움직이는 목표점 안에 유지해주세요.',
       en: 'Calibration (2/2): Keep your gaze (green dot) inside the moving target.',
@@ -1010,6 +1016,15 @@ export const translations: Record<string, Record<Language, string>> = {
   'training.complete.title': { ko: '트레이닝 완료!', en: 'Training Complete!' },
   'training.complete.score': { ko: '최종 점수', en: 'Final Score' },
   'training.complete.duration': { ko: '소요 시간', en: 'Duration' },
+  'training.complete.personalBest': { ko: '신기록 달성! (+{diff}점)', en: 'New personal best! (+{diff} pts)' },
+  'training.complete.improvedFromLast': { ko: '지난번보다 +{diff}점 상승', en: '+{diff} pts over last run' },
+  'training.complete.firstRun': { ko: '첫 기록이에요! 다음 판에서 더 올려보세요.', en: 'First record! Set the bar high next run.' },
+  'training.complete.tiedLast': { ko: '지난번과 같은 점수예요. 조금만 더 집중해볼까요?', en: 'Same as last time—one more run to beat it?' },
+  'training.complete.keepTrying': { ko: '아주 근접했어요! 다음엔 신기록을 노려보세요.', en: 'So close—push for a new high score next time!' },
+  'training.warning.trackingMissing': {
+    ko: '시야 데이터 수집에 문제가 있어 이번 세션 기록은 저장되지 않았습니다. 캘리브레이션과 웹캠 상태를 확인한 뒤 다시 시도해주세요.',
+    en: 'Eye-tracking data was not captured, so this session was not saved. Please check webcam access and re-do calibration before re-trying.',
+  },
   'training.button.viewResults': { ko: '상세 결과 보기', en: 'View Detailed Results' },
   'training.button.trainAgain': { ko: '다시 트레이닝', en: 'Train Again' },
 

@@ -720,6 +720,8 @@ export const translations: Record<string, Record<Language, string>> = {
   'dashboard.reaction.congratsTitle': { ko: '축하합니다! 전체서버 {rank}등 랭커 입니다!', en: 'Congrats! You are #{rank} globally!' },
   'dashboard.reaction.congratsMeta': { ko: '현재 #{rank}위를 유지중 {since}', en: 'Currently holding #{rank} {since}' },
   'dashboard.reaction.congratsMetaSg': { ko: '현재 SG Rank #{rank}위를 유지중 {since}', en: 'Currently holding SG Rank #{rank} {since}' },
+  'dashboard.reaction.rankerPendingTitle': { ko: 'SG 랭킹 대기중', en: 'SG Rank Pending' },
+  'dashboard.reaction.rankerPendingMeta': { ko: '첫 세션을 완료하면 순위가 집계됩니다.', en: 'Finish your first session to get ranked.' },
   'dashboard.reaction.since': { ko: '(since {date})', en: '(since {date})' },
   'dashboard.percentile.label': { ko: '상위 {percentile}%', en: 'Top {percentile}%' },
   // Sessions history page

@@ -119,13 +119,81 @@
 .hero-subtitle {
   font-size: 1.5rem;
   color: #b8b8d1;
-  margin-bottom: 3rem;
+  margin-bottom: 0rem;
   max-width: 600px;
 }
 
 .cta-buttons {
   display: flex;
   gap: 1.5rem;
+  margin: 1.5rem 0;
+}
+
+.cta-about-link {
+  display: inline-block;
+  position: relative;
+  padding: 0.15rem 0.45rem;
+  font-size: 1rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.cta-about-link::after {
+  content: '';
+  position: absolute;
+  inset: -18px;
+  border-radius: 10px;
+  background: radial-gradient(circle at 50% 50%, rgba(102, 126, 234, 0.32), rgba(15, 12, 41, 0));
+  opacity: 0;
+  filter: blur(18px);
+  transition: opacity 0.25s ease;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.cta-about-text {
+  color: #b8b8d1; /* Matches hero subtitle tone */
+}
+
+.cta-about-highlight {
+  font-weight: 600;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); /* Matches hero title gradient */
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.cta-about-link:hover,
+.cta-about-link:focus-visible {
+  transform: translateY(-2px);
+  text-shadow:
+    0 0 14px rgba(102, 126, 234, 0.9),
+    0 0 26px rgba(118, 75, 162, 0.65),
+    0 0 38px rgba(118, 75, 162, 0.55);
+}
+
+.cta-about-link:hover::after,
+.cta-about-link:focus-visible::after {
+  opacity: 1;
+  animation: ctaGlowPulse 1.6s ease-in-out infinite alternate;
+}
+
+.cta-about-link:focus-visible {
+  outline: 2px solid #667eea;
+  outline-offset: 6px;
+  border-radius: 6px;
+}
+
+@keyframes ctaGlowPulse {
+  from {
+    transform: scale(0.96);
+    filter: blur(18px);
+  }
+  to {
+    transform: scale(1.05);
+    filter: blur(22px);
+  }
 }
 
 .primary-button {
@@ -313,6 +381,24 @@
   z-index: 10; /* Ensures text stays above crosshair */
 }
 
+.landing-footer {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  text-align: center;
+  color: #b8b8d1;
+}
+
+.landing-github-link a {
+  color: #8fb4ff;
+  text-decoration: underline;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.landing-github-link a:hover {
+  color: #c3d6ff;
+}
+
 /* Footer */
 .footer {
   padding: 2rem;
@@ -342,6 +428,10 @@
 
   .primary-button,
   .secondary-button {
+    width: 100%;
+  }
+
+  .cta-about-link {
     width: 100%;
   }
 

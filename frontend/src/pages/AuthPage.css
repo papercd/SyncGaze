@@ -82,7 +82,7 @@
   flex: 0.9;
   padding: 2.6rem;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
   background: rgba(15, 12, 41, 0.6);
   overflow: visible;
@@ -389,6 +389,40 @@
   color: #b8b8d1;
   font-size: 0.83rem;
   line-height: 1.35;
+}
+
+.signup-notice {
+  padding: 1rem;
+  margin: 0.5rem 0 0.75rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #e9eafc;
+  line-height: 1.5;
+}
+
+.signup-notice h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1.05rem;
+}
+
+.signup-notice ul {
+  margin: 0.5rem 0 0 1.1rem;
+  display: grid;
+  gap: 0.35rem;
+  color: #d2d6f9;
+}
+
+.policy-disclaimer {
+  margin-top: 0.5rem;
+  color: #cfd3f3;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.policy-disclaimer a {
+  color: #a5b8ff;
+  font-weight: 600;
 }
 
 .form-switch {

@@ -1,0 +1,105 @@
+.policy-page {
+  min-height: 100vh;
+  background: radial-gradient(circle at 20% 20%, rgba(118, 75, 162, 0.18), transparent 28%),
+    radial-gradient(circle at 80% 0%, rgba(102, 126, 234, 0.2), transparent 25%),
+    linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+  display: flex;
+  justify-content: center;
+  padding: 3rem 1.25rem;
+  color: #f8f8ff;
+}
+
+.policy-card {
+  width: min(960px, 100%);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 18px;
+  padding: 2.5rem 2rem;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(8px);
+}
+
+.policy-card h1 {
+  font-size: 2rem;
+  margin: 0.25rem 0 0.75rem;
+}
+
+.policy-lead {
+  color: #dfe3ff;
+  margin-bottom: 1.75rem;
+  line-height: 1.6;
+}
+
+.policy-section {
+  padding: 1.5rem 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.policy-section:first-of-type {
+  border-top: none;
+}
+
+.policy-section h2 {
+  font-size: 1.2rem;
+  margin-bottom: 0.75rem;
+  color: #f5f1ff;
+}
+
+.policy-section p {
+  margin: 0.35rem 0;
+  color: #e4e7f5;
+  line-height: 1.7;
+}
+
+.policy-section ul {
+  margin: 0.5rem 0 0.25rem 1.2rem;
+  padding: 0;
+  color: #e4e7f5;
+  display: grid;
+  gap: 0.4rem;
+  list-style: disc;
+}
+
+.policy-actions {
+  margin-top: 2rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.primary-link,
+.secondary-link {
+  padding: 0.65rem 1.1rem;
+  border-radius: 10px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+.primary-link {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(102, 126, 234, 0.3);
+}
+
+.secondary-link {
+  background: rgba(255, 255, 255, 0.08);
+  color: #dfe3ff;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.primary-link:hover,
+.secondary-link:hover {
+  transform: translateY(-2px);
+  opacity: 0.95;
+}
+
+@media (max-width: 640px) {
+  .policy-card {
+    padding: 2rem 1.5rem;
+  }
+
+  .policy-card h1 {
+    font-size: 1.6rem;
+  }
+}

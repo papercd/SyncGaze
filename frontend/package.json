@@ -1,7 +1,7 @@
 {
   "name": "syncgaze-3d",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -19,8 +19,10 @@
     "firebase": "^12.6.0",
     "framer-motion": "^12.23.24",
     "gsap": "^3.13.0",
+    "lucide-react": "^0.555.0",
     "ogl": "^1.0.11",
     "react": "^19.1.1",
+    "react-chartjs-2": "^5.3.1",
     "react-dom": "^19.1.1",
     "react-router-dom": "^7.9.6",
     "three": "^0.180.0",

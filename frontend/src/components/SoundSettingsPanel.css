@@ -1,0 +1,203 @@
+/* src/components/SoundSettingsPanel.css */
+
+.sound-settings-panel {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 1.5rem;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  height: 100%; /* 전체 높이 채우기 */
+}
+
+.sound-settings-panel--compact {
+  padding: 1.25rem;
+  border-radius: 12px;
+}
+
+.sound-settings-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: auto; /* 버튼을 하단으로 밀기 */
+}
+
+/* Header */
+.sound-settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.sound-settings-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.sound-settings-header p {
+  margin: 0.25rem 0 0 0;
+  color: #cdd2f7;
+  font-size: 0.95rem;
+}
+
+/* Value Display */
+.sound-settings-value {
+  background: rgba(102, 126, 234, 0.15);
+  border: 1px solid rgba(102, 126, 234, 0.4);
+  color: #dbe2ff;
+  padding: 0.35rem 0.75rem;
+  border-radius: 8px;
+  font-weight: 700;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1rem;
+}
+
+.sound-settings-value-primary {
+  font-size: 1.05rem;
+  line-height: 1.2;
+}
+
+/* Slider Section */
+.sound-settings-slider {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sound-settings-slider label {
+  color: #cdd2f7;
+  font-weight: 600;
+  font-size: 0.95rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sound-volume-indicator {
+  color: #fff;
+  font-size: 0.9rem;
+}
+
+.sound-settings-slider input[type="range"] {
+  width: 100%;
+  accent-color: #667eea;
+}
+
+.sound-settings-slider input[type="range"]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sound-settings-scale {
+  display: flex;
+  justify-content: space-between;
+  color: #9ea5d6;
+  font-size: 0.85rem;
+}
+
+/* Toggle Section */
+.sound-settings-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.sound-settings-toggle h4 {
+  margin: 0;
+  font-size: 1rem;
+  color: #fff;
+}
+
+.sound-settings-toggle p {
+  margin: 0.25rem 0 0;
+  color: #cdd2f7;
+  font-size: 0.9rem;
+}
+
+/* Toggle Switch (same as ControlSettingsPanel) */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 56px;
+  height: 32px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.25);
+  -webkit-transition: 0.2s;
+  transition: 0.2s;
+  border-radius: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 24px;
+  width: 24px;
+  left: 4px;
+  bottom: 3px;
+  background-color: white;
+  -webkit-transition: 0.2s;
+  transition: 0.2s;
+  border-radius: 50%;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+}
+
+.switch input:checked + .slider {
+  background: linear-gradient(135deg, #667eea 0%, #8f7bff 100%);
+}
+
+.switch input:checked + .slider:before {
+  -webkit-transform: translateX(22px);
+  -ms-transform: translateX(22px);
+  transform: translateX(22px);
+}
+
+/* Actions */
+.sound-settings-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.sound-reset {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sound-reset:hover {
+  border-color: #667eea;
+  background: rgba(102, 126, 234, 0.1);
+}

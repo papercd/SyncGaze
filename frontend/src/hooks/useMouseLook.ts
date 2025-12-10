@@ -13,7 +13,8 @@ interface MouseLookData {
 
 export const useMouseLook = (
   sensitivity: number = 0.002,
-  isActive: boolean = false
+  isActive: boolean = false,
+  invertYAxis: boolean = false
 ) => {
   const { camera } = useThree();
   const mouseDataRef = useRef<MouseLookData[]>([]);
@@ -34,7 +35,8 @@ export const useMouseLook = (
       // Update camera rotation (FPS style)
       eulerRef.current.setFromQuaternion(camera.quaternion);
       eulerRef.current.y -= velocityRef.current.x;
-      eulerRef.current.x -= velocityRef.current.y;
+      const pitchDelta = velocityRef.current.y * (invertYAxis ? 1 : -1);
+      eulerRef.current.x += pitchDelta;
 
       // Clamp pitch (vertical rotation) to prevent flipping
       const maxPitch = Math.PI / 2 - 0.1; // Slightly less than 90 degrees
@@ -77,7 +79,7 @@ export const useMouseLook = (
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
     };
-  }, [camera, sensitivity, isActive]);
+  }, [camera, sensitivity, invertYAxis, isActive]);
 
   const getMouseData = () => mouseDataRef.current;
   const clearMouseData = () => { mouseDataRef.current = []; };

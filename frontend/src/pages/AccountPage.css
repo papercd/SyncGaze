@@ -1,0 +1,124 @@
+/* AccountPage.css */
+.account-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0b1021 0%, #1d1f3a 50%, #0f0c29 100%);
+  color: #f7f7ff;
+  padding: 2.5rem;
+}
+
+.account-header {
+  max-width: 100%;
+  margin: 0 auto 2rem;
+}
+
+.account-kicker {
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 0.85rem;
+  color: #7c9bff;
+  margin: 0 0 0.25rem 0;
+  font-weight: 600;
+}
+
+.account-header h1 {
+  margin: 0;
+  font-size: 2.2rem;
+  background: linear-gradient(135deg, #7c9bff 0%, #9e7bff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.account-subtitle {
+  margin: 0.35rem 0 0;
+  color: #aeb5ce;
+}
+
+.account-grid {
+  max-width: 100%;
+  margin: 0 auto 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.account-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.18);
+}
+
+.account-card .card-label {
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #9da5c5;
+  font-size: 0.85rem;
+  margin: 0 0 0.4rem;
+  font-weight: 600;
+}
+
+.account-card .card-value {
+  margin: 0;
+  font-size: 1.9rem;
+  font-weight: 800;
+  color: #fff;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+}
+
+.account-card .card-meta {
+  margin: 0.35rem 0 0;
+  color: #9da5c5;
+  font-size: 0.9rem;
+}
+
+.muted {
+  color: #9da5c5;
+  margin: 0.25rem 0 0;
+  font-size: 0.95rem;
+}
+
+.account-section {
+  max-width: 100%;
+  margin: 0 auto 1.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.18);
+}
+
+.section-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.section-header h2 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.account-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.account-actions button {
+  min-width: 160px;
+}
+
+@media (max-width: 768px) {
+  .account-page {
+    padding: 1.5rem;
+  }
+
+  .account-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+}

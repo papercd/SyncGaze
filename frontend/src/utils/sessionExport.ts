@@ -57,6 +57,9 @@ const formatBoolean = (value: boolean | undefined | null) =>
 const formatNumber = (value: number | null | undefined, digits = 2) =>
   value == null ? 'N/A' : value.toFixed(digits);
 
+const formatSensitivity = (value: number | null | undefined) =>
+  value == null ? 'N/A' : value.toFixed(4);
+
 const convertTrainingData = (data: TrainingDataPoint[]): SessionExportRawDatum[] =>
   data.map((point, index) => ({
     timestamp: point.timestamp,
@@ -105,15 +108,16 @@ export const serializeSessionToCsv = ({
       surveyResponses.mainGame === OTHER_GAME_VALUE ? surveyResponses.mainGameOther || 'N/A' : 'N/A';
 
     participantMeta.push(
-      `# Survey Age Check: ${formatBoolean(surveyResponses.ageCheck)}`,
-      `# Survey Webcam Check: ${formatBoolean(surveyResponses.webcamCheck)}`,
+      `# Survey Setup Ready: ${formatBoolean(surveyResponses.ageCheck)}`,
+      `# Survey Webcam Ready: ${formatBoolean(surveyResponses.webcamCheck)}`,
       `# Survey Games Played: ${formatGamesList(surveyResponses.gamesPlayed) || 'N/A'}`,
-      `# Survey Main Game: ${mainGameLabel || 'N/A'}`,
-      `# Survey Main Game (Other): ${mainGameDetail}`,
-      `# Survey Aim Trainer Usage: ${surveyResponses.aimTrainerUsage || 'N/A'}`,
+      `# Survey Focus Game: ${mainGameLabel || 'N/A'}`,
+      `# Survey Focus Game (Other): ${mainGameDetail}`,
+      `# Survey Practice Tool Usage: ${surveyResponses.aimTrainerUsage || 'N/A'}`,
       `# Survey Rank: ${surveyResponses.inGameRank || 'N/A'}`,
       `# Survey Play Time: ${surveyResponses.playTime || 'N/A'}`,
       `# Survey Self-Assessment: ${surveyResponses.selfAssessment ?? 'N/A'}`,
+      `# Survey Goal: ${surveyResponses.trainingGoal || 'N/A'}`,
     );
   } else {
     participantMeta.push('# Survey Responses: NOT_PROVIDED');
@@ -149,6 +153,7 @@ export const serializeSessionToCsv = ({
     `# Avg Reaction Time (ms): ${session.avgReactionTime.toFixed(2)}`,
     `# Gaze Accuracy (%): ${session.gazeAccuracy.toFixed(2)}`,
     `# Mouse Accuracy (%): ${session.mouseAccuracy.toFixed(2)}`,
+    `# Control Sensitivity: ${formatSensitivity(session.controlSensitivity)}`,
   ];
 
   if (trackerMeta) {

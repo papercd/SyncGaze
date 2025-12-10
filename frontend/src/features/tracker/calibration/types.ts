@@ -16,3 +16,9 @@ export interface LiveGaze {
   x: number | null;
   y: number | null;
 }
+
+export interface CalibrationProps {
+  onComplete: () => void;
+  liveGaze: LiveGaze;
+  onCalStage3Complete: (successRate: number) => void;
+}

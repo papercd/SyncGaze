@@ -7,6 +7,7 @@ import { Target } from './Target';
 import { useMouseLook } from '../hooks/useMouseLook';
 import { useFrame } from '@react-three/fiber';
 import type { Target3D } from '../types';
+import { useControlSettings } from '../state/controlSettingsContext';
 
 interface GameControllerProps {
   isLocked: boolean;
@@ -21,9 +22,9 @@ export interface GameControllerRef {
 
 
 export const GameController = forwardRef<GameControllerRef, GameControllerProps>(({ 
-  isLocked, 
+  isLocked,
   onTargetHit,
-  onPhaseChange 
+  onPhaseChange
 }, ref) => {
   const [targets, setTargets] = useState<Target3D[]>([]);
   const startTimeRef = useRef<number>(0);
@@ -34,8 +35,9 @@ export const GameController = forwardRef<GameControllerRef, GameControllerProps>
   const totalPausedDurationRef = useRef<number>(0);
   const wasLockedRef = useRef<boolean>(false);
 
-  
-  const { getMouseData, clearMouseData } = useMouseLook(0.002, isLocked);
+
+  const { controlSensitivity, invertYAxis } = useControlSettings();
+  const { getMouseData, clearMouseData } = useMouseLook(controlSensitivity, isLocked, invertYAxis);
 
   // ADD THIS ENTIRE useEffect:
   useEffect(() => {
@@ -55,20 +57,15 @@ export const GameController = forwardRef<GameControllerRef, GameControllerProps>
 
 
   const spawnTarget = useCallback((elapsedTime: number): Target3D => {
-    // First 30 seconds: static targets only
-    // 30-60 seconds: moving targets only
     const phaseType = elapsedTime < 20000 ? 'static' : 'moving';
     const isMoving = phaseType === 'moving';
 
-    const theta = Math.random() * Math.PI * 2;
-    const phi = Math.random() * Math.PI;
-    const radius = 3 + Math.random() * 2;
+    // Spawn safely inside the room
+    const x = THREE.MathUtils.randFloat(-9.0, 9.0);   // inside ±10
+    const y = THREE.MathUtils.randFloat(1.0, 9.0);    // avoid floor/ceiling
+    const z = THREE.MathUtils.randFloat(-4.0, 4.0);   // inside ±5
 
-    const position = new THREE.Vector3(
-      radius * Math.sin(phi) * Math.cos(theta),
-      radius * Math.sin(phi) * Math.sin(theta) - 0.5 + 5,
-      radius * Math.cos(phi)
-    );
+    const position = new THREE.Vector3(x, y, z);
 
     return {
       id: `target-${Date.now()}-${Math.random()}`,
@@ -76,15 +73,17 @@ export const GameController = forwardRef<GameControllerRef, GameControllerProps>
       radius: 0.3,
       spawnTime: performance.now(),
       type: isMoving ? 'moving' : 'static',
-      velocity: isMoving ? new THREE.Vector3(
-        (Math.random() - 0.5) * 0.24,
-        (Math.random() - 0.5) * 0.24,
-        (Math.random() - 0.5) * 0.24
-      ) : undefined
+      velocity: isMoving
+        ? new THREE.Vector3(
+            (Math.random() - 0.5) * 6.5,
+            (Math.random() - 0.5) * 6.5,
+            (Math.random() - 0.5) * 6.5
+          )
+        : undefined
     };
   }, []);
 
-  useFrame(() => {
+  useFrame((state,delta) => {
     if (!isLocked) return;
 
     setTargets(prev => prev.map(target => {
@@ -92,20 +91,21 @@ export const GameController = forwardRef<GameControllerRef, GameControllerProps>
 
       const newPosition = target.position.clone();
       const newVelocity = target.velocity.clone();
+      
 
       // Room boundaries
       const bounds = {
-        minX: -4.7,
-        maxX: 4.7,
-        minY: 0.8,
+        minX: -9.7,
+        maxX: 9.7,
+        minY: 0.3,
         maxY: 9.7,
         minZ: -4.7,
         maxZ: 4.7
       };
 
       // Predict next position
-      const nextPosition = target.position.clone().add(target.velocity);
-
+      const nextPosition = target.position.clone().addScaledVector(target.velocity, delta);
+  
       // X boundaries
       if (nextPosition.x < bounds.minX || nextPosition.x > bounds.maxX) {
         newVelocity.x *= -1;

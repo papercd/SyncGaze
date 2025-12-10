@@ -1,6 +1,6 @@
 // src/pages/AuthPage.tsx
 import { useState, type ChangeEvent, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import './AuthPage.css';
 import {
   auth,
@@ -14,10 +14,12 @@ import {
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { FirebaseError } from 'firebase/app';
 import { useTrackingSession } from '../state/trackingSessionContext';
+import { useTranslation } from '../state/languageContext';
 
 const AuthPage = () => {
   const navigate = useNavigate();
   const { setAnonymousSession } = useTrackingSession();
+  const { t } = useTranslation();
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
     email: '',
@@ -53,7 +55,7 @@ const AuthPage = () => {
     setSocialError(null);
 
     if (!isLogin && formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match.');
+      setError(t('auth.error.passwordMismatch'));
       return;
     }
 
@@ -75,7 +77,7 @@ const AuthPage = () => {
       setAnonymousSession(false);
       navigate('/dashboard');
     } catch (authError) {
-      const message = authError instanceof Error ? authError.message : 'Unable to authenticate. Please try again.';
+      const message = authError instanceof Error ? authError.message : t('auth.form.error.general');
       setError(message);
     } finally {
       setLoading(false);
@@ -90,10 +92,7 @@ const AuthPage = () => {
       setAnonymousSession(true);
       navigate('/dashboard');
     } catch (anonError) {
-      const message =
-        anonError instanceof Error
-          ? anonError.message
-          : 'Unable to start anonymous session. Please try again.';
+      const message = anonError instanceof Error ? anonError.message : t('auth.guest.error');
       setAnonymousError(message);
     } finally {
       setAnonymousLoading(false);
@@ -108,10 +107,7 @@ const AuthPage = () => {
       setAnonymousSession(false);
       navigate('/dashboard');
     } catch (googleError) {
-      const message =
-        googleError instanceof Error
-          ? googleError.message
-          : 'Unable to sign in with Google right now. Please try again.';
+      const message = googleError instanceof Error ? googleError.message : t('auth.oauth.error');
       setSocialError(message);
     } finally {
       setSocialLoading(false);
@@ -125,7 +121,7 @@ const AuthPage = () => {
     if (!email) {
       setResetFeedback({
         type: 'error',
-        message: 'Please enter the email associated with your account.',
+        message: t('auth.reset.required'),
       });
       return;
     }
@@ -137,23 +133,23 @@ const AuthPage = () => {
       await sendPasswordResetEmail(auth, email);
       setResetFeedback({
         type: 'success',
-        message: 'Password reset email sent. Please check your inbox.',
+        message: t('auth.reset.success'),
       });
       setResetEmail('');
       setShowResetForm(false);
     } catch (resetError) {
-      let message = 'Unable to send reset email. Please try again.';
+      let message = t('auth.reset.error');
 
       if (resetError instanceof FirebaseError) {
         switch (resetError.code) {
           case 'auth/user-not-found':
-            message = 'No account found with that email address.';
+            message = t('auth.reset.notFound');
             break;
           case 'auth/invalid-email':
-            message = 'Please enter a valid email address.';
+            message = t('auth.reset.invalid');
             break;
           case 'auth/missing-email':
-            message = 'Please enter your email before requesting a reset.';
+            message = t('auth.reset.missing');
             break;
           default:
             message = resetError.message || message;
@@ -175,23 +171,21 @@ const AuthPage = () => {
       <div className="auth-container">
         {/* Left side - Branding */}
         <div className="auth-branding">
-          <div className="branding-content">
-            <h1 className="brand-logo">SyncGaze</h1>
-            <p className="brand-tagline">
-              Elevate your aim with AI-powered eye tracking technology
-            </p>
+            <div className="branding-content">
+              <h1 className="brand-logo">SyncGaze</h1>
+            <p className="brand-tagline">{t('auth.brand.tagline')}</p>
             <div className="brand-features">
               <div className="brand-feature">
                 <span className="feature-icon">✓</span>
-                <span>Advanced Eye Tracking</span>
+                <span>{t('auth.brand.feature.eyeTracking')}</span>
               </div>
               <div className="brand-feature">
                 <span className="feature-icon">✓</span>
-                <span>Detailed Analytics</span>
+                <span>{t('auth.brand.feature.analytics')}</span>
               </div>
               <div className="brand-feature">
                 <span className="feature-icon">✓</span>
-                <span>Performance Insights</span>
+                <span>{t('auth.brand.feature.insights')}</span>
               </div>
             </div>
           </div>
@@ -199,68 +193,80 @@ const AuthPage = () => {
 
         {/* Right side - Form */}
         <div className="auth-form-container">
-          <div className="auth-form-wrapper">
-            <div className="form-header">
-              <h2>{isLogin ? 'Welcome!' : 'Create Account'}</h2>
-              <p>
-                {isLogin 
-                  ? 'Sign in to start training with SyncGaze' 
-                  : 'Start your journey to better aim'}
-              </p>
-            </div>
+            <div className="auth-form-wrapper">
+              <div className="form-header">
+              <h2>{isLogin ? t('auth.header.login') : t('auth.header.signup')}</h2>
+              <p>{isLogin ? t('auth.subheader.login') : t('auth.subheader.signup')}</p>
+              </div>
+
+            {!isLogin && (
+              <div className="signup-notice" aria-label="회원가입 안내문">
+                <h3>{t('auth.signup.notice.title')}</h3>
+                {[t('auth.signup.notice.p1'), t('auth.signup.notice.p2')].map((paragraph, index) => (
+                  <p key={index}>{paragraph}</p>
+                ))}
+                <ul>
+                  {[t('auth.signup.notice.bullet1'), t('auth.signup.notice.bullet2'), t('auth.signup.notice.bullet3')].map(
+                    (bullet, index) => (
+                      <li key={index}>{bullet}</li>
+                    ),
+                  )}
+                </ul>
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="auth-form">
               {!isLogin && (
                 <div className="form-group">
-                  <label htmlFor="username">Username</label>
+                  <label htmlFor="username">{t('auth.label.username')}</label>
                   <input
                     type="text"
                     id="username"
                     name="username"
                     value={formData.username}
                     onChange={handleInputChange}
-                    placeholder="Enter your username"
+                    placeholder={t('auth.placeholder.username')}
                     required={!isLogin}
                   />
                 </div>
               )}
 
               <div className="form-group">
-                <label htmlFor="email">Email</label>
+                <label htmlFor="email">{t('auth.label.email')}</label>
                 <input
                   type="email"
                   id="email"
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  placeholder="Enter your email"
+                  placeholder={t('auth.placeholder.email')}
                   required
                 />
               </div>
 
               <div className="form-group">
-                <label htmlFor="password">Password</label>
+                <label htmlFor="password">{t('auth.label.password')}</label>
                 <input
                   type="password"
                   id="password"
                   name="password"
                   value={formData.password}
                   onChange={handleInputChange}
-                  placeholder="Enter your password"
+                  placeholder={t('auth.placeholder.password')}
                   required
                 />
               </div>
 
               {!isLogin && (
                 <div className="form-group">
-                  <label htmlFor="confirmPassword">Confirm Password</label>
+                  <label htmlFor="confirmPassword">{t('auth.label.confirmPassword')}</label>
                   <input
                     type="password"
                     id="confirmPassword"
                     name="confirmPassword"
                     value={formData.confirmPassword}
                     onChange={handleInputChange}
-                    placeholder="Confirm your password"
+                    placeholder={t('auth.placeholder.confirmPassword')}
                     required={!isLogin}
                   />
                 </div>
@@ -270,7 +276,7 @@ const AuthPage = () => {
                 <div className="form-extras">
                   <label className="remember-me">
                     <input type="checkbox" />
-                    <span>Remember me</span>
+                    <span>{t('auth.form.remember')}</span>
                   </label>
                   <button
                     type="button"
@@ -280,7 +286,7 @@ const AuthPage = () => {
                       setShowResetForm(true);
                     }}
                   >
-                    Forgot password?
+                    {t('auth.form.forgot')}
                   </button>
                 </div>
               )}
@@ -288,12 +294,17 @@ const AuthPage = () => {
             {error && <div className="form-error">{error}</div>}
 
             <button type="submit" className="submit-button" disabled={loading}>
-              {loading ? 'Please wait…' : isLogin ? 'Sign In' : 'Create Account'}
+              {loading ? t('auth.button.loading') : isLogin ? t('auth.button.login') : t('auth.button.signup')}
             </button>
+
+            <p className="policy-disclaimer">
+              {t('auth.disclaimer')}{' '}
+              <Link to="/terms">이용약관</Link> 및 <Link to="/privacy">개인정보 처리방침</Link>
+            </p>
 
             <div className="oauth-divider">
               <span />
-              <p>or</p>
+              <p>{t('auth.divider.or')}</p>
               <span />
             </div>
 
@@ -305,38 +316,37 @@ const AuthPage = () => {
               onClick={handleGoogleSignIn}
               disabled={socialLoading}
             >
-              {socialLoading ? 'Connecting to Google…' : 'Continue with Google'}
+              {socialLoading ? t('auth.button.google.loading') : t('auth.button.google')}
             </button>
           </form>
 
-          {isLogin && (
-            <div className="guest-access" title="Guest mode is limited to supervised data-collection tests">
-              {anonymousError && <div className="form-error guest-error">{anonymousError}</div>}
-              <button
-                type="button"
-                className="guest-button"
-                onClick={handleAnonymousSignIn}
-                disabled={anonymousLoading}
-              >
-                {anonymousLoading ? 'Starting secure guest session…' : 'Continue as Guest for Data Collection'}
-              </button>
-              <p className="guest-copy">
-                Anonymous mode is only for controlled research tests. We temporarily hide account-only actions while we
-                capture calibration and tracking data without saving a profile.
-              </p>
-            </div>
-          )}
+            {isLogin && (
+              <div className="guest-access" title="Guest mode is limited to supervised data-collection tests">
+                {anonymousError && <div className="form-error guest-error">{anonymousError}</div>}
+                <button
+                  type="button"
+                  className="guest-button"
+                  onClick={handleAnonymousSignIn}
+                  disabled={anonymousLoading}
+                >
+                {anonymousLoading ? t('auth.guest.loading') : t('auth.guest.start')}
+                </button>
+                <p className="guest-copy">
+                {t('auth.guest.copy')}
+                </p>
+              </div>
+            )}
 
-          {isLogin && (
-            <div className="password-reset-area">
+            {isLogin && (
+              <div className="password-reset-area">
                 {showResetForm && (
                   <form className="password-reset-form" onSubmit={handlePasswordReset}>
-                    <label htmlFor="resetEmail">Enter your email</label>
+                    <label htmlFor="resetEmail">{t('auth.reset.label')}</label>
                     <input
                       type="email"
                       id="resetEmail"
                       name="resetEmail"
-                      placeholder="you@example.com"
+                      placeholder={t('auth.reset.placeholder')}
                       value={resetEmail}
                       onChange={(event) => setResetEmail(event.target.value)}
                       disabled={resetLoading}
@@ -349,14 +359,14 @@ const AuthPage = () => {
                         onClick={() => setShowResetForm(false)}
                         disabled={resetLoading}
                       >
-                        Cancel
+                        {t('auth.reset.cancel')}
                       </button>
                       <button
                         type="submit"
                         className="reset-submit-button"
                         disabled={resetLoading}
                       >
-                        {resetLoading ? 'Sending…' : 'Send reset link'}
+                        {resetLoading ? t('auth.reset.sending') : t('auth.reset.submit')}
                       </button>
                     </div>
                   </form>
@@ -372,22 +382,22 @@ const AuthPage = () => {
 
             <div className="form-switch">
               <p>
-                {isLogin ? "Don't have an account? " : "Already have an account? "}
+                {isLogin ? `${t('auth.switch.signup')} ` : `${t('auth.switch.login')} `}
                 <button
                   type="button"
                   onClick={() => setIsLogin(!isLogin)}
                   className="switch-button"
                 >
-                  {isLogin ? 'Sign Up' : 'Sign In'}
+                  {isLogin ? t('auth.button.toSignup') : t('auth.button.toLogin')}
                 </button>
               </p>
             </div>
 
-            <button 
+            <button
               className="back-home-button"
               onClick={() => navigate('/')}
             >
-              ← Back to Home
+              {t('auth.back.home')}
             </button>
           </div>
         </div>

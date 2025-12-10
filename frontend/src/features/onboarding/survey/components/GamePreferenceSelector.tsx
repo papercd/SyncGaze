@@ -1,4 +1,5 @@
 import { SurveyGameOption } from '../constants';
+import { useTranslation } from '../../../../state/languageContext';
 
 interface GamePreferenceSelectorProps {
   options: SurveyGameOption[];
@@ -11,15 +12,19 @@ const GamePreferenceSelector = ({
   options,
   selectedGames,
   onToggle,
-  exclusiveNote = '선택 시 탈락',
+  exclusiveNote,
 }: GamePreferenceSelectorProps) => {
+  const { t } = useTranslation();
   const categories = Array.from(new Set(options.map(option => option.category)));
+  const exclusiveLabel = exclusiveNote ?? t('survey.selector.exclusive', '선택 시 탈락');
 
   return (
     <div className="chip-grid">
       {categories.map(category => (
         <div key={category} className="chip-group">
-          <p className="hint-text">[{category}]</p>
+          <p className="hint-text">
+            [{t(`survey.selector.category.${category}`, category)}]
+          </p>
           <div className="chip-grid">
             {options
               .filter(option => option.category === category)
@@ -33,9 +38,11 @@ const GamePreferenceSelector = ({
                     onClick={() => onToggle(option.value)}
                   >
                     {option.label}
-                    {option.exclusive && <span className="chip-note">{exclusiveNote}</span>}
+                    {option.exclusive && <span className="chip-note">{exclusiveLabel}</span>}
                     {option.requiresDetail && (
-                      <span className="chip-note">주력 FPS 직접 기재</span>
+                      <span className="chip-note">
+                        {t('survey.selector.requiresDetail', '주력 FPS 직접 기재')}
+                      </span>
                     )}
                   </button>
                 );

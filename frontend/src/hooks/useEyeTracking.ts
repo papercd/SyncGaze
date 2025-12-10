@@ -40,9 +40,10 @@ export const useEyeTracking3D = (isActive: boolean) => {
         })
         .begin();
 
-      webgazer.params.showVideo = false;
-      webgazer.params.showFaceOverlay = false;
-      webgazer.params.showFaceFeedbackBox = false;
+      // Use methods instead of params assignments
+      if (webgazer.showVideo) webgazer.showVideo(false);
+      if (webgazer.showFaceOverlay) webgazer.showFaceOverlay(false);
+      if (webgazer.showFaceFeedbackBox) webgazer.showFaceFeedbackBox(false);
     };
 
     initWebGazer();

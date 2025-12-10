@@ -1,24 +1,19 @@
 // src/pages/LandingPage.tsx
 import { useNavigate } from 'react-router-dom';
-import { useRef } from 'react';
+import { useRef, KeyboardEvent } from 'react';
 import './LandingPage.css';
 import DarkVeilBackground from '../components/DarkVeil';
 import Crosshair from '../components/ScreenCrosshair';
+import LanguageToggle from '../components/LanguageToggle';
+import Navbar from '../components/TopNavBar';
 import { useAuth } from '../state/authContext';
+import { useTranslation } from '../state/languageContext';
 
 const LandingPage = () => {
   const navigate = useNavigate();
   const ctaSectionRef = useRef<HTMLElement>(null);
-  const { user, signOut } = useAuth();
-
-  const handleNavClick = async () => {
-    if (user) {
-      await signOut();
-      navigate('/');
-      return;
-    }
-    navigate('/auth');
-  };
+  const { user } = useAuth();
+  const { t } = useTranslation();
 
   const handlePrimaryCta = () => {
     if (user) {
@@ -28,9 +23,21 @@ const LandingPage = () => {
     }
   };
 
+  const handleAboutNavigate = () => navigate('/about');
+
+  const handleAboutLinkKeyDown = (event: KeyboardEvent<HTMLParagraphElement>) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      handleAboutNavigate();
+    }
+  };
+
   return (
     <div className="landing-page">
-        <div className="dark-veil-container">
+      {/* Language Toggle - Landing variant */}
+      <LanguageToggle variant="landing" />
+      
+      <div className="dark-veil-container">
         <DarkVeilBackground 
           hueShift={0}
           noiseIntensity={0.02}
@@ -41,111 +48,108 @@ const LandingPage = () => {
           resolutionScale={1}
         />
       </div>
-    <div className="landing-content">
-      {/* Hero Section */}
-      <header className="hero">
-        <nav className="navbar">
-          <div className="logo">SyncGaze</div>
-          <button className="nav-button" onClick={handleNavClick}>
-            {user ? 'Sign Out' : 'Sign In'}
+      <div className="landing-content">
+        {/* Hero Section */}
+        <header className="hero">
+          <Navbar showAuthButton={true} />
+
+          <div className="hero-content">
+            <h1>{t('landing.hero.title')}</h1>
+            <p className="hero-subtitle">{t('landing.hero.subtitle')}</p>
+            <div className="cta-buttons">
+              <button className="primary-button" onClick={handlePrimaryCta}>
+                {user ? t('landing.cta.primary.dashboard') : t('landing.cta.primary.auth')}
+              </button>
+              <button className="secondary-button" onClick={() => {
+                document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
+              }}>
+                {t('landing.cta.learnMore')}
+              </button>
+            </div>
+            <p
+              className="cta-about-link"
+              role="link"
+              tabIndex={0}
+              onClick={handleAboutNavigate}
+              onKeyDown={handleAboutLinkKeyDown}
+            >
+              <span className="cta-about-text">
+                {t('landing.cta.aboutUsDetail.intro')}
+              </span>{' '}
+              <span className="cta-about-highlight">
+                {t('landing.cta.aboutUsDetail.highlight')}
+              </span>
+            </p>
+          </div>
+        </header>
+
+        {/* Features Section */}
+        <section id="features" className="features">
+          <h2>{t('landing.section.features.title')}</h2>
+          <div className="feature-grid">
+            <div className="feature-card">
+              <h3>{t('landing.feature.eyeTracking.title')}</h3>
+              <p>{t('landing.feature.eyeTracking.desc')}</p>
+            </div>
+
+            <div className="feature-card">
+              <h3>{t('landing.feature.insights.title')}</h3>
+              <p>{t('landing.feature.insights.desc')}</p>
+            </div>
+
+            <div className="feature-card">
+              <h3>{t('landing.feature.calibrated.title')}</h3>
+              <p>{t('landing.feature.calibrated.desc')}</p>
+            </div>
+
+            <div className="feature-card">
+              <h3>{t('landing.feature.realtime.title')}</h3>
+              <p>{t('landing.feature.realtime.desc')}</p>
+            </div>
+          </div>
+        </section>
+
+        {/* How It Works Section */}
+        <section className="how-it-works">
+          <h2>{t('landing.section.how.title')}</h2>
+          <div className="steps">
+            <div className="step">
+              <div className="step-number">1</div>
+              <h3>{t('landing.step.1.title')}</h3>
+              <p>{t('landing.step.1.desc')}</p>
+            </div>
+
+            <div className="step">
+              <div className="step-number">2</div>
+              <h3>{t('landing.step.2.title')}</h3>
+              <p>{t('landing.step.2.desc')}</p>
+            </div>
+
+            <div className="step">
+              <div className="step-number">3</div>
+              <h3>{t('landing.step.3.title')}</h3>
+              <p>{t('landing.step.3.desc')}</p>
+            </div>
+
+            <div className="step">
+              <div className="step-number">4</div>
+              <h3>{t('landing.step.4.title')}</h3>
+              <p>{t('landing.step.4.desc')}</p>
+            </div>
+          </div>
+        </section>
+
+        {/* CTA Section with Crosshair */}
+        <section ref={ctaSectionRef} className="cta-section">
+          <Crosshair containerRef={ctaSectionRef} color='#ffffff' circleRadius={50}/>
+          <h2>{t('landing.cta.section.title')}</h2>
+          <p>{t('landing.cta.section.desc')}</p>
+          <button className="primary-button large" onClick={handlePrimaryCta}>
+            {user ? t('landing.cta.primary.dashboard') : t('landing.cta.primary.auth')}
           </button>
-        </nav>
-        
-        <div className="hero-content">
-          <h1>Master Your Aim with AI-Powered Eye Tracking</h1>
-          <p className="hero-subtitle">
-            Analyze your gaze patterns, improve reaction time, and unlock peak performance
-          </p>
-          <div className="cta-buttons">
-            <button className="primary-button" onClick={handlePrimaryCta}>
-              {user ? 'Go to Dashboard' : 'Get Started'}
-            </button>
-            <button className="secondary-button" onClick={() => {
-              document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
-            }}>
-              Learn More
-            </button>
-          </div>
-        </div>
-      </header>
+        </section>
 
-      {/* Features Section */}
-      <section id="features" className="features">
-        <h2>Why Choose SyncGaze?</h2>
-        <div className="feature-grid">
-          <div className="feature-card">
-          
-            <h3>Eye Tracking Technology</h3>
-            <p>Advanced WebGazer integration for precise gaze tracking and analysis</p>
-          </div>
-          
-          <div className="feature-card">
-          
-            <h3>Data-Driven Insights</h3>
-            <p>Comprehensive CSV reports with visualizations of your performance metrics</p>
-          </div>
-          
-          <div className="feature-card">
-      
-            <h3>Calibrated Training</h3>
-            <p>Personalized calibration ensures accurate tracking tailored to you</p>
-          </div>
-          
-          <div className="feature-card">
-            
-            <h3>Real-Time Feedback</h3>
-            <p>60-second training sessions with instant performance tracking</p>
-          </div>
-        </div>
-      </section>
-
-      {/* How It Works Section */}
-      <section className="how-it-works">
-        <h2>How It Works</h2>
-        <div className="steps">
-          <div className="step">
-            <div className="step-number">1</div>
-            <h3>Create Account</h3>
-            <p>Sign up and access your personal dashboard</p>
-          </div>
-          
-          <div className="step">
-            <div className="step-number">2</div>
-            <h3>Calibrate</h3>
-            <p>Quick calibration process to optimize eye tracking</p>
-          </div>
-          
-          <div className="step">
-            <div className="step-number">3</div>
-            <h3>Train</h3>
-            <p>60-second sessions to improve your aim and reaction time</p>
-          </div>
-          
-          <div className="step">
-            <div className="step-number">4</div>
-            <h3>Analyze</h3>
-            <p>Review detailed metrics and track your progress</p>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section with Crosshair */}
-      <section ref={ctaSectionRef} className="cta-section">
-        <Crosshair containerRef={ctaSectionRef} color='#ffffff'  circleRadius={50}/>
-        <h2>Ready to Level Up Your Aim?</h2>
-        <p>Join thousands of users improving their performance</p>
-        <button className="primary-button large" onClick={handlePrimaryCta}>
-          {user ? 'Go to Dashboard' : 'Start Training Now'}
-        </button>
-      </section>
-
-      {/* Footer */}
-      <footer className="footer">
-        <p>&copy; 2025 SyncGaze. All rights reserved.</p>
-      </footer>
-    </div>
-
-      
+      </div>
     </div>
   );
 };

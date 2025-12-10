@@ -35,6 +35,7 @@ interface UseTrackingDataProps {
 export const useTrackingData = ({ isActive, phase, getCurrentActiveTarget }: UseTrackingDataProps) => {
   const { isReady, liveGaze, validationError } = useWebgazer();
   const collectedData = useRef<TrackingDataRecord[]>([]);
+  const gazeSampleCount = useRef(0);
 
     // Data collection during training
     // Data collection during training
@@ -78,6 +79,7 @@ export const useTrackingData = ({ isActive, phase, getCurrentActiveTarget }: Use
           playerPosition: null,
           hitRegistered: false,
         });
+        gazeSampleCount.current += 1;
       }
     };
 
@@ -188,6 +190,7 @@ export const useTrackingData = ({ isActive, phase, getCurrentActiveTarget }: Use
   // Clear data for new session
   const clearData = useCallback(() => {
     collectedData.current = [];
+    gazeSampleCount.current = 0;
   }, []);
 
   return {
@@ -196,5 +199,7 @@ export const useTrackingData = ({ isActive, phase, getCurrentActiveTarget }: Use
     exportData,
     clearData,
     dataCount: collectedData.current.length,
+    gazeSampleCount: gazeSampleCount.current,
+    hasGazeSamples: gazeSampleCount.current > 0,
   };
 };

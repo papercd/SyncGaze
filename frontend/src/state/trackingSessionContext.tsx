@@ -12,6 +12,7 @@ export interface SurveyResponses {
   inGameRank: string;
   playTime: string;
   selfAssessment: number;
+  trainingGoal: string;
 }
 
 export type CalibrationStatus = 'not-started' | 'in-progress' | 'validated' | 'skipped';
@@ -40,12 +41,14 @@ export interface TrainingSessionSummary {
   date: string;
   duration: number;
   score: number;
+  predictedScore?: number | null;
   accuracy: number;
   targetsHit: number;
   totalTargets: number;
   avgReactionTime: number;
   gazeAccuracy: number;
   mouseAccuracy: number;
+  controlSensitivity?: number;
   screenSize?: { width: number; height: number } | null;
   csvData: string;
   rawData: TrainingDataPoint[];
@@ -59,6 +62,7 @@ interface TrackingSessionState {
   lastSession: TrainingSessionSummary | null;
   activeSessionId: string | null;
   isAnonymousSession: boolean;
+  surveyHydrated: boolean;
 }
 
 export interface TrackingSessionContextValue extends TrackingSessionState {
@@ -66,10 +70,12 @@ export interface TrackingSessionContextValue extends TrackingSessionState {
   setConsentAccepted: (accepted: boolean) => void;
   saveCalibrationResult: (result: CalibrationResult | null) => void;
   addSession: (session: TrainingSessionSummary) => void;
+  hydrateSessions: (sessions: TrainingSessionSummary[]) => void;
   setActiveSessionId: (sessionId: string | null) => void;
   clearRecentSessions: () => void;
   activeSession: TrainingSessionSummary | null;
   setAnonymousSession: (isAnonymous: boolean) => void;
+  setSurveyHydrated: (hydrated: boolean) => void;
   resetState: () => void;
 }
 
@@ -98,6 +104,7 @@ const createDefaultState = (): TrackingSessionState => {
     lastSession: sessions[0] ?? null,
     activeSessionId: sessions[0]?.id ?? null,
     isAnonymousSession: false,
+    surveyHydrated: false,
   };
 };
 
@@ -141,6 +148,15 @@ export const saveSurveyAndConsent = async ({
 
 export const TrackingSessionContext = createContext<TrackingSessionContextValue | undefined>(undefined);
 
+const applySurveyDefaults = (value: SurveyResponses | null | undefined) => {
+  if (!value) return null;
+  return {
+    ...value,
+    trainingGoal: value.trainingGoal ?? '',
+    mainGameOther: value.mainGameOther ?? '',
+  };
+};
+
 export const TrackingSessionProvider = ({ children }: { children: ReactNode }) => {
   const [state, setState] = useState<TrackingSessionState>(() => {
     if (typeof window === 'undefined') {
@@ -154,7 +170,9 @@ export const TrackingSessionProvider = ({ children }: { children: ReactNode }) =
         return {
           ...createDefaultState(),
           ...parsed,
+          surveyResponses: applySurveyDefaults(parsed.surveyResponses),
           isAnonymousSession: parsed.isAnonymousSession ?? false,
+          surveyHydrated: parsed.surveyHydrated ?? false,
         };
       }
       return createDefaultState();
@@ -174,7 +192,7 @@ export const TrackingSessionProvider = ({ children }: { children: ReactNode }) =
   const setSurveyResponses = (responses: SurveyResponses | null) => {
     setState(prev => ({
       ...prev,
-      surveyResponses: responses,
+      surveyResponses: applySurveyDefaults(responses),
     }));
   };
 
@@ -204,6 +222,15 @@ export const TrackingSessionProvider = ({ children }: { children: ReactNode }) =
     });
   };
 
+  const hydrateSessions = (sessions: TrainingSessionSummary[]) => {
+    setState(prev => ({
+      ...prev,
+      recentSessions: sessions,
+      lastSession: sessions[0] ?? null,
+      activeSessionId: sessions[0]?.id ?? null,
+    }));
+  };
+
   const setActiveSessionId = (sessionId: string | null) => {
     setState(prev => ({
       ...prev,
@@ -227,6 +254,13 @@ export const TrackingSessionProvider = ({ children }: { children: ReactNode }) =
     }));
   };
 
+  const setSurveyHydrated = (hydrated: boolean) => {
+    setState(prev => ({
+      ...prev,
+      surveyHydrated: hydrated,
+    }));
+  };
+
   const resetState = () => {
     setState(createDefaultState());
     if (typeof window !== 'undefined') {
@@ -247,10 +281,12 @@ export const TrackingSessionProvider = ({ children }: { children: ReactNode }) =
     setConsentAccepted,
     saveCalibrationResult,
     addSession,
+    hydrateSessions,
     setActiveSessionId,
     clearRecentSessions,
     activeSession,
     setAnonymousSession,
+    setSurveyHydrated,
     resetState,
   }), [state, activeSession]);
 

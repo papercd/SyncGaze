@@ -1,5 +1,6 @@
 // src/components/Crosshair.tsx
 import React from 'react';
+import { useCrosshairSettings } from '../state/crosshairSettingsContext';
 
 interface CrosshairProps {
   color?: string;
@@ -9,11 +10,18 @@ interface CrosshairProps {
 }
 
 export const Crosshair: React.FC<CrosshairProps> = ({
-  color = 'white',
-  size = 10,
-  thickness = 2,
-  gap = 5
+  color,
+  size,
+  thickness,
+  gap
 }) => {
+  const crosshairSettings = useCrosshairSettings();
+
+  const finalColor = color ?? crosshairSettings.color;
+  const finalSize = size ?? crosshairSettings.size;
+  const finalThickness = thickness ?? crosshairSettings.thickness;
+  const finalGap = gap ?? crosshairSettings.gap;
+
   const style = {
     position: 'absolute' as const,
     top: '50%',
@@ -25,7 +33,7 @@ export const Crosshair: React.FC<CrosshairProps> = ({
 
   const lineStyle = {
     position: 'absolute' as const,
-    backgroundColor: color
+    backgroundColor: finalColor
   };
 
   return (
@@ -34,8 +42,8 @@ export const Crosshair: React.FC<CrosshairProps> = ({
       <div
         style={{
           ...lineStyle,
-          width: `${thickness}px`,
-          height: `${thickness}px`,
+          width: `${finalThickness}px`,
+          height: `${finalThickness}px`,
           borderRadius: '50%',
           transform: 'translate(-50%, -50%)'
         }}
@@ -45,10 +53,10 @@ export const Crosshair: React.FC<CrosshairProps> = ({
       <div
         style={{
           ...lineStyle,
-          width: `${thickness}px`,
-          height: `${size}px`,
+          width: `${finalThickness}px`,
+          height: `${finalSize}px`,
           left: '50%',
-          bottom: `${gap}px`,
+          bottom: `${finalGap}px`,
           transform: 'translateX(-50%)'
         }}
       />
@@ -57,10 +65,10 @@ export const Crosshair: React.FC<CrosshairProps> = ({
       <div
         style={{
           ...lineStyle,
-          width: `${thickness}px`,
-          height: `${size}px`,
+          width: `${finalThickness}px`,
+          height: `${finalSize}px`,
           left: '50%',
-          top: `${gap}px`,
+          top: `${finalGap}px`,
           transform: 'translateX(-50%)'
         }}
       />
@@ -69,10 +77,10 @@ export const Crosshair: React.FC<CrosshairProps> = ({
       <div
         style={{
           ...lineStyle,
-          width: `${size}px`,
-          height: `${thickness}px`,
+          width: `${finalSize}px`,
+          height: `${finalThickness}px`,
           top: '50%',
-          right: `${gap}px`,
+          right: `${finalGap}px`,
           transform: 'translateY(-50%)'
         }}
       />
@@ -81,10 +89,10 @@ export const Crosshair: React.FC<CrosshairProps> = ({
       <div
         style={{
           ...lineStyle,
-          width: `${size}px`,
-          height: `${thickness}px`,
+          width: `${finalSize}px`,
+          height: `${finalThickness}px`,
           top: '50%',
-          left: `${gap}px`,
+          left: `${finalGap}px`,
           transform: 'translateY(-50%)'
         }}
       />

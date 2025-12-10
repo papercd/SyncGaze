@@ -16,18 +16,32 @@ import { CS2Physics } from '../utils/cs2Physics';
 import { useTrackingData, TrackingDataRecord } from '../hooks/useTrackingData';
 import { LiveGaze } from '../types/calibration';
 import { useWebgazer } from '../hooks/tracking/useWebgazer';
+import ControlSettingsPanel from './ControlSettingsPanel';
+import { useWeaponSettings } from '../state/weaponSettingsContext';
+// 기존 imports 아래에 추가
+import { SoundManager } from '../utils/soundManager';
+import { useSoundSettings } from '../state/soundSettingsContext';
+import SoundSettingsPanel from './SoundSettingsPanel';
 
 interface TrainingSceneProps {
-  onComplete?: (score: number, targetsHit: number, rawData: TrackingDataRecord[]) => void;
+  onComplete?: (
+    score: number,
+    targetsHit: number,
+    rawData: TrackingDataRecord[],
+    trackingMeta: { gazeSamples: number }
+  ) => void;
+  onExitDashboard?: () => void;
 }
 
-export const TrainingScene: React.FC<TrainingSceneProps> = ({ onComplete }) => {
+export const TrainingScene: React.FC<TrainingSceneProps> = ({ onComplete, onExitDashboard }) => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const { isLocked, requestPointerLock, exitPointerLock } = usePointerLock(canvasRef);
   const [score, setScore] = useState(0);
   const scoreRef = useRef(0); // ADD THIS
   const [timeRemaining, setTimeRemaining] = useState(60);
   const [liveGaze, setLiveGaze] = useState<LiveGaze>({ x: null, y: null });
+  const { currentWeapon } = useWeaponSettings();
+  const { masterVolume, sfxVolume, muted } = useSoundSettings();
   
   // Use WebGazer context (only for gaze data, not calibration)
   const { isReady: isWebGazerReady } = useWebgazer();
@@ -70,7 +84,8 @@ export const TrainingScene: React.FC<TrainingSceneProps> = ({ onComplete }) => {
     getData,
     exportData,
     clearData,
-    dataCount
+    dataCount,
+    gazeSampleCount
   } = useTrackingData({
     isActive: isLocked,
     phase: 'training',
@@ -104,6 +119,8 @@ export const TrainingScene: React.FC<TrainingSceneProps> = ({ onComplete }) => {
     screenY: number;
   } | null>(null);
 
+  const soundManagerRef = useRef<SoundManager | null>(null);
+
   // Auto-start training on mount
   useEffect(() => {
     clearData();
@@ -114,7 +131,27 @@ export const TrainingScene: React.FC<TrainingSceneProps> = ({ onComplete }) => {
   }, []); // Only run once on mount
 
 
+   // 🔊 Initialize SoundManager
+  useEffect(() => {
+    const soundManager = new SoundManager();
+    soundManager.loadWeaponSounds().catch(err => {
+      console.warn('⚠️ Failed to load weapon sounds:', err);
+    });
+    soundManagerRef.current = soundManager;
+    
+    return () => {
+      soundManager.dispose();
+    };
+  }, []);
  
+    // SoundManager에 볼륨 설정 동기화
+  useEffect(() => {
+    if (soundManagerRef.current) {
+      soundManagerRef.current.setMasterVolume(masterVolume);
+      soundManagerRef.current.setSfxVolume(sfxVolume);
+      soundManagerRef.current.setMuted(muted);
+    }
+  }, [masterVolume, sfxVolume, muted]);
 
 
   // Timer - calculate based on elapsed time
@@ -209,6 +246,7 @@ export const TrainingScene: React.FC<TrainingSceneProps> = ({ onComplete }) => {
   }, []);
 
   const handleTriggerPull = useCallback(() => {
+    soundManagerRef.current?.playFire();
     weaponAnimRef.current?.triggerFire(1.0);
   }, []);
 
@@ -302,17 +340,19 @@ export const TrainingScene: React.FC<TrainingSceneProps> = ({ onComplete }) => {
       
       const collectedData = getData();
       const targetsHit = collectedData.filter(d => d.hitRegistered).length;
+      const gazeSamples = gazeSampleCount;
       
       console.log('✅ Training complete:', {
         score: scoreRef.current, // USE REF HERE
         targetsHit,
-        dataPointsCollected: collectedData.length
+        dataPointsCollected: collectedData.length,
+        gazeSamples,
       });
       
       // Pass the ref value
-      onComplete?.(scoreRef.current, targetsHit, collectedData); // USE REF HERE
+      onComplete?.(scoreRef.current, targetsHit, collectedData, { gazeSamples }); // USE REF HERE
     }
-  }, [exitPointerLock, onComplete, getData]); 
+  }, [exitPointerLock, onComplete, getData, gazeSampleCount]); 
 
   // Mouse click listener - just handles weapon animations
   useEffect(() => {
@@ -392,25 +432,52 @@ export const TrainingScene: React.FC<TrainingSceneProps> = ({ onComplete }) => {
     <div ref={canvasRef} className="w-screen h-screen fixed inset-0">
       
       {!isLocked && (
-      <div 
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center cursor-pointer"
-        onClick={requestPointerLock}  // Add this
-      >
-        <div className="bg-black/80 px-8 py-6 rounded-lg border-2 border-white/30">
-          <h2 className="text-3xl font-bold text-white mb-4 text-center">Paused</h2>
-          <p className="text-white text-lg text-center">
-            Click anywhere to resume
-          </p>
-          <p className="text-gray-400 text-sm text-center mt-2">
-            Timer: {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
-          </p>
+        <div className="training-pause-overlay" role="dialog" aria-label="Training paused">
+          <div className="training-pause-dialog">
+            <h2>Paused</h2>
+            <p className="pause-subtitle">
+              Press resume to continue or adjust your control sensitivity while the timer is paused.
+            </p>
+
+            <div className="pause-actions">
+              <button type="button" className="pause-primary" onClick={requestPointerLock}>
+                Resume training
+              </button>
+              <div className="pause-time">
+                Timer: {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
+              </div>
+              {onExitDashboard && (
+                <button type="button" className="pause-secondary" onClick={onExitDashboard}>
+                  Return to dashboard
+                </button>
+              )}
+            </div>
+
+             {/* 🔄 Settings Grid - Side by Side */}
+          <div className="pause-settings-grid">
+            <div className="pause-settings-section">
+              <h3 className="pause-settings-title">Control Settings</h3>
+              <ControlSettingsPanel compact showReset />
+            </div>
+            
+            <div className="pause-settings-section">
+              <h3 className="pause-settings-title">Sound Settings</h3>
+              <SoundSettingsPanel compact showReset />
+            </div>
+          </div>
+
+            <p className="pause-hint">Press Esc at any time to pause training.</p>
+          </div>
         </div>
-      </div>
-    )}
+      )}
   
+      <div className="absolute top-4 left-4 z-30">
+        <div className="text-sm text-gray-300">Press Esc to pause and adjust settings.</div>
+      </div>
+
       <div className="absolute top-4 right-4 text-white z-30">
         <div className="text-2xl font-bold">Score: {score}</div>
-        
+
         <div className="text-sm text-gray-300">Data: {dataCount} points</div>
       </div>
 
@@ -453,6 +520,7 @@ export const TrainingScene: React.FC<TrainingSceneProps> = ({ onComplete }) => {
           scale={1}
           velocity={velocity}
           physics={physicsRef.current}
+          modelPath={currentWeapon.modelPath}
         />
 
         <Environment />

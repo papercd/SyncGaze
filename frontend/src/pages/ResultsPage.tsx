@@ -1,6 +1,7 @@
 // frontend/src/pages/ResultsPage.tsx
 // UPDATED: Stops WebGazer when mounting results page, Improved Heatmap Colors & Legend
 
+import { SplinePointer, Sparkles, Hourglass, ScanEye, RulerDimensionLine, Link, MousePointerClick, Info, Target } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import './ResultsPage.css';
@@ -9,12 +10,88 @@ import {
   TrainingDataPoint,
   useTrackingSession,
 } from '../state/trackingSessionContext';
-import { exportSessionData } from '../utils/sessionExport';
+import { exportSessionData, type CsvUploadResult } from '../utils/sessionExport';
 import { useWebgazer } from '../hooks/tracking/useWebgazer';
 import { useAuth } from '../state/authContext';
+import { useTranslation } from '../state/languageContext';
 import { persistLatestSession } from '../utils/resultsStorage';
+import { saveSessionForUser } from '../utils/remoteSessions';
 // Analytics 인터페이스와 함수를 utils에서 import (ResultsPage 내의 중복 정의 제거)
 import { calculatePerformanceAnalytics, generateErrorTimeSeries, PerformanceAnalytics } from '../utils/analytics';
+import { predictScore } from '../services/predictionService';
+
+type MetricKey =
+  | 'targets'
+  | 'avgReaction'
+  | 'gazeReaction'
+  | 'gazeAimLatency'
+  | 'hitError'
+  | 'sync';
+
+type MetricPercentile = {
+  value: number;
+  label: string;
+};
+
+const clampPercentile = (value: number): number => Math.min(99, Math.max(1, Math.round(value)));
+const formatPercentileLabel = (value: number, formatter: (pct: number) => string) => formatter(clampPercentile(value));
+
+const metricPercentile = (
+  key: MetricKey,
+  analytics: PerformanceAnalytics,
+  formatter: (pct: number) => string,
+): MetricPercentile => {
+  switch (key) {
+    case 'targets': {
+      const ratio = analytics.totalTargets > 0 ? analytics.targetsHit / analytics.totalTargets : 0;
+      if (ratio >= 0.9) return { value: 10, label: formatPercentileLabel(10, formatter) };
+      if (ratio >= 0.8) return { value: 20, label: formatPercentileLabel(20, formatter) };
+      if (ratio >= 0.65) return { value: 40, label: formatPercentileLabel(40, formatter) };
+      if (ratio >= 0.5) return { value: 60, label: formatPercentileLabel(60, formatter) };
+      return { value: 85, label: formatPercentileLabel(85, formatter) };
+    }
+    case 'avgReaction': {
+      const v = analytics.avgReactionTime;
+      if (v <= 200) return { value: 10, label: formatPercentileLabel(10, formatter) };
+      if (v <= 250) return { value: 25, label: formatPercentileLabel(25, formatter) };
+      if (v <= 300) return { value: 50, label: formatPercentileLabel(50, formatter) };
+      if (v <= 350) return { value: 70, label: formatPercentileLabel(70, formatter) };
+      return { value: 90, label: formatPercentileLabel(90, formatter) };
+    }
+    case 'gazeReaction': {
+      const v = analytics.avgGazeReactionTime;
+      if (v <= 200) return { value: 12, label: formatPercentileLabel(12, formatter) };
+      if (v <= 250) return { value: 25, label: formatPercentileLabel(25, formatter) };
+      if (v <= 350) return { value: 45, label: formatPercentileLabel(45, formatter) };
+      if (v <= 450) return { value: 65, label: formatPercentileLabel(65, formatter) };
+      return { value: 88, label: formatPercentileLabel(88, formatter) };
+    }
+    case 'gazeAimLatency': {
+      const v = analytics.gazeAimLatency;
+      if (v <= 250) return { value: 15, label: formatPercentileLabel(15, formatter) };
+      if (v <= 400) return { value: 35, label: formatPercentileLabel(35, formatter) };
+      if (v <= 600) return { value: 60, label: formatPercentileLabel(60, formatter) };
+      return { value: 85, label: formatPercentileLabel(85, formatter) };
+    }
+    case 'hitError': {
+      const avgError = (analytics.gazeErrorAtHit + analytics.mouseErrorAtHit) / 2;
+      if (avgError <= 60) return { value: 15, label: formatPercentileLabel(15, formatter) };
+      if (avgError <= 90) return { value: 30, label: formatPercentileLabel(30, formatter) };
+      if (avgError <= 130) return { value: 55, label: formatPercentileLabel(55, formatter) };
+      if (avgError <= 170) return { value: 75, label: formatPercentileLabel(75, formatter) };
+      return { value: 90, label: formatPercentileLabel(90, formatter) };
+    }
+    case 'sync': {
+      const v = analytics.synchronization;
+      if (v <= 90) return { value: 15, label: formatPercentileLabel(15, formatter) };
+      if (v <= 140) return { value: 35, label: formatPercentileLabel(35, formatter) };
+      if (v <= 200) return { value: 60, label: formatPercentileLabel(60, formatter) };
+      return { value: 85, label: formatPercentileLabel(85, formatter) };
+    }
+    default:
+      return { value: 50, label: formatPercentileLabel(50, formatter) };
+  }
+};
 
 interface Analytics {
   totalTargets: number;
@@ -49,20 +126,46 @@ type SeriesConfig = {
 
 type HeatmapPoint = { x: number; y: number };
 
+type RankLevel = {
+  key: 'trainee' | 'green' | 'blue' | 'indigo' | 'purple';
+  labelKo: string;
+  labelEn: string;
+  min: number;
+  max: number;
+  color: string;
+};
+
+const rankLevels: RankLevel[] = [
+  { key: 'trainee', labelKo: '훈련병', labelEn: 'Grey Trainee', min: 0, max: 19.9, color: '#9E9E9E' },
+  { key: 'green', labelKo: '연습 사수', labelEn: 'Green Shooter', min: 20, max: 39.9, color: '#4CAF50' },
+  { key: 'blue', labelKo: '초급 사수', labelEn: 'Blue Shooter', min: 40, max: 59.9, color: '#2196F3' },
+  { key: 'indigo', labelKo: '중급 사수', labelEn: 'Indigo Shooter', min: 60, max: 79.9, color: '#3F51B5' },
+  { key: 'purple', labelKo: '고급 사수', labelEn: 'Purple Marksman', min: 80, max: 100, color: '#9C27B0' },
+];
+
+const getRankLevel = (score: number | null): RankLevel => {
+  if (score === null || Number.isNaN(score)) {
+    return rankLevels[0];
+  }
+  const clamped = Math.min(100, Math.max(0, score));
+  return rankLevels.find(level => clamped >= level.min && clamped <= level.max) ?? rankLevels[rankLevels.length - 1];
+};
+
 // --- PerformanceLineChart Component (UPDATED with Hit Markers) ---
-const PerformanceLineChart = ({ 
-  series, 
+const PerformanceLineChart = ({
+  series,
   duration,
   hitTimes = [] // NEW: 명중 시점 배열
-}: { 
-  series: SeriesConfig[]; 
+}: {
+  series: SeriesConfig[];
   duration: number;
   hitTimes?: number[];
 }) => {
+  const { t } = useTranslation();
   const activeSeries = series.filter(s => s.points.some(p => p.value !== null));
 
   if (!activeSeries.length) {
-    return <div className="chart-empty">No performance data collected for this session.</div>;
+    return <div className="chart-empty">{t('chart.performance.empty', 'No performance data collected for this session.')}</div>;
   }
 
   const width = 720;
@@ -171,7 +274,7 @@ const PerformanceLineChart = ({
 
         {/* Axis titles */}
         <text x={(width + padding) / 2} y={height - 12} className="chart-axis-title" textAnchor="middle">
-          Time (seconds)
+          {t('chart.performance.time', 'Time (seconds)')}
         </text>
         <text
           x={16}
@@ -180,7 +283,7 @@ const PerformanceLineChart = ({
           textAnchor="middle"
           transform={`rotate(-90 16 ${height / 2})`}
         >
-          Error (px)
+          {t('chart.performance.error', 'Error (px)')}
         </text>
 
         {/* Data lines */}
@@ -219,11 +322,14 @@ const PerformanceLineChart = ({
         {/* 명중 마커 범례 추가 */}
         <div className="legend-item">
           <span className="legend-swatch" style={{ backgroundColor: '#871212ff', width: 8, height: 8, borderRadius: '50%' }} aria-hidden />
-          <span className="legend-label">Hit Moment</span>
+          <span className="legend-label">{t('chart.performance.hitMoment', 'Hit Moment')}</span>
         </div>
       </div>
       <div className="chart-caption">
-        Lower values indicate better tracking accuracy. Markers indicate when targets were hit.
+        {t(
+          'chart.performance.caption',
+          'Lower values indicate better tracking accuracy. Markers show when targets were hit.',
+        )}
       </div>
     </div>
   );
@@ -259,6 +365,7 @@ const persistUploadStatus = (sessionId: string | undefined, status: AutoUploadSt
 const ResultsPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t, language } = useTranslation();
   const {
     activeSession,
     recentSessions,
@@ -266,6 +373,7 @@ const ResultsPage = () => {
     consentAccepted,
     calibrationResult,
     setActiveSessionId,
+    isAnonymousSession
   } = useTrackingSession();
   
   const { stopSession } = useWebgazer();
@@ -291,17 +399,172 @@ const ResultsPage = () => {
   const analytics = useMemo<PerformanceAnalytics | null>(() => {
     return sessionData ? calculatePerformanceAnalytics(sessionData.rawData) : null;
   }, [sessionData]);
+  const [predictedScore, setPredictedScore] = useState<number | null>(null);
+  const [isPredictingScore, setIsPredictingScore] = useState(false);
 
   const [missingRawData, setMissingRawData] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [lastUploadResult, setLastUploadResult] = useState<CsvUploadResult | null>(null);
   const [autoUploadAttemptedFor, setAutoUploadAttemptedFor] = useState<string | null>(null);
-  const [autoUploadStatus, setAutoUploadStatus] = useState<AutoUploadStatus>('idle');
+  // 초기화 시점에 바로 sessionStorage를 확인하여 상태를 설정합니다. - csv 수동 업로드 버튼 재활성화 방지
+  const [autoUploadStatus, setAutoUploadStatus] = useState<AutoUploadStatus>(() => {
+    // sessionToDisplay가 있다면 해당 ID에 대한 저장된 상태를 불러오고, 없으면 'idle'
+    return loadStoredUploadStatus(sessionToDisplay?.id) ?? 'idle';
+  });
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const toastTimeoutRef = useRef<number | null>(null);
+  const lastSyncedRef = useRef<{ id: string; uploadKey: string | null } | null>(null);
   const heatmapCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const heatmapContainerRef = useRef<HTMLDivElement | null>(null);
   const participantLabel = user?.email ?? user?.displayName ?? user?.uid;
   const isCalibrationValidated = calibrationResult?.status === 'validated';
+  const localizedDate = useMemo(() => {
+    if (!sessionData) return '';
+    return new Date(sessionData.date).toLocaleString(language === 'ko' ? 'ko-KR' : 'en-US');
+  }, [language, sessionData]);
+  const formatPercentile = useCallback(
+    (value: number) =>
+      t('results.percentile.label', language === 'ko' ? '상위 {percentile}%' : 'Top {percentile}%').replace(
+        '{percentile}',
+        `${clampPercentile(value)}`,
+      ),
+    [language, t],
+  );
+  const metricTooltips = useMemo(
+    () => ({
+      targets: t('results.tooltip.targets', 'Hits show decisiveness and tempo.'),
+      avgReaction: t('results.tooltip.avgReaction', 'Faster reactions secure the first-shot edge.'),
+      gazeReaction: t('results.tooltip.gazeReaction', 'Gaze reaction shows how fast you acquire targets.'),
+      gazeAimLatency: t('results.tooltip.gazeAimLatency', 'Shorter gaze-aim latency keeps aim and shots synced.'),
+      hitError: t('results.tooltip.hitError', 'Smaller hit error means steadier micro-aim.'),
+      sync: t('results.tooltip.sync', 'Gaze-mouse sync reflects aiming consistency.'),
+    }),
+    [t],
+  );
+  const getMetricLevel = useCallback(
+    (key: MetricKey, analytics: PerformanceAnalytics) => {
+      const badColor = '#ff6b6b';
+      const midColor = '#f1c40f';
+      const goodColor = '#66d9ff';
+
+      switch (key) {
+        case 'targets': {
+          const ratio = analytics.totalTargets > 0 ? analytics.targetsHit / analytics.totalTargets : 0;
+          if (ratio >= 0.8) return { label: t('results.level.targets.top', 'High hit rate'), color: goodColor };
+          if (ratio >= 0.5) return { label: t('results.level.targets.mid', 'Average hit rate'), color: midColor };
+          return { label: t('results.level.targets.low', 'Needs hit rate improvement'), color: badColor };
+        }
+        case 'avgReaction': {
+          const v = analytics.avgReactionTime;
+          if (v <= 300) return { label: t('results.level.reaction.top', 'Excellent reaction time'), color: goodColor };
+          if (v <= 600) return { label: t('results.level.reaction.mid', 'Average reaction time'), color: midColor };
+          return { label: t('results.level.reaction.low', 'Needs reaction improvement'), color: badColor };
+        }
+        case 'gazeReaction': {
+          const v = analytics.avgGazeReactionTime;
+          if (v <= 250) return { label: t('results.level.gaze.top', 'Fast gaze acquisition'), color: goodColor };
+          if (v <= 450) return { label: t('results.level.gaze.mid', 'Average gaze acquisition'), color: midColor };
+          return { label: t('results.level.gaze.low', 'Slow gaze acquisition'), color: badColor };
+        }
+        case 'gazeAimLatency': {
+          const v = analytics.gazeAimLatency;
+          if (v <= 300) return { label: t('results.level.gazeAim.top', 'Short gaze-hand delay'), color: goodColor };
+          if (v <= 600) return { label: t('results.level.gazeAim.mid', 'Average gaze-hand delay'), color: midColor };
+          return { label: t('results.level.gazeAim.low', 'Needs latency improvement'), color: badColor };
+        }
+        case 'hitError': {
+          const avgError = (analytics.gazeErrorAtHit + analytics.mouseErrorAtHit) / 2;
+          if (avgError <= 80) return { label: t('results.level.hitError.top', 'Excellent accuracy'), color: goodColor };
+          if (avgError <= 140) return { label: t('results.level.hitError.mid', 'Average accuracy'), color: midColor };
+          return { label: t('results.level.hitError.low', 'Needs accuracy improvement'), color: badColor };
+        }
+        case 'sync': {
+          const v = analytics.synchronization;
+          if (v <= 120) return { label: t('results.level.sync.top', 'Great gaze-mouse sync'), color: goodColor };
+          if (v <= 200) return { label: t('results.level.sync.mid', 'Average sync'), color: midColor };
+          return { label: t('results.level.sync.low', 'Needs sync improvement'), color: badColor };
+        }
+        default:
+          return { label: '', color: '#d8ddf3' };
+      }
+    },
+    [t, language],
+  );
+  const rankLevel = useMemo(() => getRankLevel(predictedScore), [predictedScore]);
+  const rankLabel = useMemo(
+    () => (language === 'ko' ? rankLevel.labelKo : rankLevel.labelEn),
+    [language, rankLevel],
+  );
+  const rankRangeText = useMemo(
+    () =>
+      rankLevels
+        .map(level => {
+          const label = language === 'ko' ? level.labelKo : level.labelEn;
+          return `${label}: ${level.min}-${level.max}`;
+        })
+        .join(' • '),
+    [language],
+  );
+  const predictionFactors = useMemo(
+    () => {
+      if (!sessionData) return [];
+      return [
+        {
+          label: t('results.sgRank.factor.accuracy.label', 'Accuracy'),
+          value: `${sessionData.accuracy.toFixed(1)}%`,
+          desc: t('results.sgRank.factor.accuracy.desc', 'Reflects target hit rate'),
+        },
+        {
+          label: t('results.sgRank.factor.tracking.label', 'Tracking'),
+          value: `${sessionData.mouseAccuracy.toFixed(1)}%`,
+          desc: t('results.sgRank.factor.tracking.desc', 'Mouse-to-target alignment'),
+        },
+        {
+          label: t('results.sgRank.factor.reaction.label', 'Reaction'),
+          value: `${sessionData.avgReactionTime.toFixed(0)} ms`,
+          desc: t('results.sgRank.factor.reaction.desc', 'Average click speed'),
+        },
+      ];
+    },
+    [sessionData, t],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const runPrediction = async () => {
+      if (!sessionData) {
+        setPredictedScore(null);
+        return;
+      }
+
+      // 세션이 바뀔 때마다 이전에 저장된 예측 점수를 제거해
+      // 오래된 값(예: 75점)이 잠깐 노출되는 플래시를 막습니다.
+      setPredictedScore(null);
+      setIsPredictingScore(true);
+      try {
+        const result = await predictScore(sessionData);
+        if (!cancelled) {
+          setPredictedScore(result.predictedScore ?? null);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.warn('Failed to predict score on results page:', error);
+          setPredictedScore(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsPredictingScore(false);
+        }
+      }
+    };
+
+    runPrediction();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionData]);
 
   // --- NEW: Performance Series Data Generation ---
   const performanceSeries = useMemo<SeriesConfig[]>(() => {
@@ -504,6 +767,49 @@ const ResultsPage = () => {
     persistLatestSession(sessionData, calibrationResult);
   }, [sessionData, calibrationResult]);
 
+  useEffect(() => {
+    if (!sessionData || !user) {
+      return;
+    }
+
+    const uploadKey = lastUploadResult?.storagePath ?? lastUploadResult?.downloadUrl ?? null;
+    const alreadySynced =
+      lastSyncedRef.current?.id === sessionData.id && lastSyncedRef.current?.uploadKey === uploadKey;
+
+    if (alreadySynced) {
+      return;
+    }
+
+    const sync = async () => {
+      try {
+        await saveSessionForUser(user.uid, sessionData, {
+          calibrationResult,
+          surveyResponses,
+          consentAccepted,
+          uploadResult: lastUploadResult,
+          analytics,
+          leaderboardOptIn: true,
+          leaderboardLabel: participantLabel,
+        });
+        lastSyncedRef.current = { id: sessionData.id, uploadKey };
+      } catch (error) {
+        console.warn('Failed to sync session to Firestore', error);
+      }
+    };
+
+    sync();
+  }, [
+    analytics,
+    calibrationResult,
+    consentAccepted,
+    isAnonymousSession,
+    lastUploadResult,
+    participantLabel,
+    surveyResponses,
+    sessionData,
+    user,
+  ]);
+
   const showToast = useCallback((message: string, type: 'success' | 'error') => {
     setToast({ message, type });
     if (toastTimeoutRef.current) {
@@ -546,22 +852,31 @@ const ResultsPage = () => {
             },
           },
         );
+        if (upload) {
+          setLastUploadResult(exportResult.uploadResult ?? null);
+        }
         const uploadPath = exportResult.uploadResult?.storagePath || exportResult.uploadResult?.downloadUrl;
         const successMessage = upload
           ? uploadPath
-            ? `CSV uploaded to Firebase Storage: ${uploadPath}`
+            ? t('results.toast.uploadPath', `CSV uploaded to Firebase Storage: ${uploadPath}`).replace(
+                '{path}',
+                uploadPath,
+              )
             : download
-              ? 'CSV downloaded and uploaded successfully.'
-              : 'CSV uploaded successfully.'
-          : 'CSV downloaded successfully.';
+              ? t('results.toast.downloadAndUpload', 'CSV downloaded and uploaded successfully.')
+              : t('results.toast.uploadSuccess', 'CSV uploaded successfully.')
+          : t('results.toast.downloadSuccess', 'CSV downloaded successfully.');
 
         showToast(successMessage, 'success');
         return true;
       } catch (error) {
         console.error('Failed to export session data', error);
+        setLastUploadResult(null);
         const message = error instanceof Error ? error.message : 'Unexpected error occurred.';
         showToast(
-          upload ? `CSV upload failed: ${message}` : `CSV export failed: ${message}`,
+          upload
+            ? t('results.toast.uploadFailed', `CSV upload failed: ${message}`).replace('{message}', message)
+            : t('results.toast.exportFailed', `CSV export failed: ${message}`).replace('{message}', message),
           'error',
         );
         return false;
@@ -626,7 +941,7 @@ const ResultsPage = () => {
   if (!sessionData || !analytics) {
     return (
       <div className="results-page">
-        <div className="loading">Loading results...</div>
+        <div className="loading">{t('results.loading', 'Loading results...')}</div>
       </div>
     );
   }
@@ -636,163 +951,393 @@ const ResultsPage = () => {
       {/* Header */}
       <header className="results-header">
         <div className="header-content">
-          <h1>Training Results</h1>
+          <div className="header-top">
+            <h1>{t('results.title')}</h1>
+            <button
+              className="secondary-button header-detailed-btn"
+              onClick={() => handleOpenDetailed()}
+            >
+              {t('results.button.detailed')}
+            </button>
+          </div>
           <div className="header-meta">
-            <span>{new Date(sessionData.date).toLocaleString()}</span>
+            <span>{localizedDate}</span>
             <span>•</span>
-            <span>{sessionData.duration}s session</span>
+            <span>
+              {t('results.meta.duration', `${sessionData.duration}s session`).replace(
+                '{seconds}',
+                sessionData.duration.toString(),
+              )}
+            </span>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
       <main className="results-main">
+        <section className="metrics-section training-results">
+          <div className="prediction-card prediction-card--split prediction-card--compact">
+              <div className="prediction-left rank-tooltip-container">
+                <div className="rank-left-row">
+                  <div className="rank-stack">
+                    <div className="rank-medal" style={{ ['--rank-color' as string]: rankLevel.color }}>
+                      <Target size={32} />
+                    </div>
+                    <div className="rank-row rank-row--stacked">
+                      <span
+                        className="rank-name"
+                        style={{ color: rankLevel.color }}
+                        title={`${rankLabel}: ${rankLevel.min}-${rankLevel.max}`}
+                      >
+                        {rankLabel}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="prediction-left__body">
+                    <div className="title-wrap">
+                      <p className="prediction-title">{t('results.sgRank.title', 'SG Rank')}</p>
+                    </div>
+                    <p className="prediction-subtext">
+                      {t('results.sgRank.subtitle', 'Your SyncGaze aim score and rank.')}
+                    </p>
+                    <div className="score-row">
+                      <span className="score-value">
+                        {predictedScore != null ? predictedScore.toFixed(1) : t('results.sgRank.noScore', 'No score')}
+                      </span>
+                      <span className="score-scale">/ 100</span>
+                      {isPredictingScore && <span className="chip">{t('results.sgRank.predicting', 'Predicting')}</span>}
+                    </div>
+                  </div>
+                </div>
+              <div className="rank-tooltip">
+                <strong className="rank-tooltip-title">{t('results.sgRank.tooltip', 'Rank by score range')}</strong>
+                <ul>
+                  {rankLevels.map(level => {
+                    const label = language === 'ko' ? level.labelKo : level.labelEn;
+                    return (
+                      <li key={level.key}>
+                        <span style={{ color: level.color, fontWeight: 700 }}>{label}</span>{' '}
+                        <span className="rank-range">({level.min}-{level.max})</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            </div>
+            <div className="prediction-right">
+              <span className="inline-note">
+                {t(
+                  'results.sgRank.note',
+                  'Saw the target at {gazeMs}ms, moved for {aimMs}ms, and shot at {clickMs}ms.',
+                )
+                  .replace('{gazeMs}', analytics.avgGazeReactionTime.toFixed(0))
+                  .replace('{aimMs}', analytics.gazeAimLatency.toFixed(0))
+                  .replace('{clickMs}', analytics.avgReactionTime.toFixed(0))}
+              </span>
+              <div className="prediction-inline-factors condensed">
+                {predictionFactors.map(factor => (
+                  <span key={factor.label} className="inline-factor">
+                    <span className="factor-label">{factor.label}</span>
+                    <strong>{factor.value}</strong>
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Key Metrics Section - UPDATED */}
         {(!isCalibrationValidated || missingRawData) && (
           <div className="alert-banner warning" role="alert">
             {!isCalibrationValidated
-              ? '캘리브레이션이 완료되지 않아 정확도가 낮을 수 있습니다. 다시 캘리브레이션 후 측정해 보세요.'
-              : '원시 데이터가 비어 있어 요약값으로 표시 중입니다. 트레이닝을 다시 실행해 주세요.'}
+              ? t(
+                  'results.alert.calibration',
+                  'Calibration is incomplete, so accuracy may be lower. Please recalibrate and measure again.',
+                )
+              : t(
+                  'results.alert.missingRaw',
+                  'Raw data is missing, showing summary values only. Please rerun the training.',
+                )}
           </div>
         )}
 
         {/* Key Metrics */}
         <section className="metrics-section">
-          {/* --- 상세 페이지 이동 버튼 --- */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.5rem' }}>
-            <button 
-              className="secondary-button" 
-              onClick={() => handleOpenDetailed()}
-              style={{ fontSize: '0.9rem', padding: '8px 16px' }}
-            >
-              View Detailed Analysis &rarr;
-            </button>
+          <div className="metrics-header">
+            <div className="metrics-header__title">
+              <h2 style={{ margin: 0 }}>{t('results.section.overview')}</h2>
+            </div>
+            <div className="metrics-header__actions">
+              <div className="metrics-hint">{t('results.metrics.hint', 'Hover icons to see descriptions.')}</div>
+              <div className="metrics-hint metrics-hint--link">
+                {t('results.metrics.hint.link', 'Click a card to open the detailed analysis page.')}
+              </div>
+            </div>
           </div>
-          <h2>Performance Overview</h2>
+          
           <div className="metrics-grid">
             {/* 1. Targets Hit */}
-            <button
-              type="button"
-              className="metric-card actionable highlight"
-              onClick={() => handleOpenDetailed('targets')}
-            >
-              <div className="metric-icon">🎯</div>
-              <div className="metric-content">
-                <div className="metric-value">
-                  {analytics.targetsHit}/{analytics.totalTargets}
-                </div>
-                <div className="metric-label">Targets Hit</div>
-                <div className="metric-desc">전체 타겟 대비 명중 횟수</div>
-              </div>
-            </button>
+            {(() => {
+              const level = getMetricLevel('targets', analytics);
+              const percentile = metricPercentile('targets', analytics, formatPercentile);
+              return (
+                <button
+                  type="button"
+                  className="metric-card actionable"
+                  onClick={() => handleOpenDetailed('targets')}
+                >
+                  <div className="metric-icon">
+                    <SplinePointer size={32} strokeWidth={2.5}/>   
+                  </div>
+
+                  <div className="metric-content">
+                    <div className="metric-percentile-badge" style={{ color: level.color }}>
+                      {percentile.label}
+                    </div>
+                    <div className="metric-value">
+                      {analytics.targetsHit}/{analytics.totalTargets}
+                    </div>
+                    <div className="metric-label">{t('results.metric.targets.label')}</div>
+                    <div className="metric-footer">
+                      <div className="metric-desc">{t('results.metric.targets.desc')}</div>
+                    </div>
+                    <div className="metric-tooltip">
+                      <Info size={14} />
+                      <span>{metricTooltips.targets}</span>
+                      <span className="metric-level" style={{ color: level.color }}>
+                        {level.label}
+                      </span>
+                      <span className="metric-percentile" style={{ color: level.color }}>
+                        {percentile.label}
+                      </span>
+                    </div>
+                  </div>
+                </button>
+              );
+            })()}
 
             {/* 2. Avg Reaction Time (Mouse) */}
-            <button
-              type="button"
-              className="metric-card actionable"
-              onClick={() => handleOpenDetailed('reaction')}
-            >
-              <div className="metric-icon">⚡</div>
-              <div className="metric-content">
-                <div className="metric-value">
-                  {analytics.avgReactionTime.toFixed(0)}ms
-                </div>
-                <div className="metric-label">Avg Reaction</div>
-                <div className="metric-desc">타겟 등장 후 클릭까지 평균 시간</div>
-              </div>
-            </button>
+            {(() => {
+              const level = getMetricLevel('avgReaction', analytics);
+              const percentile = metricPercentile('avgReaction', analytics, formatPercentile);
+              return (
+                <button
+                  type="button"
+                  className="metric-card actionable"
+                  onClick={() => handleOpenDetailed('reaction')}
+                >
+                  <div className="metric-icon">
+                    <Hourglass size={32} strokeWidth={2.5}/>   
+                  </div>
+                  <div className="metric-content">
+                    <div className="metric-percentile-badge" style={{ color: level.color }}>
+                      {percentile.label}
+                    </div>
+                    <div className="metric-value">
+                      {analytics.avgReactionTime.toFixed(0)}ms
+                    </div>
+                    <div className="metric-label">{t('results.metric.avgReaction.label')}</div>
+                    <div className="metric-footer">
+                      <div className="metric-desc">{t('results.metric.avgReaction.desc')}</div>
+                    </div>
+                    <div className="metric-tooltip">
+                      <Info size={14} />
+                      <span>{metricTooltips.avgReaction}</span>
+                      <span className="metric-level" style={{ color: level.color }}>
+                        {level.label}
+                      </span>
+                      <span className="metric-percentile" style={{ color: level.color }}>
+                        {percentile.label}
+                      </span>
+                    </div>
+                  </div>
+                </button>
+              );
+            })()}
 
             {/* 3. Gaze Reaction Time (Eye) - NEW */}
-            <button
-              type="button"
-              className="metric-card actionable"
-              onClick={() => handleOpenDetailed('gaze')}
-            >
-              <div className="metric-icon">👁️</div>
-              <div className="metric-content">
-                <div className="metric-value">
-                  {analytics.avgGazeReactionTime.toFixed(0)}ms
-                </div>
-                <div className="metric-label">Gaze Reaction</div>
-                <div className="metric-desc">타겟 등장 후 시선 도달 시간</div>
-              </div>
-            </button>
+            {(() => {
+              const level = getMetricLevel('gazeReaction', analytics);
+              const percentile = metricPercentile('gazeReaction', analytics, formatPercentile);
+              return (
+                <button
+                  type="button"
+                  className="metric-card actionable"
+                  onClick={() => handleOpenDetailed('gaze')}
+                >
+                  <div className="metric-icon">
+                    <ScanEye size={32} strokeWidth={2.5}/>   
+                  </div>
+                  <div className="metric-content">
+                    <div className="metric-percentile-badge" style={{ color: level.color }}>
+                      {percentile.label}
+                    </div>
+                    <div className="metric-value">
+                      {analytics.avgGazeReactionTime.toFixed(0)}ms
+                    </div>
+                    <div className="metric-label">{t('results.metric.gazeReaction.label')}</div>
+                    <div className="metric-footer">
+                      <div className="metric-desc">{t('results.metric.gazeReaction.desc')}</div>
+                    </div>
+                    <div className="metric-tooltip">
+                      <Info size={14} />
+                      <span>{metricTooltips.gazeReaction}</span>
+                      <span className="metric-level" style={{ color: level.color }}>
+                        {level.label}
+                      </span>
+                      <span className="metric-percentile" style={{ color: level.color }}>
+                        {percentile.label}
+                      </span>
+                    </div>
+                  </div>
+                </button>
+              );
+            })()}
 
             {/* 4. Gaze-Aim Latency - NEW */}
-            <button
-              type="button"
-              className="metric-card actionable"
-              onClick={() => handleOpenDetailed('reaction')}
-            >
-              <div className="metric-icon">⏱️</div>
-              <div className="metric-content">
-                <div className="metric-value">
-                  {analytics.gazeAimLatency.toFixed(0)}ms
-                </div>
-                <div className="metric-label">Gaze-Aim Latency</div>
-                <div className="metric-desc">시선 포착 후 클릭까지의 지연 시간</div>
-              </div>
-            </button>
+            {(() => {
+              const level = getMetricLevel('gazeAimLatency', analytics);
+              const percentile = metricPercentile('gazeAimLatency', analytics, formatPercentile);
+              return (
+                <button
+                  type="button"
+                  className="metric-card actionable"
+                  onClick={() => handleOpenDetailed('reaction')}
+                >
+                  <div className="metric-icon">
+                    <MousePointerClick size={32} strokeWidth={2.5}/>   
+                  </div>
+                  <div className="metric-content">
+                    <div className="metric-percentile-badge" style={{ color: level.color }}>
+                      {percentile.label}
+                    </div>
+                    <div className="metric-value">
+                      {analytics.gazeAimLatency.toFixed(0)}ms
+                    </div>
+                    <div className="metric-label">{t('results.metric.gazeAimLatency.label')}</div>
+                    <div className="metric-footer">
+                      <div className="metric-desc">{t('results.metric.gazeAimLatency.desc')}</div>
+                    </div>
+                    <div className="metric-tooltip">
+                      <Info size={14} />
+                      <span>{metricTooltips.gazeAimLatency}</span>
+                      <span className="metric-level" style={{ color: level.color }}>
+                        {level.label}
+                      </span>
+                      <span className="metric-percentile" style={{ color: level.color }}>
+                        {percentile.label}
+                      </span>
+                    </div>
+                  </div>
+                </button>
+              );
+            })()}
 
             {/* 5. Errors (Gaze / Mouse) - UPDATED from Accuracy */}
-            <button
-              type="button"
-              className="metric-card actionable"
-              onClick={() => handleOpenDetailed('accuracy')}
-            >
-              <div className="metric-icon">📏</div>
-              <div className="metric-content">
-                <div className="metric-value" style={{ fontSize: '1.5rem' }}>
-                   G: {analytics.gazeErrorAtHit.toFixed(0)}px / M: {analytics.mouseErrorAtHit.toFixed(0)}px
-                </div>
-                <div className="metric-label">Hit Error (Gaze/Mouse)</div>
-                <div className="metric-desc">명중 순간 타겟 중심과의 거리 오차</div>
-              </div>
-            </button>
+            {(() => {
+              const level = getMetricLevel('hitError', analytics);
+              const percentile = metricPercentile('hitError', analytics, formatPercentile);
+              return (
+                <button
+                  type="button"
+                  className="metric-card actionable"
+                  onClick={() => handleOpenDetailed('accuracy')}
+                >
+                  <div className="metric-icon">
+                    <RulerDimensionLine size={32} strokeWidth={2.5}/>   
+                  </div>
+                  <div className="metric-content">
+                    <div className="metric-percentile-badge" style={{ color: level.color }}>
+                      {percentile.label}
+                    </div>
+                    <div className="metric-value" style={{ fontSize: '1.5rem' }}>
+                       G: {analytics.gazeErrorAtHit.toFixed(0)}px / M: {analytics.mouseErrorAtHit.toFixed(0)}px
+                    </div>
+                    <div className="metric-label">{t('results.metric.hitError.label')}</div>
+                    <div className="metric-footer">
+                      <div className="metric-desc">{t('results.metric.hitError.desc')}</div>
+                    </div>
+                    <div className="metric-tooltip">
+                      <Info size={14} />
+                      <span>{metricTooltips.hitError}</span>
+                      <span className="metric-level" style={{ color: level.color }}>
+                        {level.label}
+                      </span>
+                      <span className="metric-percentile" style={{ color: level.color }}>
+                        {percentile.label}
+                      </span>
+                    </div>
+                  </div>
+                </button>
+              );
+            })()}
 
             {/* 6. Synchronization - NEW */}
-            <button
-              type="button"
-              className="metric-card actionable"
-              onClick={() => handleOpenDetailed('mouse')}
-            >
-              <div className="metric-icon">🔗</div>
-              <div className="metric-content">
-                <div className="metric-value">
-                  {analytics.synchronization.toFixed(0)}px
-                </div>
-                <div className="metric-label">Synchronization</div>
-                <div className="metric-desc">시선과 마우스 커서 간의 평균 거리</div>
-              </div>
-            </button>
+            {(() => {
+              const level = getMetricLevel('sync', analytics);
+              const percentile = metricPercentile('sync', analytics, formatPercentile);
+              return (
+                <button
+                  type="button"
+                  className="metric-card actionable"
+                  onClick={() => handleOpenDetailed('mouse')}
+                >
+                  <div className="metric-icon">
+                    <Link size={32} strokeWidth={2.5}/>   
+                  </div>
+                  <div className="metric-content">
+                    <div className="metric-percentile-badge" style={{ color: level.color }}>
+                      {percentile.label}
+                    </div>
+                    <div className="metric-value">
+                      {analytics.synchronization.toFixed(0)}px
+                    </div>
+                    <div className="metric-label">{t('results.metric.sync.label')}</div>
+                    <div className="metric-footer">
+                      <div className="metric-desc">{t('results.metric.sync.desc')}</div>
+                    </div>
+                    <div className="metric-tooltip">
+                      <Info size={14} />
+                      <span>{metricTooltips.sync}</span>
+                      <span className="metric-level" style={{ color: level.color }}>
+                        {level.label}
+                      </span>
+                      <span className="metric-percentile" style={{ color: level.color }}>
+                        {percentile.label}
+                      </span>
+                    </div>
+                  </div>
+                </button>
+              );
+            })()}
           </div>
         </section>
 
         {/* Visualizations */}
         <section className="viz-section">
-          <h2>Session Visualizations</h2>
+          <h2>{t('results.section.visuals')}</h2>
           <div className="viz-grid">
             {/* Performance Trends Chart (UPDATED: Clickable) */}
-            <div 
-              className="viz-card actionable" 
+            <div
+              className="viz-card actionable"
               onClick={() => handleOpenDetailed('trends')}
               style={{ cursor: 'pointer' }}
             >
-              <h3>Performance Trends (Error & Sync)</h3>
-              <PerformanceLineChart 
-                series={performanceSeries} 
-                duration={sessionData.duration} 
+              <h3>{t('results.visual.trends.title')}</h3>
+              <PerformanceLineChart
+                series={performanceSeries}
+                duration={sessionData.duration}
                 hitTimes={hitTimes}
               />
             </div>
 
             {/* Gaze Heatmap (UPDATED: Clickable) */}
-            <div 
+            <div
               className="viz-card actionable"
               onClick={() => handleOpenDetailed('heatmap')}
               style={{ cursor: 'pointer' }}
             >
-              <h3>Gaze Heatmap</h3>
+              <h3>{t('results.visual.heatmap.title')}</h3>
               <div className="heatmap-wrapper">
                 {heatmapPoints.length ? (
                   <div
@@ -806,7 +1351,7 @@ const ResultsPage = () => {
                     </div>
                   </div>
                 ) : (
-                  <div className="chart-empty">No gaze samples collected for this session.</div>
+                  <div className="chart-empty">{t('results.visual.heatmap.empty')}</div>
                 )}
                 
                 {/* UPDATED: Heatmap Legend Added */}
@@ -815,13 +1360,13 @@ const ResultsPage = () => {
                     <div style={{ 
                       display: 'flex', 
                       justifyContent: 'space-between', 
-                      fontSize: '0.75rem', 
-                      color: '#666', 
+                      fontSize: '0.75rem',
+                      color: '#666',
                       marginBottom: '4px',
                       fontWeight: 500
                     }}>
-                      <span>Low Focus</span>
-                      <span>High Focus</span>
+                      <span>{t('results.visual.heatmap.legend.low')}</span>
+                      <span>{t('results.visual.heatmap.legend.high')}</span>
                     </div>
                     <div style={{
                       height: '6px',
@@ -834,13 +1379,18 @@ const ResultsPage = () => {
 
                 <div className="heatmap-footer">
                   <p className="viz-description">
-                    Visualize where your gaze was focused during the session
+                    {t('results.visual.heatmap.description')}
                   </p>
                   {heatmapPoints.length > 0 && (
                     <div className="heatmap-meta">
-                      <span>{heatmapPoints.length} gaze samples</span>
                       <span>
-                        Rendered at {Math.round(baseScreenWidth)} × {Math.round(baseScreenHeight)}
+                        {t('results.visual.heatmap.samples')
+                          .replace('{count}', heatmapPoints.length.toLocaleString())}
+                      </span>
+                      <span>
+                        {t('results.visual.heatmap.resolution')
+                          .replace('{width}', Math.round(baseScreenWidth).toString())
+                          .replace('{height}', Math.round(baseScreenHeight).toString())}
                       </span>
                     </div>
                   )}
@@ -852,21 +1402,21 @@ const ResultsPage = () => {
 
         {/* Raw Data */}
         <section className="data-section">
-          <h2>Session Data</h2>
+          <h2>{t('results.section.data')}</h2>
           <div className="data-actions">
             {autoUploadStatus === 'error' && (
-              <span className="upload-status error">Automatic upload failed. You can retry below.</span>
+              <span className="upload-status error">{t('results.data.uploadError')}</span>
             )}
             <button
               className="download-button"
               onClick={() => handleExport({ upload: false })}
               disabled={isExporting}
             >
-              {isExporting ? 'Preparing…' : 'Download CSV'}
+              {isExporting ? t('results.data.preparing') : t('results.data.download')}
             </button>
             {autoUploadStatus === 'success' ? (
               <span className="upload-status success upload-status-inline">
-                CSV automatically uploaded to Firebase Storage.
+                {t('results.data.uploadedAuto')}
               </span>
             ) : (
               <button
@@ -875,17 +1425,24 @@ const ResultsPage = () => {
                 disabled={isExporting}
               >
                 {isExporting
-                  ? 'Uploading…'
+                  ? t('results.data.uploading')
                   : autoUploadStatus === 'error'
-                    ? 'Retry Upload'
-                    : 'Upload to Firebase Storage'}
+                    ? t('results.data.retryUpload')
+                    : t('results.data.upload')}
               </button>
             )}
             <button className="secondary-button" onClick={handleTrainAgain}>
-              Train Again
+              {t('results.action.trainAgain')}
             </button>
-            <button className="secondary-button" onClick={handleBackToDashboard}>
-              Back to Dashboard
+            
+
+            <button 
+              className="secondary-button" 
+              onClick={() => navigate('/report')}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+            >
+              <Sparkles size={20} />
+              {t('report.actions.generate', 'Generate report')}
             </button>
           </div>
         </section>
@@ -895,6 +1452,8 @@ const ResultsPage = () => {
           {toast.message}
         </div>
       )}
+      {/* --- 연구 감사 인사용 페이지 이동 영역--- */}
+      
     </div>
   );
 };

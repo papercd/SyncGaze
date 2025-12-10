@@ -18,14 +18,18 @@ export const createTrackingSessionValue = (
   lastSession: null,
   activeSessionId: null,
   isAnonymousSession: false,
+  surveyHydrated: true,
   setSurveyResponses: vi.fn(),
   setConsentAccepted: vi.fn(),
   saveCalibrationResult: vi.fn(),
   addSession: vi.fn(),
+  hydrateSessions: vi.fn(),
   setActiveSessionId: vi.fn(),
   clearRecentSessions: vi.fn(),
   activeSession: null,
   setAnonymousSession: vi.fn(),
+  setSurveyHydrated: vi.fn(),
+  resetState: vi.fn(),
   ...overrides,
 });
 
@@ -39,6 +43,7 @@ export const buildSurveyResponses = (overrides: Partial<SurveyResponses> = {}): 
   inGameRank: 'Immortal',
   playTime: '< 100시간',
   selfAssessment: 5,
+  trainingGoal: '랭크 올리기',
   ...overrides,
 });
 
@@ -65,6 +70,7 @@ export const buildTrainingSession = (
   avgReactionTime: 250,
   gazeAccuracy: 75,
   mouseAccuracy: 90,
+  controlSensitivity: 0.002,
   screenSize: { width: 1920, height: 1080 },
   csvData: 'timestamp,gazeX',
   rawData: [],

@@ -143,12 +143,16 @@ const TrainingPage = () => {
     setFinalScore(score);
     setSessionSaved(false);
 
-    const hasGazeSamples = (trackingMeta?.gazeSamples ?? 0) > 0;
-    const webgazerHealthy = isTrackingActive && isWebgazerOperational();
+    const gazeSamplesFromMeta = trackingMeta?.gazeSamples ?? 0;
+    const gazeSamplesFromData = rawTrackingData.filter(
+      point => !point.hitRegistered && point.gazeX !== null && point.gazeY !== null,
+    ).length;
+    const totalGazeSamples = Math.max(gazeSamplesFromMeta, gazeSamplesFromData);
+    const hasGazeSamples = totalGazeSamples > 0;
+    const webgazerHealthy = isWebgazerOperational();
     const cameraHealthy = hasLiveCameraFeed();
-    const shouldBlockSession = !webgazerHealthy || !cameraHealthy || !hasGazeSamples;
 
-    if (shouldBlockSession) {
+    if (!hasGazeSamples) {
       setTrackingWarning(
         t(
           'training.warning.trackingMissing',
@@ -157,6 +161,16 @@ const TrainingPage = () => {
       );
       setScoreComparisonText(null);
       return;
+    }
+
+    if (!isTrackingActive || !webgazerHealthy || !cameraHealthy) {
+      console.warn('⚠️ Gaze samples captured but tracker health check failed, saving anyway', {
+        isTrackingActive,
+        webgazerHealthy,
+        cameraHealthy,
+        gazeSamplesFromMeta,
+        gazeSamplesFromData,
+      });
     }
 
     setTrackingWarning(null);
@@ -201,6 +215,7 @@ const TrainingPage = () => {
       score,
       targetsHit,
       rawDataPoints: rawTrackingData.length,
+      gazeSamples: totalGazeSamples,
     });
 
     // Convert the raw tracking data to the format expected by the session system

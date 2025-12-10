@@ -10,11 +10,14 @@ The target y is set to the session score (game score). Accuracy stays as a featu
 from __future__ import annotations
 
 import csv
+import math
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 DATA_DIR = Path(__file__).parent / "session_data"
 OUT_PATH = Path(__file__).parent / "session_features_local.csv"
+MIN_SCORE = 7.0
+MAX_SCORE = 80.0
 
 
 def parse_float(value: Optional[str]) -> Optional[float]:
@@ -45,7 +48,124 @@ def parse_header(lines: List[str]) -> Dict[str, str]:
     return meta
 
 
-def build_row(meta: Dict[str, str]) -> Dict[str, object]:
+def parse_raw_data(lines: List[str]) -> List[Dict[str, object]]:
+    """Parse the raw gaze/mouse CSV body (ignoring comment header)."""
+    data_lines = [line for line in lines if line.strip() and not line.startswith("#")]
+    if not data_lines:
+        return []
+
+    reader = csv.DictReader(data_lines)
+    rows: List[Dict[str, object]] = []
+    for row in reader:
+        rows.append(
+            {
+                "timestamp": parse_float(row.get("timestamp")),
+                "targetId": (row.get("taskId") or row.get("targetId") or "").strip() or None,
+                "targetX": parse_float(row.get("targetX")),
+                "targetY": parse_float(row.get("targetY")),
+                "gazeX": parse_float(row.get("gazeX")),
+                "gazeY": parse_float(row.get("gazeY")),
+                "mouseX": parse_float(row.get("mouseX")),
+                "mouseY": parse_float(row.get("mouseY")),
+                "targetHit": (row.get("targetHit") or "").strip().lower() == "true",
+            }
+        )
+    return rows
+
+
+def compute_performance_metrics(raw: List[Dict[str, object]]) -> Tuple[Optional[float], Optional[float]]:
+    """Compute avg reaction time and gaze-aim latency from raw data (mirrors frontend analytics)."""
+    if not raw:
+        return None, None
+
+    GAZE_HIT_THRESHOLD = 100
+    MIN_GAZE_REACTION_MS = 200
+    MIN_LATENCY_MS = 60
+    MAX_GAZE_REACTION_MS = 4000
+
+    hits = [r for r in raw if r.get("targetHit") and r.get("targetId")]
+    if not hits:
+        return None, None
+
+    first_seen: Dict[str, float] = {}
+    first_gaze_on_target: Dict[str, float] = {}
+    first_any_gaze: Dict[str, float] = {}
+
+    def dist(ax: Optional[float], ay: Optional[float], bx: Optional[float], by: Optional[float]) -> Optional[float]:
+        if ax is None or ay is None or bx is None or by is None:
+            return None
+        return math.hypot(ax - bx, ay - by)
+
+    for point in raw:
+        target_id = point.get("targetId")
+        ts = point.get("timestamp")
+        if target_id and isinstance(ts, (int, float)):
+            existing = first_seen.get(target_id)
+            if existing is None or ts < existing:
+                first_seen[target_id] = ts
+
+        if target_id and point.get("targetX") is not None and point.get("targetY") is not None:
+            gx, gy = point.get("gazeX"), point.get("gazeY")
+            ts = point.get("timestamp")
+
+            if gx is not None and gy is not None and isinstance(ts, (int, float)):
+                distance = dist(gx, gy, point.get("targetX"), point.get("targetY"))
+                if distance is not None and distance <= GAZE_HIT_THRESHOLD:
+                    prev = first_gaze_on_target.get(target_id) if target_id else None
+                    if target_id and (prev is None or ts < prev):
+                        first_gaze_on_target[target_id] = ts
+
+                prev_any = first_any_gaze.get(target_id) if target_id else None
+                if target_id and (prev_any is None or ts < prev_any):
+                    first_any_gaze[target_id] = ts
+
+    reaction_times: List[float] = []
+    gaze_latencies: List[float] = []
+
+    for hit in hits:
+        target_id = hit.get("targetId")
+        hit_ts = hit.get("timestamp")
+        if target_id is None or not isinstance(hit_ts, (int, float)):
+            continue
+
+        start = first_seen.get(target_id)
+        if isinstance(start, (int, float)):
+            diff = hit_ts - start
+            if diff >= 0:
+                reaction_times.append(diff)
+
+        gaze_arrival = first_gaze_on_target.get(target_id) or first_any_gaze.get(target_id)
+        if isinstance(start, (int, float)) and isinstance(gaze_arrival, (int, float)):
+            safe_arrival = gaze_arrival if gaze_arrival > start + MIN_LATENCY_MS else start + MIN_LATENCY_MS
+            if hit_ts > safe_arrival + MIN_LATENCY_MS:
+                gaze_latencies.append(hit_ts - safe_arrival)
+
+    avg_reaction = sum(reaction_times) / len(reaction_times) if reaction_times else None
+
+    if avg_reaction is not None and avg_reaction < MIN_GAZE_REACTION_MS:
+        avg_reaction = MIN_GAZE_REACTION_MS
+    elif avg_reaction is not None and avg_reaction > MAX_GAZE_REACTION_MS:
+        avg_reaction = MAX_GAZE_REACTION_MS
+
+    avg_latency = sum(gaze_latencies) / len(gaze_latencies) if gaze_latencies else None
+    if avg_latency is not None and avg_latency < MIN_LATENCY_MS:
+        avg_latency = MIN_LATENCY_MS
+
+    return avg_reaction, avg_latency
+
+
+def scale_score_to_percent(score: Optional[float]) -> Optional[float]:
+    """Rescale raw 점수 to 0-100% where 7점 → 0%, 80점 → 100%."""
+    if score is None:
+        return None
+    clamped = max(MIN_SCORE, min(MAX_SCORE, score))
+    ratio = (clamped - MIN_SCORE) / (MAX_SCORE - MIN_SCORE)
+    return ratio * 100.0
+
+
+def build_row(meta: Dict[str, str], raw_metrics: Tuple[Optional[float], Optional[float]]) -> Dict[str, object]:
+    avg_reaction_time_ms, gaze_aim_latency_ms = raw_metrics
+
     targets = meta.get("Targets Hit")
     targets_hit = total_targets = None
     if targets and "/" in targets:
@@ -98,13 +218,17 @@ def build_row(meta: Dict[str, str]) -> Dict[str, object]:
     }
     row.update(
         {
-            "avgReactionTime_ms": parse_float(meta.get("Avg Reaction Time (ms)")),
-            "gazeAimLatency_ms": parse_float(meta.get("Gaze Aim Latency (ms)")),
+            "avgReactionTime_ms": avg_reaction_time_ms
+            if avg_reaction_time_ms is not None
+            else parse_float(meta.get("Avg Reaction Time (ms)")),
+            "gazeAimLatency_ms": gaze_aim_latency_ms
+            if gaze_aim_latency_ms is not None
+            else parse_float(meta.get("Gaze Aim Latency (ms)")),
             "duration_s": duration,
             "targetsHit": targets_hit,
             "totalTargets": total_targets,
             "timePerTarget_s": time_per_target,
-            "y_performance": score,  # target label = game score
+            "y_performance": scale_score_to_percent(score),  # 타깃: 7점→0%, 80점→100% 구간 스케일
         }
     )
     return row
@@ -118,7 +242,9 @@ def collect_rows() -> List[Dict[str, object]]:
         meta = parse_header(lines)
         if not meta:
             continue
-        rows.append(build_row(meta))
+        raw_data = parse_raw_data(lines)
+        metrics = compute_performance_metrics(raw_data)
+        rows.append(build_row(meta, metrics))
     return rows
 
 

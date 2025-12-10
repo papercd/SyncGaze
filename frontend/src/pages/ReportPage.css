@@ -522,8 +522,8 @@
 
 .data-percentile {
   font-size: 0.9rem;
-  color: #7c9bff;
-  font-weight: 600;
+  color: inherit;
+  font-weight: 700;
 }
 
 /* New Report Button */

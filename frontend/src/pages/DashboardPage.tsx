@@ -168,7 +168,7 @@ const DashboardPage = () => {
     return best;
   }, [recentSessions]);
 
-  const percentileColor = (percentile: number) => (percentile <= 25 ? '#66d9ff' : percentile <= 60 ? '#f1c40f' : '#ff6b6b');
+  const percentileColor = (percentile: number) => (percentile <= 35 ? '#66d9ff' : percentile <= 70 ? '#f1c40f' : '#ff6b6b');
 
   const formatPercentileLabel = (percentile: number) => {
     const template = t(
@@ -189,27 +189,23 @@ const DashboardPage = () => {
   const reactionPercentile = useMemo(() => {
     if (!bestReactionSession) return null;
     const buckets = [
-      { max: 300, percentile: 8 },
-      { max: 400, percentile: 14 },
-      { max: 500, percentile: 18 },
-      { max: 600, percentile: 24 },
-      { max: 700, percentile: 28 },
-      { max: 800, percentile: 32 },
-      { max: 900, percentile: 40 },
+      { max: 300, percentile: 10 },
+      { max: 450, percentile: 18 },
+      { max: 650, percentile: 26 },
+      { max: 820, percentile: 30 },
       { max: 1100, percentile: 55 },
-      { max: 1400, percentile: 70 },
     ];
-    return mapToPercentile(bestReactionSession.avgReactionTime, buckets, 90);
+    return mapToPercentile(bestReactionSession.avgReactionTime, buckets, 85);
   }, [bestReactionSession, language, t]);
 
   const gazePercentile = useMemo(() => {
     if (!bestGazeReaction) return null;
     const buckets = [
-      { max: 180, percentile: 10 },
-      { max: 220, percentile: 22 },
-      { max: 270, percentile: 40 },
-      { max: 330, percentile: 58 },
-      { max: 400, percentile: 72 },
+      { max: 200, percentile: 10 },
+      { max: 280, percentile: 20 },
+      { max: 340, percentile: 35 },
+      { max: 420, percentile: 50 },
+      { max: 520, percentile: 72 },
     ];
     return mapToPercentile(bestGazeReaction.gaze, buckets, 90);
   }, [bestGazeReaction, language, t]);
@@ -217,14 +213,13 @@ const DashboardPage = () => {
   const gazeAimPercentile = useMemo(() => {
     if (!bestGazeAimLatency) return null;
     const buckets = [
-      { max: 220, percentile: 10 },
-      { max: 300, percentile: 20 },
-      { max: 380, percentile: 38 },
-      { max: 480, percentile: 55 },
-      { max: 600, percentile: 72 },
-      { max: 720, percentile: 88 },
+      { max: 320, percentile: 18 },
+      { max: 480, percentile: 35 },
+      { max: 650, percentile: 45 },
+      { max: 780, percentile: 50 },
+      { max: 950, percentile: 70 },
     ];
-    return mapToPercentile(bestGazeAimLatency.latency, buckets, 96);
+    return mapToPercentile(bestGazeAimLatency.latency, buckets, 90);
   }, [bestGazeAimLatency, language, t]);
 
   const sgRankSinceText = useMemo(() => {

@@ -44,7 +44,6 @@ export const calculatePerformanceAnalytics = (data: TrainingDataPoint[]): Perfor
 
   const GAZE_HIT_THRESHOLD = 100; 
   const MOUSE_HIT_THRESHOLD = 100; // Assumed threshold for mouse tracking accuracy
-  const MIN_GAZE_REACTION_MS = 200; // treat smaller as noise
   const MIN_LATENCY_MS = 60; // avoid zero/negative jitter
   const MAX_GAZE_REACTION_MS = 4000; // very delayed readings treated as outliers
   
@@ -133,7 +132,7 @@ export const calculatePerformanceAnalytics = (data: TrainingDataPoint[]): Perfor
         arrival = start + MIN_LATENCY_MS;
       }
       const diff = arrival - start;
-      if (diff >= MIN_GAZE_REACTION_MS && diff <= MAX_GAZE_REACTION_MS) {
+      if (diff >= MIN_LATENCY_MS && diff <= MAX_GAZE_REACTION_MS) {
         gazeReactionTimes.push(diff);
       }
     }
@@ -205,14 +204,9 @@ export const calculatePerformanceAnalytics = (data: TrainingDataPoint[]): Perfor
     ? reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length
     : 0;
 
-  let avgGazeReactionTime = gazeReactionTimes.length
+  const avgGazeReactionTime = gazeReactionTimes.length
     ? gazeReactionTimes.reduce((a, b) => a + b, 0) / gazeReactionTimes.length
     : 0;
-  if (avgGazeReactionTime === 0 && gazeReactionTimes.length === 0) {
-    avgGazeReactionTime = MIN_GAZE_REACTION_MS; // 최소 보정값으로 강제
-  } else if (avgGazeReactionTime > 0 && avgGazeReactionTime < MIN_GAZE_REACTION_MS) {
-    avgGazeReactionTime = MIN_GAZE_REACTION_MS;
-  }
 
   let gazeAimLatency = latencies.length ? latencies.reduce((a, b) => a + b, 0) / latencies.length : 0;
   if (gazeAimLatency > 0 && gazeAimLatency < MIN_LATENCY_MS) {

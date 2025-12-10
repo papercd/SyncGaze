@@ -79,7 +79,6 @@ def compute_performance_metrics(raw: List[Dict[str, object]]) -> Tuple[Optional[
         return None, None
 
     GAZE_HIT_THRESHOLD = 100
-    MIN_GAZE_REACTION_MS = 200
     MIN_LATENCY_MS = 60
     MAX_GAZE_REACTION_MS = 4000
 
@@ -142,9 +141,7 @@ def compute_performance_metrics(raw: List[Dict[str, object]]) -> Tuple[Optional[
 
     avg_reaction = sum(reaction_times) / len(reaction_times) if reaction_times else None
 
-    if avg_reaction is not None and avg_reaction < MIN_GAZE_REACTION_MS:
-        avg_reaction = MIN_GAZE_REACTION_MS
-    elif avg_reaction is not None and avg_reaction > MAX_GAZE_REACTION_MS:
+    if avg_reaction is not None and avg_reaction > MAX_GAZE_REACTION_MS:
         avg_reaction = MAX_GAZE_REACTION_MS
 
     avg_latency = sum(gaze_latencies) / len(gaze_latencies) if gaze_latencies else None

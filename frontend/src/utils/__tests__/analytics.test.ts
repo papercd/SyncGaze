@@ -57,7 +57,7 @@ describe('calculatePerformanceAnalytics', () => {
     expect(result.totalTargets).toBe(2);
     expect(result.accuracy).toBeCloseTo(50, 1);
     expect(result.avgReactionTime).toBeGreaterThanOrEqual(500);
-    expect(result.avgGazeReactionTime).toBeGreaterThanOrEqual(200);
+    expect(result.avgGazeReactionTime).toBeGreaterThan(0);
     expect(result.gazeAccuracy).toBeGreaterThan(0);
     expect(result.mouseAccuracy).toBeGreaterThanOrEqual(0);
   });

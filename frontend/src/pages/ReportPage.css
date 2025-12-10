@@ -373,6 +373,113 @@
   font-weight: 600;
 }
 
+/* Results Metrics Block */
+.report-metrics {
+  margin: 1.5rem 0 2rem;
+  padding: 1.5rem;
+  border-radius: 14px;
+  border: 1px solid rgba(124, 155, 255, 0.35);
+  background: radial-gradient(90% 120% at 0% 0%, rgba(124, 155, 255, 0.12), rgba(124, 155, 255, 0.04)),
+    rgba(255, 255, 255, 0.02);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.22);
+}
+
+.report-metrics__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.report-metrics__header h3 {
+  margin: 0 0 0.25rem 0;
+  color: #fff;
+  font-size: 1.25rem;
+}
+
+.report-metrics__subtitle {
+  margin: 0;
+  color: #c6ccf4;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.report-metrics__badge {
+  border: 1px solid rgba(124, 155, 255, 0.6);
+  color: #cfd6ff;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  background: rgba(124, 155, 255, 0.12);
+}
+
+.report-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.report-metric-card {
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-height: 160px;
+}
+
+.report-metric-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.report-metric-label {
+  font-size: 0.9rem;
+  color: #e9ecff;
+  font-weight: 700;
+}
+
+.report-metric-chip {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.report-metric-value {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+.report-metric-meaning {
+  color: #c6ccf4;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.report-metric-eval {
+  font-weight: 800;
+  font-size: 0.9rem;
+  margin-top: auto;
+}
+
+.report-metrics--empty {
+  border: 1px dashed rgba(255, 255, 255, 0.25);
+  border-radius: 10px;
+  padding: 1rem;
+  color: #c6ccf4;
+  text-align: center;
+}
+
 /* Data Summary */
 .report-data-summary {
   background: rgba(124, 155, 255, 0.1);

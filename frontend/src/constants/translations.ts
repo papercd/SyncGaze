@@ -1104,6 +1104,16 @@ export const translations: Record<string, Record<Language, string>> = {
   'report.summary.gazeAcc': { ko: '시선 정확도', en: 'Gaze accuracy' },
   'report.summary.mouseAcc': { ko: '마우스 정확도', en: 'Mouse accuracy' },
   'report.summary.hitRate': { ko: '적중률', en: 'Hit rate' },
+  'report.metrics.title': { ko: '핵심 메트릭 요약', en: 'Key metrics summary' },
+  'report.metrics.subtitle': {
+    ko: '결과 페이지 카드 6개와 동일한 수치, 설명, 평가를 종합 평가 아래에 표시합니다.',
+    en: 'Show the same six cards, descriptions, and evaluations from the Results page right below Overall Evaluation.',
+  },
+  'report.metrics.badge': { ko: 'Results view', en: 'Results view' },
+  'report.metrics.missing': {
+    ko: '세션의 상세 원본 데이터가 없어 결과 페이지 메트릭을 불러올 수 없습니다.',
+    en: 'Cannot load Results metrics because raw session data is unavailable.',
+  },
   'report.loading.prediction': { ko: '계산 중...', en: 'Calculating...' },
 
   // Results page
@@ -1128,7 +1138,7 @@ export const translations: Record<string, Record<Language, string>> = {
   'results.metric.gazeReaction.desc': { ko: '타겟 등장 후 시선 도달 시간', en: 'Time for gaze to reach the target' },
   'results.metric.gazeAimLatency.label': { ko: '시선-마우스 지연', en: 'Gaze-Aim Latency' },
   'results.metric.gazeAimLatency.desc': { ko: '시선 포착 후 클릭까지의 지연 시간', en: 'Delay from gaze acquisition to click' },
-  'results.metric.hitError.label': { ko: '명중 오차 (시선/마우스)', en: 'Hit Error (Gaze/Mouse)' },
+  'results.metric.hitError.label': { ko: '시선/마우스 오차', en: 'Gaze/Mouse Error' },
   'results.metric.hitError.desc': { ko: '명중 순간 타겟 중심과의 거리 오차', en: 'Distance from target center at hit time' },
   'results.metric.sync.label': { ko: '동기화', en: 'Synchronization' },
   'results.metric.sync.desc': { ko: '시선과 마우스 커서 간의 평균 거리', en: 'Average distance between gaze and cursor' },

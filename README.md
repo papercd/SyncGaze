@@ -1,9 +1,6 @@
 # SyncGaze Tracking Workspace
 
-This repository hosts two related React applications:
-
-- `frontend/` – the Vite-powered demo that stitches together onboarding, consent, calibration, training and analytics flows that share a single `trackingSessionContext`.
-- `tracker-app/` – the original CRA prototype (kept for reference) that provided the first iteration of the tracker UI.
+SyncGaze is a multi-language eye-tracking training and analytics stack. The Vite + React frontend drives onboarding → calibration → training → results → AI reports, while the Node backend handles CSV uploads, survey storage, and Anthropic-powered reports. Optional Python services cover ML score prediction and Cloud Run ingestion.
 
 ## In-game overview
 <img width="1685" height="948" alt="KakaoTalk_Photo_2025-11-23-18-19-09 001" src="https://github.com/user-attachments/assets/6d86c1f0-3e2b-4e54-be9a-1b6f0510a29b" />
@@ -12,60 +9,96 @@ This repository hosts two related React applications:
 <img width="1710" height="981" alt="KakaoTalk_Photo_2025-11-23-18-19-10 005" src="https://github.com/user-attachments/assets/cc6e7c37-c57b-43b7-a1e7-486c5e3a07e9" />
 <img width="1710" height="985" alt="KakaoTalk_Photo_2025-11-23-18-19-10 006" src="https://github.com/user-attachments/assets/a80805a6-9032-4a8d-9496-c3d52e265b10" />
 
+## Repository layout
+- `frontend/` – main Vite app (React + TypeScript) with WebGazer tracking, dashboard/results/report pages, bilingual UI (ko/en), Firebase Auth, and session persistence.
+- `backend/` – Express API backed by firebase-admin for CSV uploads, survey writes, and Claude-based performance reports.
+- `cloudrun/` – Python Cloud Run service that ingests Storage CSVs and writes joined summaries to Firestore/BigQuery.
+- `ml_inference_function/` – Python HTTP function that returns `predictedScore` for a session; wire it via `VITE_PREDICTION_ENDPOINT`.
+- `analysis/` – offline scripts/notebooks for feature extraction and model training.
+- `tracker-app/` – original CRA prototype kept for reference only.
+- `functions/` – firebase-functions friendly copy of the backend routes (use `backend/` for local/dev).
 
-## Frontend overview
-
-The new `frontend` app exposes every research step as a dedicated page while keeping shared state in `src/state/trackingSessionContext.tsx`. Feature-specific code now lives under `src/features`:
-
-- `features/onboarding/survey` centralises survey defaults, storage helpers, API calls and reusable UI such as the eligibility checklist and game selector.
-- `features/tracker/calibration` contains calibration constants, types and 2D overlay components used by the calibration page and the `useWebgazer` hook.
-
-### Local development
-
-```bash
-cd frontend
-npm install            # install/update dependencies
-npm run dev            # start Vite dev server
-npm run build          # type-check and create a production bundle
-npm run preview        # preview the production build
+### Project map
 ```
-Copy `frontend/.env.example` to `frontend/.env` and populate it with your Firebase project keys before starting Vite. When you
-change any `VITE_FIREBASE_*` value make sure to restart the dev server so that the updated environment variables are injected
-into the client bundle.
-
-### Testing workflow
-
-Unit tests rely on Vitest + React Testing Library and live alongside the pages they exercise, while end-to-end coverage is provided by Cypress.
-
-```bash
-npm run test           # run the Vitest suite once
-npm run test:watch     # watch mode for rapid UI iteration
-npm run test:e2e       # execute Cypress specs in headless mode
-npm run test:e2e:open  # launch the Cypress runner UI
+SyncGaze/
+├─ frontend/                 # Vite app (React + TS)
+│  ├─ src/
+│  │  ├─ pages/              # Landing, Auth, Dashboard, Calibration, Training, Results, Report, etc.
+│  │  ├─ features/
+│  │  │  ├─ onboarding/      # Survey, consent helpers & UI
+│  │  │  └─ tracker/         # Calibration components, constants, types
+│  │  ├─ state/              # Contexts: trackingSession, auth, language, settings
+│  │  ├─ hooks/              # Webgazer + tracking utilities
+│  │  ├─ services/           # API helpers (reports, predictions)
+│  │  ├─ utils/              # analytics, exports, remote session storage
+│  │  └─ __tests__/          # Unit/UI specs (Vitest + RTL)
+│  ├─ cypress/               # E2E specs (trackerFlow, errorHandling)
+│  └─ public/                # static assets
+├─ backend/                  # Express API (upload CSV, survey, report proxy)
+│  └─ src/routes/            # uploadCsv, submitSurvey, generateReport
+├─ cloudrun/                 # Python CSV ingestor for Firestore/BigQuery
+├─ ml_inference_function/    # Python HTTP function for predictedScore
+├─ analysis/                 # Data prep/model training scripts
+└─ tracker-app/              # Legacy CRA prototype
 ```
 
-> **Note:** When running inside restricted environments you may need to configure npm/yarn to use an allow-listed registry or install the dev dependencies from an internal mirror before running the commands above.
+## Frontend (Vite)
+Prereq: Node 18+.
+1. `cd frontend && npm install`
+2. Copy `.env.example` to `.env` and fill:
+   - `VITE_FIREBASE_*` – Firebase client keys (required)
+   - `VITE_API_BASE_URL` or `VITE_BACKEND_URL` – URL of the Node backend for CSV upload/report generation
+   - `VITE_PREDICTION_ENDPOINT` or `VITE_PERFORMANCE_MODEL_ENDPOINT` – optional ML scoring endpoint (falls back to heuristic when absent)
+3. Run `npm run dev` to start Vite, `npm run build` for production, `npm run preview` to serve the bundle.
+4. Tests: `npm run test`, `npm run test:watch`, `npm run test:e2e`, `npm run test:e2e:open` (Vitest + Cypress, see `frontend/cypress/e2e`).
 
-## QA checklist
+### Product flow highlights
+- Auth + onboarding: email/password, Google, or anonymous sign-in (`AuthPage`), bilingual copy via `LanguageProvider`, survey + consent steps gate access and sync to Firestore with `saveSurveyAndConsent`.
+- Calibration + training: WebGazer-backed calibration (`CalibrationPage`) with webcam gating, validation, and `RECALIBRATION_THRESHOLD` enforcement; `TrainingPage` records gaze/mouse/target telemetry.
+- Results + storage: `ResultsPage` computes analytics (`calculatePerformanceAnalytics`), exports CSV via `exportSessionData`, optionally uploads to the backend/Storage, and persists sessions to Firestore with `saveSessionForUser` (including leaderboard opt-in and predicted score).
+- Insights: dashboard, history, and leaderboard pages read from Firestore (`SessionRemoteHydrator` hydrates on login). `ReportPage` calls the backend to generate Anthropic-based coaching reports; `predictionService` uses the ML endpoint when configured and otherwise falls back to a deterministic score.
 
-The following manual checklist keeps regressions away from critical study flows:
+### Testing
+- Unit/UI: Vitest + React Testing Library; tests colocated under `frontend/src/**/__tests__` and page-level specs. Run `npm run test` or `npm run test:watch`.
+- E2E: Cypress specs in `frontend/cypress/e2e` (`trackerFlow.cy.ts`, `errorHandling.cy.ts`). Run `npm run test:e2e` (headless) or `npm run test:e2e:open`.
+- Mocking/fixtures: rely on RTL queries for DOM; Cypress uses Vite dev server config from `cypress.config.cjs`.
 
-- [ ] **Webcam permission gate** – the calibration page (`/calibration`) must request camera access before transitioning away from the idle instructions, and gracefully handle rejected permissions.
-- [ ] **Recalibration loop** – when `Validation` reports an error greater than `RECALIBRATION_THRESHOLD`, clicking “Recalibrate” should reset validation stats, clear gaze data and relaunch the dot sequence.
-- [ ] **Survey gating** – age/webcam toggles and the “해당 없음” option in the screening survey should block submission and display the validation banner until all conditions are satisfied.
-- [ ] **Consent synchronisation** – toggling the consent checkbox in `/tracker-app` must immediately update the consent step inside `/tracker-flow` and persist after a reload.
-- [ ] **Session context persistence** – completing (or skipping) calibration, training or results should update `trackingSessionState` in `localStorage` so that `/tracker-flow` reflects real progress after reloading the page or switching tabs.
-- [ ] **CSV export & upload** – from `/results`, trigger “Download CSV” and the optional upload flag to confirm `exportSessionData` attaches survey + consent metadata and handles upload failures with the toast messaging.
-- [ ] **Webcam re-alignment** – verify the calibration task overlay properly follows the cursor and that the task phase advances when all dots are clicked.
-- [ ] **Cypress journey** – run the `trackerFlow.cy.ts` spec to cover the full survey → consent → tracker → training → results flow using the shared session context.
+## Backend (Express API)
+Prereq: Node 18+.
+1. `cd backend && npm install`
+2. Configure environment:
+   - `FIREBASE_STORAGE_BUCKET`
+   - `FIREBASE_SERVICE_ACCOUNT_JSON` or `FIREBASE_PROJECT_ID` + `FIREBASE_CLIENT_EMAIL` + `FIREBASE_PRIVATE_KEY` (use `\n` for newlines) or `GOOGLE_APPLICATION_CREDENTIALS`
+   - `ANTHROPIC_API_KEY` for report generation
+   - `PORT` (optional, default `4000`)
+3. `npm start` to launch the API.
 
-## Tracker flow scenario
+Endpoints:
+- `POST /api/upload-csv` – expects CSV body + `x-session-id`; uploads to Storage and records metadata in Firestore (and user-scoped copy when authenticated).
+- `POST /api/submit-survey` – stores survey payloads under `sessions/{sessionId}/surveys` or `users/{uid}/surveys`.
+- `POST /api/generate-report` – proxies prompts to Anthropic Claude and returns the generated report.
 
-The Cypress spec (`frontend/cypress/e2e/trackerFlow.cy.ts`) automates the critical happy path:
+## Optional services
+- `ml_inference_function/`: deployable Python HTTP function for performance scoring; set its URL in `VITE_PREDICTION_ENDPOINT`.
+- `cloudrun/`: Cloud Run CSV ingestor wiring Storage events to Firestore/BigQuery (see `cloudrun/README.md`).
+- `analysis/`: local data prep and model training assets.
+- `tracker-app/`: legacy CRA UI; kept for context, not wired into the current Vite app.
 
-1. Complete the screening survey and land on `/tracker-flow`.
-2. Jump into `/tracker-app`, accept consent and return to the tracker overview.
-3. Patch the calibration summary (mirroring the skip/test button) and start a training session to ensure the HUD renders.
-4. Inject a mock training session so that `/results` can be opened without waiting for live data, then verify the analytics cards.
+## User flow (current Vite app)
+1) Landing → user chooses Sign up / Sign in / Explore: language toggle persists choice.
+2) Auth (`/auth`): email/password, Google, or anonymous login. On success, `TrackingSessionProvider` marks anonymous vs. identified sessions and redirects to `/dashboard`.
+3) Onboarding survey/consent (`/onboarding/...`): required unless anonymous; data saved to Firestore via `saveSurveyAndConsent` and used to gate protected routes.
+4) Calibration (`/calibration`): webcam permission + WebGazer session; validation enforces `RECALIBRATION_THRESHOLD`; exiting stops tracking, continuing routes to training.
+5) Training (`/training`): collects gaze/mouse/target telemetry for the session.
+6) Results (`/results`): computes analytics, exports CSV locally, optional upload to backend/Storage with `x-session-id`, and saves session + calibration + survey metadata to Firestore (and leaderboard if opted-in).
+7) Report (`/report`): generates AI coaching report via backend Anthropic proxy; predicted score fetched from ML endpoint or fallback heuristic.
+8) History/Leaderboard (`/sessions`, `/leaderboard`): renders stored sessions and optional leaderboard entries; hydration occurs after auth.
 
-Keeping this script green alongside the Vitest coverage ensures that onboarding, consent, calibration, training and reporting remain wired together as a single experience.
+## Manual QA reminders
+- Auth: email/Google/anonymous flows land on `/dashboard` and respect persisted language settings.
+- Onboarding: survey + consent gates block tracker pages until completed; state survives reload via localStorage/Firestore hydration.
+- Calibration: webcam permission gating, validation respects `RECALIBRATION_THRESHOLD`, and exiting stops WebGazer; proceeding routes into training.
+- Training → Results: telemetry is captured, analytics render (reaction times, gaze/mouse accuracy, sync), and CSV export/upload succeeds with `x-session-id` metadata stored in Firestore/Storage.
+- Reports + predictions: `ReportPage` surfaces Anthropic errors when the API key is missing, and score prediction falls back gracefully when the ML endpoint is absent.
+- Leaderboard/history: sessions and leaderboard entries write to Firestore and re-hydrate on dashboard/leaderboard/sessions pages; consent and calibration status persist across tabs.
+- Localization: ko/en toggle persists and updates UI copy across landing, dashboard, tracker, and report flows.

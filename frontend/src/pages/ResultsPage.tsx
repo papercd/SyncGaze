@@ -14,8 +14,8 @@ import { exportSessionData, type CsvUploadResult } from '../utils/sessionExport'
 import { useWebgazer } from '../hooks/tracking/useWebgazer';
 import { useAuth } from '../state/authContext';
 import { useTranslation } from '../state/languageContext';
-import { persistLatestSession } from '../utils/resultsStorage';
-import { saveSessionForUser } from '../utils/remoteSessions';
+import { persistLatestSession, LATEST_SESSION_STORAGE_KEY } from '../utils/resultsStorage';
+import { deleteSessionForUser, saveSessionForUser } from '../utils/remoteSessions';
 // Analytics 인터페이스와 함수를 utils에서 import (ResultsPage 내의 중복 정의 제거)
 import { calculatePerformanceAnalytics, generateErrorTimeSeries, PerformanceAnalytics } from '../utils/analytics';
 import { predictScore } from '../services/predictionService';
@@ -373,7 +373,8 @@ const ResultsPage = () => {
     consentAccepted,
     calibrationResult,
     setActiveSessionId,
-    isAnonymousSession
+    removeSession,
+    isAnonymousSession,
   } = useTrackingSession();
   
   const { stopSession } = useWebgazer();
@@ -404,6 +405,7 @@ const ResultsPage = () => {
 
   const [missingRawData, setMissingRawData] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [lastUploadResult, setLastUploadResult] = useState<CsvUploadResult | null>(null);
   const [autoUploadAttemptedFor, setAutoUploadAttemptedFor] = useState<string | null>(null);
   // 초기화 시점에 바로 sessionStorage를 확인하여 상태를 설정합니다. - csv 수동 업로드 버튼 재활성화 방지
@@ -931,6 +933,43 @@ const ResultsPage = () => {
     persistUploadStatus(sessionData?.id, status);
   }, [handleExport, sessionData?.id]);
 
+  const handleDeleteSession = useCallback(async () => {
+    if (!sessionData) return;
+
+    const confirmed = window.confirm(
+      t('results.delete.confirm', 'Delete this session data permanently? This cannot be undone.'),
+    );
+    if (!confirmed) return;
+
+    setIsDeleting(true);
+    try {
+      if (user?.uid) {
+        await deleteSessionForUser(user.uid, sessionData.id);
+      }
+      removeSession(sessionData.id);
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.removeItem(LATEST_SESSION_STORAGE_KEY);
+      }
+      showToast(t('results.toast.deleteSuccess', 'Session data deleted.'), 'success');
+      navigate('/sessions');
+    } catch (error) {
+      console.error('Failed to delete session', error);
+      showToast(
+        t('results.toast.deleteError', 'Failed to delete the session. Please try again shortly.'),
+        'error',
+      );
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [
+    navigate,
+    removeSession,
+    sessionData,
+    showToast,
+    t,
+    user?.uid,
+  ]);
+
   const handleOpenDetailed = (focusMetric?: string) => {
     if (sessionData) {
       persistLatestSession(sessionData, calibrationResult);
@@ -1435,7 +1474,6 @@ const ResultsPage = () => {
               {t('results.action.trainAgain')}
             </button>
             
-
             <button 
               className="secondary-button" 
               onClick={() => navigate('/report')}
@@ -1443,6 +1481,15 @@ const ResultsPage = () => {
             >
               <Sparkles size={20} />
               {t('report.actions.generate', 'Generate report')}
+            </button>
+            <button
+              className="danger-button delete-session-button"
+              onClick={handleDeleteSession}
+              disabled={isDeleting}
+            >
+              {isDeleting
+                ? t('results.data.deleting', 'Deleting…')
+                : t('results.data.delete', 'Delete Session')}
             </button>
           </div>
         </section>

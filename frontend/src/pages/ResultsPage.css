@@ -923,6 +923,10 @@
   align-items: center;
 }
 
+.delete-session-button {
+  margin-left: auto;
+}
+
 .upload-status {
   font-weight: 600;
   letter-spacing: 0.2px;
@@ -949,7 +953,8 @@
 /* Buttons */
 .download-button,
 .upload-button,
-.secondary-button {
+.secondary-button,
+.danger-button {
   padding: 0.75rem 1.4rem;
   border-radius: 10px;
   font-size: 1rem;
@@ -993,9 +998,22 @@
   transform: translateY(-2px);
 }
 
+.danger-button {
+  background: linear-gradient(135deg, #ff6b6b 0%, #c44569 100%);
+  color: #fff;
+  border: none;
+  box-shadow: 0 4px 15px rgba(255, 107, 107, 0.35);
+}
+
+.danger-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 26px rgba(255, 107, 107, 0.35);
+}
+
 .download-button:disabled,
 .upload-button:disabled,
-.secondary-button:disabled {
+.secondary-button:disabled,
+.danger-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
   transform: none;

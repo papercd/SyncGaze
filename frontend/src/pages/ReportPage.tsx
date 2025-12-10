@@ -1,5 +1,5 @@
 // frontend/src/pages/ReportPage.tsx - UPDATED with session IDs removed
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FileText, Sparkles } from 'lucide-react';
 import { useAuth } from '../state/authContext';
@@ -8,6 +8,80 @@ import { generatePerformanceReport, saveReport, getUserReports, PerformanceRepor
 import { predictScore } from '../services/predictionService';
 import './ReportPage.css';
 import { useTranslation } from '../state/languageContext';
+import { calculatePerformanceAnalytics, type PerformanceAnalytics } from '../utils/analytics';
+
+type MetricKey =
+  | 'targets'
+  | 'avgReaction'
+  | 'gazeReaction'
+  | 'gazeAimLatency'
+  | 'hitError'
+  | 'sync';
+
+type MetricPercentile = {
+  value: number;
+  label: string;
+};
+
+const clampPercentile = (value: number): number => Math.min(99, Math.max(1, Math.round(value)));
+const formatPercentileLabel = (value: number, formatter: (pct: number) => string) => formatter(clampPercentile(value));
+
+const metricPercentile = (
+  key: MetricKey,
+  analytics: PerformanceAnalytics,
+  formatter: (pct: number) => string,
+): MetricPercentile => {
+  switch (key) {
+    case 'targets': {
+      const ratio = analytics.totalTargets > 0 ? analytics.targetsHit / analytics.totalTargets : 0;
+      if (ratio >= 0.9) return { value: 10, label: formatPercentileLabel(10, formatter) };
+      if (ratio >= 0.8) return { value: 20, label: formatPercentileLabel(20, formatter) };
+      if (ratio >= 0.65) return { value: 40, label: formatPercentileLabel(40, formatter) };
+      if (ratio >= 0.5) return { value: 60, label: formatPercentileLabel(60, formatter) };
+      return { value: 85, label: formatPercentileLabel(85, formatter) };
+    }
+    case 'avgReaction': {
+      const v = analytics.avgReactionTime;
+      if (v <= 200) return { value: 10, label: formatPercentileLabel(10, formatter) };
+      if (v <= 250) return { value: 25, label: formatPercentileLabel(25, formatter) };
+      if (v <= 300) return { value: 50, label: formatPercentileLabel(50, formatter) };
+      if (v <= 350) return { value: 70, label: formatPercentileLabel(70, formatter) };
+      return { value: 90, label: formatPercentileLabel(90, formatter) };
+    }
+    case 'gazeReaction': {
+      const v = analytics.avgGazeReactionTime;
+      if (v <= 200) return { value: 12, label: formatPercentileLabel(12, formatter) };
+      if (v <= 250) return { value: 25, label: formatPercentileLabel(25, formatter) };
+      if (v <= 350) return { value: 45, label: formatPercentileLabel(45, formatter) };
+      if (v <= 450) return { value: 65, label: formatPercentileLabel(65, formatter) };
+      return { value: 88, label: formatPercentileLabel(88, formatter) };
+    }
+    case 'gazeAimLatency': {
+      const v = analytics.gazeAimLatency;
+      if (v <= 250) return { value: 15, label: formatPercentileLabel(15, formatter) };
+      if (v <= 400) return { value: 35, label: formatPercentileLabel(35, formatter) };
+      if (v <= 600) return { value: 60, label: formatPercentileLabel(60, formatter) };
+      return { value: 85, label: formatPercentileLabel(85, formatter) };
+    }
+    case 'hitError': {
+      const avgError = (analytics.gazeErrorAtHit + analytics.mouseErrorAtHit) / 2;
+      if (avgError <= 60) return { value: 15, label: formatPercentileLabel(15, formatter) };
+      if (avgError <= 90) return { value: 30, label: formatPercentileLabel(30, formatter) };
+      if (avgError <= 130) return { value: 55, label: formatPercentileLabel(55, formatter) };
+      if (avgError <= 170) return { value: 75, label: formatPercentileLabel(75, formatter) };
+      return { value: 90, label: formatPercentileLabel(90, formatter) };
+    }
+    case 'sync': {
+      const v = analytics.synchronization;
+      if (v <= 90) return { value: 15, label: formatPercentileLabel(15, formatter) };
+      if (v <= 140) return { value: 35, label: formatPercentileLabel(35, formatter) };
+      if (v <= 200) return { value: 60, label: formatPercentileLabel(60, formatter) };
+      return { value: 85, label: formatPercentileLabel(85, formatter) };
+    }
+    default:
+      return { value: 50, label: formatPercentileLabel(50, formatter) };
+  }
+};
 
 const ReportPage = () => {
   const navigate = useNavigate();
@@ -24,6 +98,82 @@ const ReportPage = () => {
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
   const [predictedScore, setPredictedScore] = useState<number | null>(null);
   const [isPredicting, setIsPredicting] = useState(false);
+  const activeAnalytics = useMemo(
+    () => (activeSession ? calculatePerformanceAnalytics(activeSession.rawData) : null),
+    [activeSession],
+  );
+
+  const formatPercentile = useMemo(
+    () =>
+      (value: number) =>
+        t('results.percentile.label', language === 'ko' ? '상위 {percentile}%' : 'Top {percentile}%').replace(
+          '{percentile}',
+          `${clampPercentile(value)}`,
+        ),
+    [language, t],
+  );
+
+  const metricTooltips = useMemo(
+    () => ({
+      targets: t('results.tooltip.targets', 'Hits show decisiveness and tempo.'),
+      avgReaction: t('results.tooltip.avgReaction', 'Faster reactions secure the first-shot edge.'),
+      gazeReaction: t('results.tooltip.gazeReaction', 'Gaze reaction shows how fast you acquire targets.'),
+      gazeAimLatency: t('results.tooltip.gazeAimLatency', 'Shorter gaze-aim latency keeps aim and shots synced.'),
+      hitError: t('results.tooltip.hitError', 'Smaller hit error means steadier micro-aim.'),
+      sync: t('results.tooltip.sync', 'Gaze-mouse sync reflects aiming consistency.'),
+    }),
+    [t],
+  );
+
+  const getMetricLevel = useMemo(
+    () => (key: MetricKey, analytics: PerformanceAnalytics) => {
+      const badColor = '#ff6b6b';
+      const midColor = '#f1c40f';
+      const goodColor = '#66d9ff';
+
+      switch (key) {
+        case 'targets': {
+          const ratio = analytics.totalTargets > 0 ? analytics.targetsHit / analytics.totalTargets : 0;
+          if (ratio >= 0.8) return { label: t('results.level.targets.top', 'High hit rate'), color: goodColor };
+          if (ratio >= 0.5) return { label: t('results.level.targets.mid', 'Average hit rate'), color: midColor };
+          return { label: t('results.level.targets.low', 'Needs hit rate improvement'), color: badColor };
+        }
+        case 'avgReaction': {
+          const v = analytics.avgReactionTime;
+          if (v <= 300) return { label: t('results.level.reaction.top', 'Excellent reaction time'), color: goodColor };
+          if (v <= 600) return { label: t('results.level.reaction.mid', 'Average reaction time'), color: midColor };
+          return { label: t('results.level.reaction.low', 'Needs reaction improvement'), color: badColor };
+        }
+        case 'gazeReaction': {
+          const v = analytics.avgGazeReactionTime;
+          if (v <= 250) return { label: t('results.level.gaze.top', 'Fast gaze acquisition'), color: goodColor };
+          if (v <= 450) return { label: t('results.level.gaze.mid', 'Average gaze acquisition'), color: midColor };
+          return { label: t('results.level.gaze.low', 'Slow gaze acquisition'), color: badColor };
+        }
+        case 'gazeAimLatency': {
+          const v = analytics.gazeAimLatency;
+          if (v <= 300) return { label: t('results.level.gazeAim.top', 'Short gaze-hand delay'), color: goodColor };
+          if (v <= 600) return { label: t('results.level.gazeAim.mid', 'Average gaze-hand delay'), color: midColor };
+          return { label: t('results.level.gazeAim.low', 'Needs latency improvement'), color: badColor };
+        }
+        case 'hitError': {
+          const avgError = (analytics.gazeErrorAtHit + analytics.mouseErrorAtHit) / 2;
+          if (avgError <= 80) return { label: t('results.level.hitError.top', 'Excellent accuracy'), color: goodColor };
+          if (avgError <= 140) return { label: t('results.level.hitError.mid', 'Average accuracy'), color: midColor };
+          return { label: t('results.level.hitError.low', 'Needs accuracy improvement'), color: badColor };
+        }
+        case 'sync': {
+          const v = analytics.synchronization;
+          if (v <= 120) return { label: t('results.level.sync.top', 'Great gaze-mouse sync'), color: goodColor };
+          if (v <= 200) return { label: t('results.level.sync.mid', 'Average sync'), color: midColor };
+          return { label: t('results.level.sync.low', 'Needs sync improvement'), color: badColor };
+        }
+        default:
+          return { label: '', color: '#d8ddf3' };
+      }
+    },
+    [t],
+  );
 
   // Load saved reports on mount
   useEffect(() => {
@@ -121,6 +271,8 @@ const ReportPage = () => {
         targetsHit: activeSession.targetsHit,
         totalTargets: activeSession.totalTargets,
         predictedScore: resolvedPredictedScore,
+        gazeReactionTime: activeAnalytics?.avgGazeReactionTime,
+        gazeAimLatency: activeAnalytics?.gazeAimLatency,
         calibrationError: calibrationResult?.validationError,
       });
 
@@ -180,6 +332,138 @@ const ReportPage = () => {
     const sessionDurationText = sessionInfo ? `${sessionInfo.duration}s` : null;
     const sessionAccuracyText = sessionInfo ? `${sessionInfo.accuracy.toFixed(1)}%` : null;
     const sessionTargetsText = sessionInfo ? `${sessionInfo.targetsHit}/${sessionInfo.totalTargets}` : null;
+    const analytics: PerformanceAnalytics | null = sessionInfo ? calculatePerformanceAnalytics(sessionInfo.rawData) : null;
+
+    const metricsList = analytics
+      ? ([
+          {
+            key: 'targets' as const,
+            label: t('results.metric.targets.label', '명중 수'),
+            value: `${analytics.targetsHit}/${analytics.totalTargets}`,
+            meaning: metricTooltips.targets,
+            level: getMetricLevel('targets', analytics),
+            percentile: metricPercentile('targets', analytics, formatPercentile),
+          },
+          {
+            key: 'avgReaction' as const,
+            label: t('results.metric.avgReaction.label', '평균 반응'),
+            value: `${analytics.avgReactionTime.toFixed(0)}ms`,
+            meaning: metricTooltips.avgReaction,
+            level: getMetricLevel('avgReaction', analytics),
+            percentile: metricPercentile('avgReaction', analytics, formatPercentile),
+          },
+          {
+            key: 'gazeReaction' as const,
+            label: t('results.metric.gazeReaction.label', '시선 반응'),
+            value: `${analytics.avgGazeReactionTime.toFixed(0)}ms`,
+            meaning: metricTooltips.gazeReaction,
+            level: getMetricLevel('gazeReaction', analytics),
+            percentile: metricPercentile('gazeReaction', analytics, formatPercentile),
+          },
+          {
+            key: 'gazeAimLatency' as const,
+            label: t('results.metric.gazeAimLatency.label', '시선-마우스 지연'),
+            value: `${analytics.gazeAimLatency.toFixed(0)}ms`,
+            meaning: metricTooltips.gazeAimLatency,
+            level: getMetricLevel('gazeAimLatency', analytics),
+            percentile: metricPercentile('gazeAimLatency', analytics, formatPercentile),
+          },
+          {
+            key: 'hitError' as const,
+            label: t('results.metric.hitError.label', '명중 오차 (시선/마우스)'),
+            value: `G: ${analytics.gazeErrorAtHit.toFixed(0)}px / M: ${analytics.mouseErrorAtHit.toFixed(0)}px`,
+            meaning: metricTooltips.hitError,
+            level: getMetricLevel('hitError', analytics),
+            percentile: metricPercentile('hitError', analytics, formatPercentile),
+          },
+          {
+            key: 'sync' as const,
+            label: t('results.metric.sync.label', '동기화'),
+            value: `${analytics.synchronization.toFixed(0)}px`,
+            meaning: metricTooltips.sync,
+            level: getMetricLevel('sync', analytics),
+            percentile: metricPercentile('sync', analytics, formatPercentile),
+          },
+        ]) satisfies {
+          key: MetricKey;
+          label: string;
+          value: string;
+          meaning: string;
+          level: { label: string; color: string };
+          percentile: MetricPercentile;
+        }[]
+      : [];
+
+    const metricsBlock = (
+      <div className="report-metrics">
+        <div className="report-metrics__header">
+          <div>
+            <h3>{t('report.metrics.title', '핵심 메트릭 한눈에')}</h3>
+            <p className="report-metrics__subtitle">
+              {t(
+                'report.metrics.subtitle',
+                '결과 페이지 카드 6개와 동일한 수치, 의미, 평가 코멘트를 종합 평가 바로 아래에서 확인하세요.',
+              )}
+            </p>
+          </div>
+          <span className="report-metrics__badge">{t('report.metrics.badge', 'Results view')}</span>
+        </div>
+
+        {analytics ? (
+          <div className="report-metrics-grid">
+            {metricsList.map(metric => (
+              <div key={metric.key} className="report-metric-card">
+                <div className="report-metric-top">
+                  <span className="report-metric-label">{metric.label}</span>
+                  <span className="report-metric-chip" style={{ color: metric.level.color, borderColor: metric.level.color }}>
+                    {metric.percentile.label}
+                  </span>
+                </div>
+                <div className="report-metric-value">{metric.value}</div>
+                <div className="report-metric-meaning">{metric.meaning}</div>
+                <div className="report-metric-eval" style={{ color: metric.level.color }}>
+                  {metric.level.label}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="report-metrics--empty">
+            {t(
+              'report.metrics.missing',
+              '세션의 상세 원본 데이터가 없어 결과 페이지 메트릭을 불러올 수 없습니다.',
+            )}
+          </div>
+        )}
+      </div>
+    );
+
+    const renderMarkdownWithMetrics = () => {
+      const markdownHtml = renderMarkdown(report.content);
+      const anchors = ['<h2>종합 평가</h2>', '<h2>Overall Evaluation</h2>'];
+      const anchor = anchors.find(a => markdownHtml.includes(a));
+
+      if (!anchor) {
+        return (
+          <div className="report-markdown">
+            <div dangerouslySetInnerHTML={{ __html: markdownHtml }} />
+            {metricsBlock}
+          </div>
+        );
+      }
+
+      const insertIndex = markdownHtml.indexOf(anchor) + anchor.length;
+      const before = markdownHtml.slice(0, insertIndex);
+      const after = markdownHtml.slice(insertIndex);
+
+      return (
+        <div className="report-markdown">
+          <div dangerouslySetInnerHTML={{ __html: before }} />
+          {metricsBlock}
+          <div dangerouslySetInnerHTML={{ __html: after }} />
+        </div>
+      );
+    };
 
     return (
       <div className="report-content">
@@ -214,10 +498,7 @@ const ReportPage = () => {
           </div>
         </div>
 
-        <div 
-          className="report-markdown"
-          dangerouslySetInnerHTML={{ __html: renderMarkdown(report.content) }}
-        />
+        {renderMarkdownWithMetrics()}
 
         <div className="report-data-summary">
           <h3>{t('report.data.title', '측정 데이터')}</h3>
@@ -235,6 +516,24 @@ const ReportPage = () => {
               <span className="data-value">{report.metrics.reactionTime.toFixed(0)}ms</span>
               <span className="data-percentile">(상위 {report.metrics.reactionTimePercentile}%)</span>
             </div>
+            {report.metrics.gazeReactionTime != null && (
+              <div className="data-item">
+                <span className="data-label">{t('report.data.gazeReaction', '시선 반응')}</span>
+                <span className="data-value">{report.metrics.gazeReactionTime.toFixed(0)}ms</span>
+                {report.metrics.gazeReactionTimePercentile != null && (
+                  <span className="data-percentile">(상위 {report.metrics.gazeReactionTimePercentile}%)</span>
+                )}
+              </div>
+            )}
+            {report.metrics.gazeAimLatency != null && (
+              <div className="data-item">
+                <span className="data-label">{t('report.data.gazeAimLatency', '시선-마우스 지연')}</span>
+                <span className="data-value">{report.metrics.gazeAimLatency.toFixed(0)}ms</span>
+                {report.metrics.gazeAimLatencyPercentile != null && (
+                  <span className="data-percentile">(상위 {report.metrics.gazeAimLatencyPercentile}%)</span>
+                )}
+              </div>
+            )}
             <div className="data-item">
               <span className="data-label">{t('report.data.overlap', '시선-에임 일치도')}</span>
               <span className="data-value">{report.metrics.overlapScore.toFixed(1)}%</span>

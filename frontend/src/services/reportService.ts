@@ -7,6 +7,10 @@ export interface PerformanceMetrics {
   reactionTimePercentile: number;
   overlapScore: number;
   overlapScorePercentile: number;
+  gazeReactionTime?: number;
+  gazeReactionTimePercentile?: number;
+  gazeAimLatency?: number;
+  gazeAimLatencyPercentile?: number;
   trackingAccuracy: number;
   accuracy: number;
   targetsHit: number;
@@ -34,6 +38,8 @@ interface GenerateReportParams {
   targetsHit: number;
   totalTargets: number;
   predictedScore?: number | null;
+  gazeReactionTime?: number;
+  gazeAimLatency?: number;
   calibrationError?: number | null;
 }
 
@@ -41,7 +47,14 @@ interface GenerateReportParams {
 const calculatePercentiles = (metrics: {
   reactionTime: number;
   overlapScore: number;
-}): { reactionTimePercentile: number; overlapScorePercentile: number } => {
+  gazeReactionTime?: number;
+  gazeAimLatency?: number;
+}): {
+  reactionTimePercentile: number;
+  overlapScorePercentile: number;
+  gazeReactionTimePercentile: number | null;
+  gazeAimLatencyPercentile: number | null;
+} => {
   // Reaction time percentiles (lower is better)
   // Elite: <200ms, Good: 200-250ms, Average: 250-300ms, Below avg: >300ms
   let reactionTimePercentile = 50;
@@ -60,7 +73,28 @@ const calculatePercentiles = (metrics: {
   else if (metrics.overlapScore > 55) overlapScorePercentile = 60;
   else overlapScorePercentile = 70;
 
-  return { reactionTimePercentile, overlapScorePercentile };
+  // Gaze reaction (lower is better)
+  let gazeReactionTimePercentile: number | null = null;
+  if (metrics.gazeReactionTime != null) {
+    const v = metrics.gazeReactionTime;
+    if (v <= 200) gazeReactionTimePercentile = 12;
+    else if (v <= 250) gazeReactionTimePercentile = 25;
+    else if (v <= 350) gazeReactionTimePercentile = 45;
+    else if (v <= 450) gazeReactionTimePercentile = 65;
+    else gazeReactionTimePercentile = 88;
+  }
+
+  // Gaze-aim latency (lower is better)
+  let gazeAimLatencyPercentile: number | null = null;
+  if (metrics.gazeAimLatency != null) {
+    const v = metrics.gazeAimLatency;
+    if (v <= 250) gazeAimLatencyPercentile = 15;
+    else if (v <= 400) gazeAimLatencyPercentile = 35;
+    else if (v <= 600) gazeAimLatencyPercentile = 60;
+    else gazeAimLatencyPercentile = 85;
+  }
+
+  return { reactionTimePercentile, overlapScorePercentile, gazeReactionTimePercentile, gazeAimLatencyPercentile };
 };
 
 // Generate performance report using Claude API via backend
@@ -70,6 +104,8 @@ export const generatePerformanceReport = async (
   const percentiles = calculatePercentiles({
     reactionTime: params.reactionTime,
     overlapScore: params.overlapScore,
+    gazeReactionTime: params.gazeReactionTime,
+    gazeAimLatency: params.gazeAimLatency,
   });
 
   const prompt = `[Role]
@@ -86,12 +122,14 @@ ${params.predictedScore != null ? `- 예측 점수: ${params.predictedScore.toFi
 ${params.predictedScore == null ? '- 예측 점수가 없어 기존 점수/정확도를 기준으로 평가합니다.' : ''}
 ${params.predictedScore != null ? '- 점수 해석: 0~100에서 100에 가까울수록 상위 퍼포먼스' : ''}
 ${params.calibrationError != null ? `- 캘리브레이션 오차: ${params.calibrationError.toFixed(2)}px` : ''}
+${params.gazeReactionTime != null ? `- 시선 반응 시간: ${params.gazeReactionTime.toFixed(0)}ms${percentiles.gazeReactionTimePercentile != null ? ` (상위 ${percentiles.gazeReactionTimePercentile}% 수준)` : ''}` : ''}
+${params.gazeAimLatency != null ? `- 시선-마우스 지연: ${params.gazeAimLatency.toFixed(0)}ms${percentiles.gazeAimLatencyPercentile != null ? ` (상위 ${percentiles.gazeAimLatencyPercentile}% 수준)` : ''}` : ''}
 
 [Task]
 위 데이터를 바탕으로 플레이어에게 구체적인 피드백 리포트를 작성해주세요.
 1. "종합 평가": 현재 실력에 대한 요약 (2-3문장)
-2. "강점": 데이터에서 잘 나온 부분 칭찬 (구체적인 수치 언급, 2-3개 포인트)
-3. "약점 및 개선점": 수치가 낮은 부분에 대한 지적 (구체적인 수치 언급, 2-3개 포인트)
+2. "강점": 데이터에서 잘 나온 부분 칭찬 (구체적인 수치 언급, 강점인 포인트 각각에 대해여 2-3 문장)
+3. "약점 및 개선점": 수치가 낮은 부분에 대한 지적 (구체적인 수치 언급, 약점 및 개선점인 포인트 각각에 대해여 2-3 문장)
 4. "맞춤형 훈련법": 약점을 보완하기 위해 SyncGaze 트레이닝 그라운드에서 어떻게 연습해야 하는지 구체적인 루틴 제안 (3-4개의 실천 가능한 단계)
 
 [Format]
@@ -140,6 +178,10 @@ Markdown 형식으로 출력해주세요. 헤더는 ##을 사용하고, 각 섹�
         reactionTimePercentile: percentiles.reactionTimePercentile,
         overlapScore: params.overlapScore,
         overlapScorePercentile: percentiles.overlapScorePercentile,
+        gazeReactionTime: params.gazeReactionTime,
+        gazeReactionTimePercentile: percentiles.gazeReactionTimePercentile ?? undefined,
+        gazeAimLatency: params.gazeAimLatency,
+        gazeAimLatencyPercentile: percentiles.gazeAimLatencyPercentile ?? undefined,
         trackingAccuracy: params.trackingAccuracy,
         accuracy: params.accuracy,
         targetsHit: params.targetsHit,

@@ -72,6 +72,7 @@ export interface TrackingSessionContextValue extends TrackingSessionState {
   addSession: (session: TrainingSessionSummary) => void;
   hydrateSessions: (sessions: TrainingSessionSummary[]) => void;
   setActiveSessionId: (sessionId: string | null) => void;
+  removeSession: (sessionId: string) => void;
   clearRecentSessions: () => void;
   activeSession: TrainingSessionSummary | null;
   setAnonymousSession: (isAnonymous: boolean) => void;
@@ -247,6 +248,23 @@ export const TrackingSessionProvider = ({ children }: { children: ReactNode }) =
     }));
   };
 
+  const removeSession = (sessionId: string) => {
+    setState(prev => {
+      const filteredSessions = prev.recentSessions.filter(session => session.id !== sessionId);
+      const hasActive = filteredSessions.some(session => session.id === prev.activeSessionId);
+      const nextActiveId = hasActive
+        ? prev.activeSessionId
+        : filteredSessions[0]?.id ?? null;
+
+      return {
+        ...prev,
+        recentSessions: filteredSessions,
+        lastSession: filteredSessions[0] ?? null,
+        activeSessionId: nextActiveId,
+      };
+    });
+  };
+
   const setAnonymousSession = (isAnonymous: boolean) => {
     setState(prev => ({
       ...prev,
@@ -283,6 +301,7 @@ export const TrackingSessionProvider = ({ children }: { children: ReactNode }) =
     addSession,
     hydrateSessions,
     setActiveSessionId,
+    removeSession,
     clearRecentSessions,
     activeSession,
     setAnonymousSession,

@@ -2,6 +2,13 @@
 
 SyncGaze is a multi-language eye-tracking training and analytics stack. The Vite + React frontend drives onboarding → calibration → training → results → AI reports, while the Node backend handles CSV uploads, survey storage, and Anthropic-powered reports. Optional Python services cover ML score prediction and Cloud Run ingestion.
 
+## In-game overview
+<img width="1685" height="948" alt="KakaoTalk_Photo_2025-11-23-18-19-09 001" src="https://github.com/user-attachments/assets/6d86c1f0-3e2b-4e54-be9a-1b6f0510a29b" />
+<img width="1710" height="984" alt="KakaoTalk_Photo_2025-11-23-18-19-09 003" src="https://github.com/user-attachments/assets/5fee9ebe-0a48-4b37-ae0f-99d234445fd9" />
+<img width="1279" height="738" alt="KakaoTalk_Photo_2025-11-23-18-19-10 004" src="https://github.com/user-attachments/assets/1457733b-67bf-4482-a0fe-9c2745736ce9" />
+<img width="1710" height="981" alt="KakaoTalk_Photo_2025-11-23-18-19-10 005" src="https://github.com/user-attachments/assets/cc6e7c37-c57b-43b7-a1e7-486c5e3a07e9" />
+<img width="1710" height="985" alt="KakaoTalk_Photo_2025-11-23-18-19-10 006" src="https://github.com/user-attachments/assets/a80805a6-9032-4a8d-9496-c3d52e265b10" />
+
 ## Repository layout
 - `frontend/` – main Vite app (React + TypeScript) with WebGazer tracking, dashboard/results/report pages, bilingual UI (ko/en), Firebase Auth, and session persistence.
 - `backend/` – Express API backed by firebase-admin for CSV uploads, survey writes, and Claude-based performance reports.

@@ -98,6 +98,10 @@ const ReportPage = () => {
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
   const [predictedScore, setPredictedScore] = useState<number | null>(null);
   const [isPredicting, setIsPredicting] = useState(false);
+  const activeAnalytics = useMemo(
+    () => (activeSession ? calculatePerformanceAnalytics(activeSession.rawData) : null),
+    [activeSession],
+  );
 
   const formatPercentile = useMemo(
     () =>
@@ -267,6 +271,8 @@ const ReportPage = () => {
         targetsHit: activeSession.targetsHit,
         totalTargets: activeSession.totalTargets,
         predictedScore: resolvedPredictedScore,
+        gazeReactionTime: activeAnalytics?.avgGazeReactionTime,
+        gazeAimLatency: activeAnalytics?.gazeAimLatency,
         calibrationError: calibrationResult?.validationError,
       });
 
@@ -510,6 +516,24 @@ const ReportPage = () => {
               <span className="data-value">{report.metrics.reactionTime.toFixed(0)}ms</span>
               <span className="data-percentile">(상위 {report.metrics.reactionTimePercentile}%)</span>
             </div>
+            {report.metrics.gazeReactionTime != null && (
+              <div className="data-item">
+                <span className="data-label">{t('report.data.gazeReaction', '시선 반응')}</span>
+                <span className="data-value">{report.metrics.gazeReactionTime.toFixed(0)}ms</span>
+                {report.metrics.gazeReactionTimePercentile != null && (
+                  <span className="data-percentile">(상위 {report.metrics.gazeReactionTimePercentile}%)</span>
+                )}
+              </div>
+            )}
+            {report.metrics.gazeAimLatency != null && (
+              <div className="data-item">
+                <span className="data-label">{t('report.data.gazeAimLatency', '시선-마우스 지연')}</span>
+                <span className="data-value">{report.metrics.gazeAimLatency.toFixed(0)}ms</span>
+                {report.metrics.gazeAimLatencyPercentile != null && (
+                  <span className="data-percentile">(상위 {report.metrics.gazeAimLatencyPercentile}%)</span>
+                )}
+              </div>
+            )}
             <div className="data-item">
               <span className="data-label">{t('report.data.overlap', '시선-에임 일치도')}</span>
               <span className="data-value">{report.metrics.overlapScore.toFixed(1)}%</span>

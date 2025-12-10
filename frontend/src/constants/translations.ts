@@ -1084,6 +1084,8 @@ export const translations: Record<string, Record<Language, string>> = {
   'report.data.title': { ko: '측정 데이터', en: 'Measured Data' },
   'report.data.predicted': { ko: '예측 점수', en: 'Predicted score' },
   'report.data.reaction': { ko: '반응 속도', en: 'Reaction time' },
+  'report.data.gazeReaction': { ko: '시선 반응', en: 'Gaze reaction' },
+  'report.data.gazeAimLatency': { ko: '시선-마우스 지연', en: 'Gaze-aim latency' },
   'report.data.overlap': { ko: '시선-에임 일치도', en: 'Gaze-aim overlap' },
   'report.data.tracking': { ko: '트래킹 정확도', en: 'Tracking accuracy' },
   'report.data.accuracy': { ko: '종합 정확도', en: 'Overall accuracy' },

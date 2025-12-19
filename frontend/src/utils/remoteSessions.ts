@@ -1,6 +1,7 @@
 import {
   collection,
   doc,
+  deleteDoc,
   getDocs,
   orderBy,
   query,
@@ -171,6 +172,13 @@ export const fetchSessionsForUser = async (uid: string): Promise<StoredSessionRe
       leaderboardLabel: record.leaderboardLabel ?? null,
     }));
 
+};
+
+export const deleteSessionForUser = async (uid: string, sessionId: string): Promise<void> => {
+  const sessionRef = doc(db, 'users', uid, 'sessions', sessionId);
+  const leaderboardRef = doc(db, 'leaderboardEntries', `${uid}-${sessionId}`);
+
+  await Promise.allSettled([deleteDoc(sessionRef), deleteDoc(leaderboardRef)]);
 };
 
 export const saveSessionForUser = async (

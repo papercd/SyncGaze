@@ -8,6 +8,7 @@ import { getUserReports } from '../services/reportService';
 import { calculatePerformanceAnalytics } from '../utils/analytics';
 import { Line } from 'react-chartjs-2';
 import { AlertTriangle, Lightbulb } from 'lucide-react';
+import { deleteSessionForUser } from '../utils/remoteSessions';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -39,7 +40,7 @@ type TrendPeriod = '7days' | '30days';
 const SessionsHistoryPage = () => {
   const navigate = useNavigate();
   const { t, language } = useTranslation();
-  const { recentSessions, setActiveSessionId } = useTrackingSession();
+  const { recentSessions, setActiveSessionId, removeSession } = useTrackingSession();
   const { user } = useAuth();
 
   const [sortField, setSortField] = useState<SortField>('date');
@@ -47,6 +48,8 @@ const SessionsHistoryPage = () => {
   const [trendPeriod, setTrendPeriod] = useState<TrendPeriod>('7days');
   const [sessionReportMap, setSessionReportMap] = useState<Record<string, string>>({});
   const [isLoadingReports, setIsLoadingReports] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteStatus, setDeleteStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // Load reports on mount
   useEffect(() => {
@@ -263,6 +266,38 @@ const SessionsHistoryPage = () => {
     navigate('/report', { state: { sessionId } });
   };
 
+  const handleDeleteSession = async (sessionId: string) => {
+    const confirmed = window.confirm(
+      t(
+        'sessions.delete.confirm',
+        'Delete this session from your history? This action cannot be undone.',
+      ),
+    );
+    if (!confirmed) return;
+
+    setDeletingId(sessionId);
+    setDeleteStatus(null);
+
+    try {
+      if (user?.uid) {
+        await deleteSessionForUser(user.uid, sessionId);
+      }
+      removeSession(sessionId);
+      setDeleteStatus({
+        type: 'success',
+        message: t('sessions.delete.success', 'Session removed from your history.'),
+      });
+    } catch (error) {
+      console.error('Failed to delete session', error);
+      setDeleteStatus({
+        type: 'error',
+        message: t('sessions.delete.error', 'Failed to delete the session. Please try again.'),
+      });
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   const formatDate = (date: string) => {
     const dateObj = new Date(date);
     const locale = language === 'ko' ? 'ko-KR' : 'en-US';
@@ -468,6 +503,11 @@ const SessionsHistoryPage = () => {
             </span>
           </div>
         </div>
+        {deleteStatus && (
+          <div className={`delete-status ${deleteStatus.type}`}>
+            {deleteStatus.message}
+          </div>
+        )}
 
         {displaySessions.length === 0 ? (
           <div className="empty-state">
@@ -569,6 +609,15 @@ const SessionsHistoryPage = () => {
                           {sessionReportMap[session.id]
                             ? t('sessions.table.report.viewExisting', 'View Report')
                             : t('sessions.table.report.create', 'Create Report')}
+                        </button>
+                        <button
+                          className="delete-button"
+                          onClick={() => handleDeleteSession(session.id)}
+                          disabled={deletingId === session.id}
+                        >
+                          {deletingId === session.id
+                            ? t('sessions.table.deleting', 'Deleting...')
+                            : t('sessions.table.delete', 'Delete')}
                         </button>
                       </div>
                     </td>

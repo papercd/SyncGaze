@@ -763,6 +763,17 @@ export const translations: Record<string, Record<Language, string>> = {
   'sessions.table.view': { ko: '보기', en: 'View' },
   'sessions.table.report.create': { ko: '리포트 생성하기', en: 'Create Report' },
   'sessions.table.report.viewExisting': { ko: '리포트 확인하기', en: 'View Report' },
+  'sessions.table.delete': { ko: '삭제', en: 'Delete' },
+  'sessions.table.deleting': { ko: '삭제 중...', en: 'Deleting...' },
+  'sessions.delete.confirm': {
+    ko: '이 세션을 기록에서 삭제할까요? 이 작업은 되돌릴 수 없습니다.',
+    en: 'Delete this session from your history? This action cannot be undone.',
+  },
+  'sessions.delete.success': { ko: '세션이 기록에서 삭제되었습니다.', en: 'Session removed from your history.' },
+  'sessions.delete.error': {
+    ko: '세션을 삭제하지 못했습니다. 다시 시도해주세요.',
+    en: 'Failed to delete the session. Please try again.',
+  },
   'sessions.empty.title': { ko: '아직 세션이 없습니다', en: 'No sessions yet' },
   'sessions.empty.desc': { ko: '트레이닝을 시작해 여기에서 세션 기록을 확인하세요', en: 'Start training to see your session history here' },
   'sessions.empty.cta': { ko: '트레이닝 시작', en: 'Start Training' },
@@ -1176,6 +1187,12 @@ export const translations: Record<string, Record<Language, string>> = {
   'results.data.uploading': { ko: '업로드 중…', en: 'Uploading…' },
   'results.data.retryUpload': { ko: '업로드 재시도', en: 'Retry Upload' },
   'results.data.upload': { ko: 'Firebase Storage에 업로드', en: 'Upload to Firebase Storage' },
+  'results.data.delete': { ko: '세션 삭제', en: 'Delete Session' },
+  'results.data.deleting': { ko: '삭제 중…', en: 'Deleting…' },
+  'results.delete.confirm': {
+    ko: '이 세션 데이터를 완전히 삭제할까요? 삭제하면 되돌릴 수 없습니다.',
+    en: 'Delete this session data permanently? This cannot be undone.',
+  },
   'results.action.trainAgain': { ko: '다시 트레이닝', en: 'Train Again' },
   'results.action.backDashboard': { ko: '대시보드로 돌아가기', en: 'Back to Dashboard' },
   'results.finish.prompt': {
@@ -1195,6 +1212,11 @@ export const translations: Record<string, Record<Language, string>> = {
   'results.toast.downloadSuccess': { ko: 'CSV 다운로드 완료.', en: 'CSV downloaded successfully.' },
   'results.toast.uploadFailed': { ko: 'CSV 업로드 실패: {message}', en: 'CSV upload failed: {message}' },
   'results.toast.exportFailed': { ko: 'CSV 내보내기 실패: {message}', en: 'CSV export failed: {message}' },
+  'results.toast.deleteSuccess': { ko: '세션 데이터가 삭제되었습니다.', en: 'Session data deleted.' },
+  'results.toast.deleteError': {
+    ko: '세션을 삭제하지 못했습니다. 잠시 후 다시 시도해주세요.',
+    en: 'Failed to delete the session. Please try again shortly.',
+  },
   'results.tooltip.targets': { ko: '명중 수는 결정력과 전투 페이스를 보여줍니다.', en: 'Hits show decisiveness and tempo.' },
   'results.tooltip.avgReaction': { ko: '반응 시간이 짧을수록 첫 발 이점을 가져갑니다.', en: 'Faster reactions secure the first-shot edge.' },
   'results.tooltip.gazeReaction': { ko: '시선 반응은 목표 포착 속도를 의미합니다.', en: 'Gaze reaction shows how fast you acquire targets.' },

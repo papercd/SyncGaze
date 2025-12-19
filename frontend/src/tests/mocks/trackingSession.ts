@@ -25,6 +25,7 @@ export const createTrackingSessionValue = (
   addSession: vi.fn(),
   hydrateSessions: vi.fn(),
   setActiveSessionId: vi.fn(),
+  removeSession: vi.fn(),
   clearRecentSessions: vi.fn(),
   activeSession: null,
   setAnonymousSession: vi.fn(),

@@ -158,41 +158,46 @@ const metricPercentile = (
   switch (key) {
     case 'accuracy': {
       const ratio = analytics.totalTargets > 0 ? analytics.targetsHit / analytics.totalTargets : 0;
-      if (ratio >= 0.9) return { value: 10, label: formatPercentileLabel(10, formatter) };
-      if (ratio >= 0.8) return { value: 20, label: formatPercentileLabel(20, formatter) };
-      if (ratio >= 0.65) return { value: 40, label: formatPercentileLabel(40, formatter) };
-      if (ratio >= 0.5) return { value: 60, label: formatPercentileLabel(60, formatter) };
+      if (ratio >= 0.95) return { value: 12, label: formatPercentileLabel(12, formatter) };
+      if (ratio >= 0.85) return { value: 28, label: formatPercentileLabel(28, formatter) };
+      if (ratio >= 0.7) return { value: 45, label: formatPercentileLabel(45, formatter) };
+      if (ratio >= 0.55) return { value: 65, label: formatPercentileLabel(65, formatter) };
       return { value: 85, label: formatPercentileLabel(85, formatter) };
     }
     case 'reaction': {
       const v = analytics.avgReactionTime;
-      if (v <= 200) return { value: 10, label: formatPercentileLabel(10, formatter) };
-      if (v <= 250) return { value: 25, label: formatPercentileLabel(25, formatter) };
-      if (v <= 300) return { value: 50, label: formatPercentileLabel(50, formatter) };
-      if (v <= 350) return { value: 70, label: formatPercentileLabel(70, formatter) };
-      return { value: 90, label: formatPercentileLabel(90, formatter) };
+      if (v <= 300) return { value: 10, label: formatPercentileLabel(10, formatter) };
+      if (v <= 450) return { value: 18, label: formatPercentileLabel(18, formatter) };
+      if (v <= 650) return { value: 26, label: formatPercentileLabel(26, formatter) };
+      if (v <= 820) return { value: 30, label: formatPercentileLabel(30, formatter) };
+      if (v <= 1100) return { value: 55, label: formatPercentileLabel(55, formatter) };
+      return { value: 85, label: formatPercentileLabel(85, formatter) };
     }
     case 'gaze': {
       const v = analytics.avgGazeReactionTime;
-      if (v <= 200) return { value: 12, label: formatPercentileLabel(12, formatter) };
-      if (v <= 250) return { value: 25, label: formatPercentileLabel(25, formatter) };
-      if (v <= 350) return { value: 45, label: formatPercentileLabel(45, formatter) };
-      if (v <= 450) return { value: 65, label: formatPercentileLabel(65, formatter) };
-      return { value: 88, label: formatPercentileLabel(88, formatter) };
+      if (v <= 200) return { value: 10, label: formatPercentileLabel(10, formatter) };
+      if (v <= 280) return { value: 20, label: formatPercentileLabel(20, formatter) };
+      if (v <= 340) return { value: 35, label: formatPercentileLabel(35, formatter) };
+      if (v <= 420) return { value: 50, label: formatPercentileLabel(50, formatter) };
+      if (v <= 520) return { value: 72, label: formatPercentileLabel(72, formatter) };
+      return { value: 90, label: formatPercentileLabel(90, formatter) };
     }
     case 'gazeAim': {
       const v = analytics.gazeAimLatency;
-      if (v <= 250) return { value: 15, label: formatPercentileLabel(15, formatter) };
-      if (v <= 400) return { value: 35, label: formatPercentileLabel(35, formatter) };
-      if (v <= 600) return { value: 60, label: formatPercentileLabel(60, formatter) };
-      return { value: 85, label: formatPercentileLabel(85, formatter) };
+      if (v <= 320) return { value: 18, label: formatPercentileLabel(18, formatter) };
+      if (v <= 480) return { value: 35, label: formatPercentileLabel(35, formatter) };
+      if (v <= 650) return { value: 45, label: formatPercentileLabel(45, formatter) };
+      if (v <= 780) return { value: 50, label: formatPercentileLabel(50, formatter) };
+      if (v <= 950) return { value: 70, label: formatPercentileLabel(70, formatter) };
+      return { value: 90, label: formatPercentileLabel(90, formatter) };
     }
     case 'sync': {
       const v = analytics.synchronization;
-      if (v <= 90) return { value: 15, label: formatPercentileLabel(15, formatter) };
-      if (v <= 140) return { value: 35, label: formatPercentileLabel(35, formatter) };
-      if (v <= 200) return { value: 60, label: formatPercentileLabel(60, formatter) };
-      return { value: 85, label: formatPercentileLabel(85, formatter) };
+      if (v <= 110) return { value: 18, label: formatPercentileLabel(18, formatter) };
+      if (v <= 150) return { value: 30, label: formatPercentileLabel(30, formatter) };
+      if (v <= 190) return { value: 40, label: formatPercentileLabel(40, formatter) };
+      if (v <= 230) return { value: 60, label: formatPercentileLabel(60, formatter) };
+      return { value: 80, label: formatPercentileLabel(80, formatter) };
     }
     case 'coverage': {
       const gazeCov = coverage?.gaze ?? 0;
@@ -619,31 +624,31 @@ const DetailedResultsPage = () => {
         case 'accuracy': {
           const ratio = analytics.totalTargets > 0 ? analytics.targetsHit / analytics.totalTargets : 0;
           if (ratio >= 0.8) return { label: t('results.level.targets.top', 'High hit rate'), color: goodColor };
-          if (ratio >= 0.5) return { label: t('results.level.targets.mid', 'Average hit rate'), color: midColor };
+          if (ratio >= 0.7) return { label: t('results.level.targets.mid', 'Average hit rate'), color: midColor };
           return { label: t('results.level.targets.low', 'Needs hit rate improvement'), color: badColor };
         }
         case 'reaction': {
           const v = analytics.avgReactionTime;
-          if (v <= 300) return { label: t('results.level.reaction.top', 'Excellent reaction time'), color: goodColor };
-          if (v <= 600) return { label: t('results.level.reaction.mid', 'Average reaction time'), color: midColor };
+          if (v <= 450) return { label: t('results.level.reaction.top', 'Excellent reaction time'), color: goodColor };
+          if (v <= 900) return { label: t('results.level.reaction.mid', 'Average reaction time'), color: midColor };
           return { label: t('results.level.reaction.low', 'Needs reaction improvement'), color: badColor };
         }
         case 'gaze': {
           const v = analytics.avgGazeReactionTime;
-          if (v <= 250) return { label: t('results.level.gaze.top', 'Fast gaze acquisition'), color: goodColor };
-          if (v <= 450) return { label: t('results.level.gaze.mid', 'Average gaze acquisition'), color: midColor };
+          if (v <= 320) return { label: t('results.level.gaze.top', 'Fast gaze acquisition'), color: goodColor };
+          if (v <= 520) return { label: t('results.level.gaze.mid', 'Average gaze acquisition'), color: midColor };
           return { label: t('results.level.gaze.low', 'Slow gaze acquisition'), color: badColor };
         }
         case 'gazeAim': {
           const v = analytics.gazeAimLatency;
-          if (v <= 300) return { label: t('results.level.gazeAim.top', 'Short gaze-hand delay'), color: goodColor };
-          if (v <= 600) return { label: t('results.level.gazeAim.mid', 'Average gaze-hand delay'), color: midColor };
+          if (v <= 480) return { label: t('results.level.gazeAim.top', 'Short gaze-hand delay'), color: goodColor };
+          if (v <= 900) return { label: t('results.level.gazeAim.mid', 'Average gaze-hand delay'), color: midColor };
           return { label: t('results.level.gazeAim.low', 'Needs latency improvement'), color: badColor };
         }
         case 'sync': {
           const v = analytics.synchronization;
-          if (v <= 120) return { label: t('results.level.sync.top', 'Great gaze-mouse sync'), color: goodColor };
-          if (v <= 200) return { label: t('results.level.sync.mid', 'Average sync'), color: midColor };
+          if (v <= 150) return { label: t('results.level.sync.top', 'Great gaze-mouse sync'), color: goodColor };
+          if (v <= 230) return { label: t('results.level.sync.mid', 'Average sync'), color: midColor };
           return { label: t('results.level.sync.low', 'Needs sync improvement'), color: badColor };
         }
         case 'coverage': {

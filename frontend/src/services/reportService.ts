@@ -56,42 +56,45 @@ const calculatePercentiles = (metrics: {
   gazeAimLatencyPercentile: number | null;
 } => {
   // Reaction time percentiles (lower is better)
-  // Elite: <200ms, Good: 200-250ms, Average: 250-300ms, Below avg: >300ms
+  // Calibrated so ~800ms sits around Top 30%
   let reactionTimePercentile = 50;
-  if (metrics.reactionTime < 200) reactionTimePercentile = 10;
-  else if (metrics.reactionTime < 250) reactionTimePercentile = 25;
-  else if (metrics.reactionTime < 300) reactionTimePercentile = 50;
-  else if (metrics.reactionTime < 350) reactionTimePercentile = 70;
+  if (metrics.reactionTime <= 300) reactionTimePercentile = 10;
+  else if (metrics.reactionTime <= 450) reactionTimePercentile = 18;
+  else if (metrics.reactionTime <= 650) reactionTimePercentile = 26;
+  else if (metrics.reactionTime <= 820) reactionTimePercentile = 30;
+  else if (metrics.reactionTime <= 1100) reactionTimePercentile = 55;
   else reactionTimePercentile = 85;
 
   // Overlap score percentiles (higher is better)
-  // Elite: >85%, Good: 75-85%, Average: 60-75%, Below avg: <60%
   let overlapScorePercentile = 50;
-  if (metrics.overlapScore > 85) overlapScorePercentile = 10;
-  else if (metrics.overlapScore > 75) overlapScorePercentile = 20;
-  else if (metrics.overlapScore > 65) overlapScorePercentile = 40;
-  else if (metrics.overlapScore > 55) overlapScorePercentile = 60;
-  else overlapScorePercentile = 70;
+  if (metrics.overlapScore > 90) overlapScorePercentile = 12;
+  else if (metrics.overlapScore > 82) overlapScorePercentile = 28;
+  else if (metrics.overlapScore > 72) overlapScorePercentile = 45;
+  else if (metrics.overlapScore > 60) overlapScorePercentile = 65;
+  else overlapScorePercentile = 85;
 
   // Gaze reaction (lower is better)
   let gazeReactionTimePercentile: number | null = null;
   if (metrics.gazeReactionTime != null) {
     const v = metrics.gazeReactionTime;
-    if (v <= 200) gazeReactionTimePercentile = 12;
-    else if (v <= 250) gazeReactionTimePercentile = 25;
-    else if (v <= 350) gazeReactionTimePercentile = 45;
-    else if (v <= 450) gazeReactionTimePercentile = 65;
-    else gazeReactionTimePercentile = 88;
+    if (v <= 200) gazeReactionTimePercentile = 10;
+    else if (v <= 280) gazeReactionTimePercentile = 20;
+    else if (v <= 340) gazeReactionTimePercentile = 35;
+    else if (v <= 420) gazeReactionTimePercentile = 50;
+    else if (v <= 520) gazeReactionTimePercentile = 72;
+    else gazeReactionTimePercentile = 90;
   }
 
   // Gaze-aim latency (lower is better)
   let gazeAimLatencyPercentile: number | null = null;
   if (metrics.gazeAimLatency != null) {
     const v = metrics.gazeAimLatency;
-    if (v <= 250) gazeAimLatencyPercentile = 15;
-    else if (v <= 400) gazeAimLatencyPercentile = 35;
-    else if (v <= 600) gazeAimLatencyPercentile = 60;
-    else gazeAimLatencyPercentile = 85;
+    if (v <= 320) gazeAimLatencyPercentile = 18;
+    else if (v <= 480) gazeAimLatencyPercentile = 35;
+    else if (v <= 650) gazeAimLatencyPercentile = 45;
+    else if (v <= 780) gazeAimLatencyPercentile = 50;
+    else if (v <= 950) gazeAimLatencyPercentile = 70;
+    else gazeAimLatencyPercentile = 90;
   }
 
   return { reactionTimePercentile, overlapScorePercentile, gazeReactionTimePercentile, gazeAimLatencyPercentile };
